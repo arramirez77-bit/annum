@@ -1,0 +1,19 @@
+appId: com.highdesert.annum
+name: Scenario on-track
+---
+- runFlow:
+    file: ../common/open-scenario.yaml
+    env:
+      SCENARIO: on-track
+- extendedWaitUntil:
+    visible: 'You can spend \$1,000 until your next invoice on Oct 13\. About \$50 a day\.'
+    timeout: 5000
+- assertVisible: 'Status: On track'
+- assertVisible: 'Runway, 4\.2 mo, Up 0\.2 this week · \$15k target'
+- assertVisible: 'Tax reserve, \$3,000, Next quarterly date Jan 15'
+- assertVisible: 'Start weekly review'
+- takeScreenshot: scenario-on-track
+# The settings button opens Settings (a stub until M5).
+- tapOn:
+    id: 'open-settings'
+- assertVisible: 'Modules, your numbers, reminders and privacy arrive in M5\.'

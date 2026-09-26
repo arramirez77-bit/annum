@@ -2,6 +2,7 @@ import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { color } from '@/theme';
+import { modalScreen } from '@/ui/navigation';
 
 // Dark only (v1). Navigation chrome uses theme tokens so there is never a white flash.
 const navigationTheme = {
@@ -21,7 +22,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={navigationTheme}>
       <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="what-if" options={modalScreen} />
+      </Stack>
     </ThemeProvider>
   );
 }

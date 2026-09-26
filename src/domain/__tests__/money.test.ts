@@ -149,6 +149,16 @@ describe('what if and transfer', () => {
     expect(w.waitUntil).toBe('2026-10-13');
   });
 
+  test('a purchase bigger than Free to spend plus all of Runway: Runway stops at 0, never negative', () => {
+    const w = whatIf(seed, 2000200); // ATS $1,000 + Runway $12,600 = $13,600 available
+    expect(w).toMatchObject({
+      shortfall: 1260000,
+      beyondRunway: 640200,
+      runwayMonths: 0,
+      guardrail: true,
+    });
+  });
+
   test('transfer lists what falls in the next 7 days (inclusive)', () => {
     const t = weeklyTransfer(seed);
     expect(t.due.map((o) => o.name)).toEqual(['Contoso Card', 'Car insurance', 'Phone']);

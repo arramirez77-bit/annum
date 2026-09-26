@@ -1,0 +1,13 @@
+appId: com.highdesert.annum
+name: Scenario heads-up
+---
+- runFlow:
+    file: ../common/open-scenario.yaml
+    env:
+      SCENARIO: heads-up
+- extendedWaitUntil:
+    visible: 'You can spend \$200 until your next invoice on Oct 13\. About \$10 a day\. The Contoso Card statement \(\$500\) lands before your invoice does\.'
+    timeout: 5000
+- assertVisible: 'Status: Heads up'
+- assertVisible: 'See what I can move'
+- takeScreenshot: scenario-heads-up

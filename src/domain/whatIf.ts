@@ -7,10 +7,12 @@ export interface WhatIfResult {
   /** Available to Spend after the purchase, floored at 0. */
   ats: Cents;
   perDay: Cents;
-  /** Runway months after the purchase (unchanged unless it dips into Runway). */
+  /** Runway months after the purchase (unchanged unless it dips into Runway; never below 0). */
   runwayMonths: number;
-  /** How much would come out of Runway. */
+  /** How much would come out of Runway (at most what Runway holds). */
   shortfall: Cents;
+  /** How much the purchase exceeds Free to spend and all of Runway together. */
+  beyondRunway: Cents;
   /** True when the purchase would reduce Runway at all. */
   guardrail: boolean;
   /** The next income date, for "Wait until {date}". */
@@ -20,14 +22,16 @@ export interface WhatIfResult {
 export function whatIf(data: AppData, purchase: Cents): WhatIfResult {
   const ats = availableToSpend(data);
   const after = ats.raw - purchase;
-  const shortfall = Math.max(purchase - Math.max(ats.raw, 0), 0);
+  const needed = Math.max(purchase - Math.max(ats.raw, 0), 0);
+  const shortfall = Math.min(needed, Math.max(data.buckets.runway, 0));
   return {
     purchase,
     ats: Math.max(after, 0),
     perDay: perDayFor(after, ats.days),
     runwayMonths: runwayMonths(data, data.buckets.runway - shortfall),
     shortfall,
-    guardrail: shortfall > 0,
+    beyondRunway: needed - shortfall,
+    guardrail: needed > 0,
     waitUntil: ats.nextIncome.date,
   };
 }

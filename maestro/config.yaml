@@ -1,0 +1,4 @@
+# `maestro test maestro/` runs these; common/ holds shared sub-flows only.
+flows:
+  - '*'
+  - 'scenarios/*'

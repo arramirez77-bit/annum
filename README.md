@@ -87,12 +87,12 @@ npm test           # Jest: the 25 docs/03 test cases, engine unit tests, fixture
 npm run lint       # ESLint + Prettier + token check (no raw colors/sizes outside src/theme)
 npm run typecheck  # TypeScript
 npx expo-doctor    # Expo project health
-maestro test maestro/gallery.yaml   # flow tests on the Simulator (needs `npm start` running)
+maestro test maestro/               # all flow tests on the Simulator (needs `npm start` running)
 ```
 
 Flow tests use [Maestro](https://maestro.mobile.dev): `brew install openjdk@17 mobile-dev-inc/tap/maestro`, and set `JAVA_HOME` to `$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home`.
 
-**Component gallery (development builds only):** on Today, tap **Component gallery** to see every component in every state.
+**Demo scenarios and the component gallery (development builds):** long-press the status pill on Today to switch scenarios (on track, heads up, stale sync, late invoice, first run, salary). The same screen links to the component gallery.
 
 ## How the project is organized
 
@@ -124,6 +124,7 @@ Flow tests use [Maestro](https://maestro.mobile.dev): `brew install openjdk@17 m
 | Annum opens a different project | You picked another project's server in the list. Close Annum, reopen it, and pick the server ending in **:8082** |
 | Blank screen after an upgrade | `npx expo prebuild --clean`, then `npm run ios:device` again |
 | "Port 8082 is running … in another window" | Annum's dev server is already running in another Terminal window. Use that one, or close it first |
+| Expo's gear "Tools" button covers the settings icon | Development builds only. Drag it aside, or turn it off in the developer menu (shake the phone) |
 
 ## Pushing to GitHub
 

@@ -1,0 +1,14 @@
+appId: com.highdesert.annum
+name: Scenario stale-sync
+---
+- runFlow:
+    file: ../common/open-scenario.yaml
+    env:
+      SCENARIO: stale-sync
+- extendedWaitUntil:
+    visible: 'You can spend about \$1,000 until your next invoice on Oct 13\. About \$50 a day\.'
+    timeout: 5000
+- assertVisible: 'Sep 23 · Updated Sep 20'
+- assertVisible: "Heads up\\. Woodgrove checking hasn't synced since Sep 20, so this may be off by a few purchases\\."
+- assertVisible: 'Status: On track'
+- takeScreenshot: scenario-stale-sync

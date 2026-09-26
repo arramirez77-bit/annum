@@ -7,10 +7,10 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 | Milestone | Status | Evidence |
 | --- | --- | --- |
 | M0 Project setup & dev build | ✅ Done (268f564) | Runs on iPhone + iOS 27 Simulator; 33 tests; lint/typecheck/expo-doctor green; CI green |
-| M0.5 Loop setup | ✅ Done | Baseline re-verified; this file; Human checkpoints listed |
+| M0.5 Loop setup + spikes | ⏳ Spikes after M3 | Baseline re-verified; this file; Human checkpoints listed. Spikes: SQLCipher, widget — to run next; bank sync **pending: provider undecided** |
 | M1 Domain engine | ✅ Done | `src/domain/` (13 modules, no RN imports); tests/spec now runs the 25 cases on the real engine, reference copy deleted; 81 tests (was 33); lint/typecheck/format green; Simulator still renders |
 | M2 Design system components | ✅ Done | 19 components + Mark/Wordmark in `src/ui/components/`, native TopBar/Sheet presets; dev gallery `app/dev/components.tsx`; token check in `npm run lint`; 97 tests (was 81); Maestro `maestro/gallery.yaml` passes on the iOS 27 Simulator (split edit $2,500 → Free $2,800, Tax chip checked). Not visually compared to Figma screens (H1) |
-| M3 Today, Money, What would this do? | ⏳ Next | |
+| M3 Today, Money, What would this do? | ✅ Done | Zustand store + tested view builders (`src/state/`); Today (field cross-fade, count-up), Money (+E3, salary), What-if modal (fits/guardrail, Wait until → deferred purchase), scenario switcher, settings stub. 112 tests. Maestro: 6 scenario flows + what-if + gallery all pass on the iOS 27 Simulator |
 | M4 Weekly Review + Deposit split | — | |
 | M5 Onboarding, storage, Face ID, Settings | — | |
 | M6 Real bank data, background refresh, notifications | — | |
@@ -29,9 +29,9 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 | # | Needed for | What | Status |
 | --- | --- | --- | --- |
 | H1 | M2+ visual checks | 40 screen PNGs in `docs/screens/` (git-ignored), **or** a link to the Figma file/branch that has the Screens, component, Tab Bar and Widgets pages. The connected Figma account only sees "Cover" and "Brand — Logo" in the Annum file. | Open |
-| H2 | M6 | Teller developer account: application ID (goes in local `.env`), paths to client certificate + key **outside the repo**, sandbox OK to start | Open |
-| H3 | M6 | Cloudflare account + `wrangler login` (browser approval) | Open |
-| H4 | M6 | Which banks to test (kept private; placeholders only in the repo) + go-ahead to use real accounts | Open |
+| H2 | M7 | **Bank sync provider undecided** (Teller has no public sign-up). At M7 I stop with options: Teller (if access), Plaid free Trial (verify limits/terms), SimpleFIN (~$15/yr, needs approval), or file import only ($0) | Pending decision |
+| H3 | M7 | Cloudflare account + `wrangler login` — only if the chosen provider needs a server-side proxy (Teller's mTLS does) | Pending H2 |
+| H4 | M7 | Which banks to test (kept private; placeholders only in the repo) + go-ahead to use real accounts | Pending H2 |
 | H5 | M7 | App Store Connect: create app record (Annum, `com.highdesert.annum`), invite the second user as a team user for internal TestFlight; optional API key (.p8 outside the repo) | Open |
 | H6 | M8 | App Group `group.com.highdesert.annum` — likely registered automatically by Xcode; manual clicks only if that fails | Open |
 | H7 | M5–M8 | On-device checks: Face ID, notification permission + Sunday reminder, VoiceOver walkthrough, adding lock-screen widgets | Open |
@@ -40,6 +40,8 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 ## Decisions log
 
 - Milestone numbering follows `docs/06-BUILD-PLAN.md` (M0–M8). The loop instructions mentioned M0.5, TestFlight in "M6" and the App Group in "M9"; the rest of that message was cut off, so docs/06 wins until clarified.
+- **Bank sync (Andy, 2026-09-25):** Teller has no public sign-up, so the provider is undecided. File import (S11) and manual accounts (S10) are the data path; sync sits behind a provider interface in `src/data/` so Teller, Plaid or SimpleFIN can plug in later without touching screens. The Teller-only Cloudflare Worker is on hold. At M7: stop and present the options.
+- **M0.5 order:** the SQLCipher and widget spikes run after M3 (they inform M5 storage and M8 widgets, not M1–M4).
 
 **M1 — defaults chosen where docs/03 is silent (please review):**
 1. **No expected income recorded** (freelance): plan over the next **30 days** (`kind: 'none'`), so Today can say "over the next 30 days" and suggest adding an invoice.
@@ -65,6 +67,16 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 7. **Number-pad inputs** have no Return key: screens with inputs use `keyboardDismissMode="on-drag"` and `automaticallyAdjustKeyboardInsets`.
 8. **Split amount chip** is 36pt; a surrounding tap area focuses it so the target is 44pt.
 9. **Tests:** React Native Testing Library 14 (async `render`/`fireEvent`); Jest mocks `react-native-worklets` and runs Reanimated's `setUpTests()` (`jest.setup.ts`).
+
+**M3 — Today, Money, What would this do? (please review):**
+1. **Copy** (docs/05 gives the pattern, not every sentence): late invoice hero "until Oct 22, when we expect the late invoice. About $35 a day." + cause "The Northwind Studio invoice is 4 days late."; statement cause "The Contoso Card statement ($500) lands before your invoice does." (salary: "before payday does"); no income recorded: "over the next 30 days"; low per day: "That's under $20 a day until your next invoice."
+2. **Heads-up buttons** ("See what I can move", "See my options") and "Start weekly review" all go to the Review tab until M4 builds the review flow and options.
+3. **Demo clock:** demo mode runs at 9:00 AM on the fixture's "today", so "Updated 7:02 AM" and staleness are stable.
+4. **Fixture fixes:** the late-invoice scenario now syncs on its own date (Oct 17) and, like salary, has no start-of-week snapshot (`weekStart: null`) — otherwise it read as stale and salary showed "Down 2.8 this week". No test values changed.
+5. **What-if bug fixed:** a purchase bigger than Free to spend plus all of Runway showed negative Runway. Runway now stops at 0.0 months and the note says how much more than both it is.
+6. **Runway row in estimate mode:** "~6 mo · Estimated from savings · $15k target"; Tax reserve shows "Not set aside yet" until the first split.
+7. **Unsplit Money (E3):** "Split my savings now" opens a stub until M4 builds the deposit split.
+8. **Screens that scroll under the floating tab bar** use automatic content insets; Today keeps the light sheet color under the tab bar.
 
 ## Dependabot (Expo-owned transitive packages — not CI failures, don't downgrade Expo)
 

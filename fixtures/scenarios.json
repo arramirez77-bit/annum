@@ -18,15 +18,19 @@
   },
   "late-invoice": {
     "today": "2026-10-17",
+    "weekStart": null,
     "accounts": {
       "chk": {
-        "balance": 17500
+        "balance": 17500,
+        "lastSynced": "2026-10-17T07:02:00"
       },
       "card": {
-        "statementBalance": 0
+        "statementBalance": 0,
+        "lastSynced": "2026-10-17T07:02:00"
       },
       "sav": {
-        "balance": 1760000
+        "balance": 1760000,
+        "lastSynced": "2026-10-17T07:02:00"
       }
     },
     "buckets": {
@@ -62,6 +66,7 @@
     "_savingsUnsplit": true
   },
   "salary": {
+    "weekStart": null,
     "settings": {
       "incomeType": "salary",
       "taxRate": 0,

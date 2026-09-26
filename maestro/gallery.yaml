@@ -6,8 +6,15 @@ name: Component gallery
 - openLink: 'exp+annum://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082'
 - extendedWaitUntil:
     visible:
-      id: 'open-gallery'
+      id: 'status-pill'
     timeout: 30000
+# The gallery link lives on the dev scenario switcher (long-press the status pill).
+- longPressOn:
+    id: 'status-pill'
+- scrollUntilVisible:
+    element:
+      id: 'open-gallery'
+    direction: DOWN
 - tapOn:
     id: 'open-gallery'
 - extendedWaitUntil:

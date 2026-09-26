@@ -1,0 +1,13 @@
+appId: com.highdesert.annum
+name: Scenario late-invoice
+---
+- runFlow:
+    file: ../common/open-scenario.yaml
+    env:
+      SCENARIO: late-invoice
+- extendedWaitUntil:
+    visible: 'You can spend \$175 until Oct 22, when we expect the late invoice\. About \$35 a day\. The Northwind Studio invoice is 4 days late\.'
+    timeout: 5000
+- assertVisible: 'Status: Heads up'
+- assertVisible: 'See my options'
+- takeScreenshot: scenario-late-invoice

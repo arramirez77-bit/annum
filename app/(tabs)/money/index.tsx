@@ -1,6 +1,104 @@
-import { ScreenPlaceholder } from '@/ui/components/ScreenPlaceholder';
+import { router } from 'expo-router';
+import { ScrollView, View } from 'react-native';
 
-// 03 Money — placeholder until M3.
+import { formatDollars } from '@/domain';
+import { useMoneyView } from '@/state/hooks';
+import { color, layout, space } from '@/theme';
+import {
+  BucketBar,
+  BucketRow,
+  Button,
+  GuardrailNote,
+  SettingsGroup,
+  SettingsRow,
+  Text,
+} from '@/ui/components';
+
+// 03 Money (+E3 not split yet, P2 salary). docs/05.
 export default function MoneyScreen() {
-  return <ScreenPlaceholder title="Money" line="Where every dollar in savings is spoken for." />;
+  const v = useMoneyView();
+
+  return (
+    <ScrollView
+      style={{ backgroundColor: color.bgBase }}
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{
+        paddingTop: space[16],
+        paddingBottom: space[24],
+        paddingHorizontal: layout.screenMargin,
+        gap: space[24],
+      }}
+      testID="money"
+    >
+      <View style={{ gap: space[4] }}>
+        <Text variant="title1" accessibilityRole="header">
+          Money
+        </Text>
+        <Text tone="secondary">Where every dollar in savings is spoken for.</Text>
+      </View>
+
+      <View style={{ gap: space[12] }}>
+        <View
+          accessible
+          accessibilityLabel={`Savings, ${formatDollars(v.savings)}`}
+          style={{ gap: space[2] }}
+        >
+          <Text variant="footnote" tone="secondary">
+            Savings
+          </Text>
+          <Text variant="title2" money testID="money-savings">
+            {formatDollars(v.savings)}
+          </Text>
+        </View>
+        <BucketBar segments={v.segments} muted={v.unsplit} accessibilityLabel={v.barLabel} />
+      </View>
+
+      {v.unsplit && v.previewNote ? (
+        <View style={{ gap: space[12] }}>
+          <GuardrailNote tone="info" testID="unsplit-preview">
+            {v.previewNote}
+          </GuardrailNote>
+          <Button
+            variant="primary"
+            label="Split my savings now"
+            onPress={() => router.push('/deposit/unsplit')}
+            testID="split-now"
+          />
+        </View>
+      ) : null}
+
+      <View style={{ gap: space[8] }}>
+        {v.rows.map((row) => (
+          <BucketRow
+            key={row.bucket}
+            variant="card"
+            bucket={row.bucket}
+            name={row.name}
+            note={row.note}
+            amount={row.amount}
+            testID={`money-row-${row.bucket}`}
+          />
+        ))}
+      </View>
+
+      <SettingsGroup>
+        <SettingsRow
+          variant="chevron"
+          label="All transactions"
+          onPress={() => router.push('/money/transactions')}
+          last={!v.showTaxes}
+          testID="open-transactions"
+        />
+        {v.showTaxes && v.taxYearLabel ? (
+          <SettingsRow
+            variant="chevron"
+            label={v.taxYearLabel}
+            onPress={() => router.push('/money/taxes')}
+            last
+            testID="open-taxes"
+          />
+        ) : null}
+      </SettingsGroup>
+    </ScrollView>
+  );
 }
