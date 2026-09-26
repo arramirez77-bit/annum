@@ -1,43 +1,69 @@
-/** App state (Zustand). Demo mode loads the fixtures; storage arrives in M5, bank data later. */
+/**
+ * App state (Zustand). Real mode loads from the encrypted database and saves every change
+ * (state/session.ts); demo mode (development builds) loads the fixtures and saves nothing.
+ */
 import { create } from 'zustand';
 
 import { demoScenario, type ScenarioName } from '@/data/demo';
+import { DEFAULT_PREFS, type PendingTransfer, type Prefs } from '@/data/repo';
 import {
   applyTaxChanges,
   confirmSplit,
+  localISODate,
+  newAppData,
   ruleFromCorrection,
   toTag,
   upsertRule,
+  weekStartSnapshot,
+  withDerived,
+  type Account,
   type AppData,
   type Cadence,
   type CategoryRule,
   type Cents,
   type DeferredPurchase,
+  type ExpectedIncome,
   type ISODate,
+  type Settings,
   type Split,
   type Transaction,
 } from '@/domain';
 import { haptic } from '@/services/haptics';
 
-export interface PendingTransfer {
-  amount: Cents;
-  markedOn: ISODate;
-}
+import { depositsWith, lastReviewDate, type Persisted } from './persist';
 
-export interface AppState {
+export type { PendingTransfer };
+
+/**
+ * booting: deciding what to show · onboarding: first run · locked: Face ID (S5) ·
+ * ready: the app · blocked: the data can't be opened on this phone (calm recovery screen).
+ */
+export type Phase = 'booting' | 'onboarding' | 'locked' | 'ready' | 'blocked';
+export type Blocked = 'key-missing' | 'newer' | 'cant-open';
+
+export interface AppState extends Persisted {
   mode: 'demo' | 'real';
+  phase: Phase;
+  blocked: Blocked | null;
+  /** Real data is in memory (a lock after 5 minutes keeps it; a cold start doesn't have it yet). */
+  loaded: boolean;
   scenario: ScenarioName;
-  data: AppData;
-  deferred: DeferredPurchase[];
-  rules: CategoryRule[];
-  /** Weekly review: the step to resume at, and what was chosen along the way. */
-  reviewStep: number;
   /** Transactions as they were when tagging started (to tell corrections from suggestions). */
   tagBaseline: Transaction[] | null;
-  pendingTransfer: PendingTransfer | null;
   lastReviewDate: ISODate | null;
+  lockEnabled: boolean;
+  /** The last save didn't reach the database; the next change tries again. */
+  saveProblem: boolean;
 
+  setPhase: (phase: Phase, blocked?: Blocked | null) => void;
+  hydrate: (persisted: Persisted, lockEnabled: boolean) => void;
+  /** After Delete everything: empty, back to the first-run screens. */
+  reset: () => void;
   setScenario: (name: ScenarioName) => void;
+  setToday: (today: ISODate) => void;
+  setLockEnabled: (on: boolean) => void;
+  setSaveProblem: (problem: boolean) => void;
+
   deferPurchase: (amount: Cents, waitUntil: ISODate) => DeferredPurchase;
   saveReviewStep: (step: number) => void;
   chooseCategory: (transactionId: string, category: string) => void;
@@ -48,21 +74,66 @@ export interface AppState {
   completeReview: () => void;
   setSplitSettings: (taxRate: number, runwayTarget: Cents) => void;
   confirmDeposit: (split: Split, landed: boolean) => void;
+
+  /** S9: change one transaction (category, work expense, tax category). */
+  editTransaction: (
+    id: string,
+    change: Partial<Pick<Transaction, 'category' | 'tax' | 'taxCategory'>>,
+  ) => void;
+  /** S9 "Always treat {merchant} this way". */
+  alwaysTreat: (transactionId: string) => CategoryRule | undefined;
+  /** S10 and onboarding: accounts entered by hand. */
+  setBalance: (accountId: string, balance: Cents) => void;
+  /** Add the account, or replace the one with the same id. */
+  saveAccount: (account: Account) => void;
+  stopTracking: (accountId: string) => void;
+  /** S4 Add expected income. */
+  addExpectedIncome: (income: ExpectedIncome) => void;
+  /** S3 Settings. */
+  setModules: (modules: Partial<Settings['modules']>) => void;
+  setNumbers: (
+    numbers: Partial<Pick<Settings, 'taxRate' | 'runwayTarget' | 'monthlySpend'>>,
+  ) => void;
+  /** Salary / Both: the paycheck that defines "next income" (undefined removes it). */
+  setPaySchedule: (pay: Settings['paySchedule']) => void;
+  setPrefs: (prefs: Partial<Prefs>) => void;
 }
 
 let nextId = 1;
+const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${nextId++}`;
 
-const fresh = (name: ScenarioName) => ({
-  scenario: name,
-  data: demoScenario(name),
-  rules: [] as CategoryRule[],
+const empty = (today: ISODate): Persisted => ({
+  data: newAppData({ today, incomeType: 'freelance', accounts: [] }),
+  prefs: DEFAULT_PREFS,
+  deposits: [],
+  splits: [],
+  reviews: [],
+  rules: [],
+  deferred: [],
   reviewStep: 1,
-  tagBaseline: null,
   pendingTransfer: null,
-  lastReviewDate: null,
+  startedOn: null,
 });
 
+const demo = (name: ScenarioName) => {
+  const data = demoScenario(name);
+  return {
+    ...empty(data.today),
+    data,
+    deposits: data.pendingDeposit ? [data.pendingDeposit] : [],
+    mode: 'demo' as const,
+    scenario: name,
+    tagBaseline: null,
+    lastReviewDate: null,
+  };
+};
+
 export const useAppStore = create<AppState>((set, get) => {
+  /** Save a new AppData; real mode recomputes what depends on transactions and the date. */
+  const commit = (data: AppData) => set({ data: get().mode === 'real' ? withDerived(data) : data });
+  const settings = (change: Partial<Settings>) =>
+    commit({ ...get().data, settings: { ...get().data.settings, ...change } });
+
   /** Replace one transaction; if its tax tag changed, move it in or out of the Taxes totals. */
   const updateTransaction = (id: string, change: (t: Transaction) => Transaction) => {
     const { data } = get();
@@ -71,22 +142,66 @@ export const useAppStore = create<AppState>((set, get) => {
     const after = change(before);
     const transactions = data.transactions.map((t) => (t.id === id ? after : t));
     const taxYear = data.taxYear ? applyTaxChanges(data.taxYear, [before], [after]) : data.taxYear;
-    set({ data: { ...data, transactions, taxYear } });
+    commit({ ...data, transactions, taxYear });
   };
   const ensureBaseline = () => {
     if (!get().tagBaseline) set({ tagBaseline: get().data.transactions });
   };
+  const accounts = (change: (list: Account[]) => Account[]) =>
+    commit({ ...get().data, accounts: change(get().data.accounts) });
 
   return {
-    mode: 'demo',
-    deferred: [],
-    ...fresh('on-track'),
+    ...empty(localISODate(new Date())),
+    mode: 'real',
+    phase: 'booting',
+    blocked: null,
+    loaded: false,
+    scenario: 'on-track',
+    tagBaseline: null,
+    lastReviewDate: null,
+    lockEnabled: false,
+    saveProblem: false,
 
-    setScenario: (name) => set({ ...fresh(name), deferred: [] }),
+    setPhase: (phase, blocked = null) => set({ phase, blocked }),
+
+    hydrate: (persisted, lockEnabled) =>
+      set({
+        ...persisted,
+        mode: 'real',
+        phase: 'ready',
+        blocked: null,
+        loaded: true,
+        tagBaseline: null,
+        lastReviewDate: lastReviewDate(persisted.reviews),
+        lockEnabled,
+        saveProblem: false,
+      }),
+
+    reset: () =>
+      set({
+        ...empty(localISODate(new Date())),
+        mode: 'real',
+        phase: 'onboarding',
+        blocked: null,
+        loaded: false,
+        tagBaseline: null,
+        lastReviewDate: null,
+        lockEnabled: false,
+        saveProblem: false,
+      }),
+
+    setScenario: (name) => set({ ...demo(name), phase: 'ready', blocked: null, loaded: false }),
+
+    setToday: (today) => {
+      if (get().mode === 'real' && get().data.today !== today) commit({ ...get().data, today });
+    },
+
+    setLockEnabled: (on) => set({ lockEnabled: on }),
+    setSaveProblem: (problem) => set({ saveProblem: problem }),
 
     deferPurchase: (amount, waitUntil) => {
       const purchase: DeferredPurchase = {
-        id: `deferred-${nextId++}`,
+        id: newId('deferred'),
         label: 'Purchase',
         amount,
         waitUntil,
@@ -127,43 +242,101 @@ export const useAppStore = create<AppState>((set, get) => {
           nextRules = upsertRule(nextRules, ruleFromCorrection(t, chosen, t.tax, t.taxCategory));
         return { ...t, category: chosen, reviewed: true };
       });
-      set({ data: { ...data, transactions }, rules: nextRules, tagBaseline: null });
+      commit({ ...data, transactions });
+      set({ rules: nextRules, tagBaseline: null });
     },
 
-    setHabit: (amount, cadence) => {
-      const { data } = get();
-      set({
-        data: { ...data, settings: { ...data.settings, habitTransfer: { amount, cadence } } },
-      });
-    },
+    setHabit: (amount, cadence) => settings({ habitTransfer: { amount, cadence } }),
 
     markTransferMoved: (amount) => {
       haptic('confirm');
       set({ pendingTransfer: { amount, markedOn: get().data.today } });
     },
 
-    /** "Done": the week is reviewed; estimates end after the first review. */
+    /** "Done": the week is reviewed and a new one starts; estimates end after the first review. */
     completeReview: () => {
       haptic('confirm');
-      const { data } = get();
+      const { data, reviews, pendingTransfer } = get();
+      const review = {
+        id: `review-${data.today}`,
+        date: data.today,
+        ...(pendingTransfer ? { transfer: pendingTransfer.amount } : {}),
+      };
+      commit({
+        ...data,
+        settings: { ...data.settings, isEstimate: false },
+        weekStart: weekStartSnapshot(data),
+      });
       set({
-        data: { ...data, settings: { ...data.settings, isEstimate: false } },
+        reviews: [...reviews.filter((r) => r.id !== review.id), review],
         lastReviewDate: data.today,
         reviewStep: 1,
       });
     },
 
-    setSplitSettings: (taxRate, runwayTarget) => {
-      const { data } = get();
-      set({ data: { ...data, settings: { ...data.settings, taxRate, runwayTarget } } });
-    },
+    setSplitSettings: (taxRate, runwayTarget) => settings({ taxRate, runwayTarget }),
 
     confirmDeposit: (split, landed) => {
       haptic('confirm');
-      set({ data: confirmSplit(get().data, split, landed) });
+      const { data, splits, deposits } = get();
+      const next = confirmSplit(data, split, landed);
+      const depositId = landed ? data.pendingDeposit?.id : undefined;
+      commit(next);
+      set({
+        deposits: depositsWith(deposits, next.pendingDeposit),
+        splits: [
+          ...splits,
+          { id: newId('split'), date: data.today, split, ...(depositId ? { depositId } : {}) },
+        ],
+      });
     },
+
+    editTransaction: (id, change) => updateTransaction(id, (t) => ({ ...t, ...change })),
+
+    alwaysTreat: (id) => {
+      const t = get().data.transactions.find((x) => x.id === id);
+      if (!t) return undefined;
+      const rule = ruleFromCorrection(
+        t,
+        t.category ?? t.suggestedCategory ?? 'Other',
+        t.tax,
+        t.taxCategory,
+      );
+      set({ rules: upsertRule(get().rules, rule) });
+      return rule;
+    },
+
+    setBalance: (id, balance) =>
+      accounts((list) => list.map((a) => (a.id === id ? { ...a, balance } : a))),
+    saveAccount: (account) =>
+      accounts((list) =>
+        list.some((a) => a.id === account.id)
+          ? list.map((a) => (a.id === account.id ? account : a))
+          : [...list, account],
+      ),
+    stopTracking: (id) => {
+      const { data } = get();
+      commit({
+        ...data,
+        accounts: data.accounts.filter((a) => a.id !== id),
+        transactions: data.transactions.filter((t) => t.accountId !== id),
+      });
+    },
+
+    addExpectedIncome: (income) =>
+      commit({ ...get().data, expectedIncome: [...get().data.expectedIncome, income] }),
+
+    setModules: (modules) => settings({ modules: { ...get().data.settings.modules, ...modules } }),
+    setNumbers: (numbers) => settings(numbers),
+    setPaySchedule: (paySchedule) => {
+      const { paySchedule: _old, ...rest } = get().data.settings;
+      commit({ ...get().data, settings: paySchedule ? { ...rest, paySchedule } : rest });
+    },
+    setPrefs: (prefs) => set({ prefs: { ...get().prefs, ...prefs } }),
   };
 });
+
+export const newRecordId = newId;
 
 /**
  * The clock the screens use. Demo mode runs at 9:00 AM on the fixture's "today", so

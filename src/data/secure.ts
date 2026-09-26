@@ -6,6 +6,8 @@ import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 
 const DB_KEY = 'annum.db.key.v1';
+/** "1" when the Face ID lock is on. Read before the database opens, so it lives here. */
+const LOCK_KEY = 'annum.lock.v1';
 
 export const toHex = (bytes: Uint8Array): string =>
   Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
@@ -31,5 +33,34 @@ export async function getOrCreateDatabaseKey(options: KeyOptions = {}): Promise<
   return key;
 }
 
-/** "Delete everything" removes the key with the data (M5). */
+/**
+ * The database key, if this phone has one. Stored without a Face ID requirement on purpose:
+ * expo-secure-store's Face ID option loses the item whenever Face ID changes (a new face, a
+ * reset) and has no passcode fallback, which would lose every number. The app itself is gated
+ * by Face ID with passcode fallback (services/lock.ts). Decision logged in PROGRESS.md (M5).
+ */
+export const readDatabaseKey = (): Promise<string | null> =>
+  SecureStore.getItemAsync(DB_KEY, storeOptions({}));
+
+export async function createDatabaseKey(): Promise<string> {
+  const key = toHex(await Crypto.getRandomBytesAsync(32));
+  await SecureStore.setItemAsync(DB_KEY, key, storeOptions({}));
+  return key;
+}
+
 export const deleteDatabaseKey = (): Promise<void> => SecureStore.deleteItemAsync(DB_KEY);
+
+export async function isLockEnabled(): Promise<boolean> {
+  return (await SecureStore.getItemAsync(LOCK_KEY, storeOptions({}))) === '1';
+}
+
+export const setLockEnabled = (on: boolean): Promise<void> =>
+  on
+    ? SecureStore.setItemAsync(LOCK_KEY, '1', storeOptions({}))
+    : SecureStore.deleteItemAsync(LOCK_KEY);
+
+/** Delete everything: every Keychain entry Annum wrote (bank tokens join this list in M6+). */
+export async function deleteAllSecrets(): Promise<void> {
+  await SecureStore.deleteItemAsync(DB_KEY);
+  await SecureStore.deleteItemAsync(LOCK_KEY);
+}

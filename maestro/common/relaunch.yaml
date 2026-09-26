@@ -1,0 +1,5 @@
+# Quits Annum and opens it again (a cold start), against Metro on :8082.
+appId: com.highdesert.annum
+---
+- stopApp
+- openLink: 'exp+annum://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082'

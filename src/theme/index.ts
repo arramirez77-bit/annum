@@ -70,6 +70,8 @@ export const layout = {
   chipHeight: 36,
   touchTarget: 44,
   tabBarBottomOffset: 28,
+  compactHeight: 700,     // screens shorter than this use the compact Today (01c)
+  todayTopCompact: 44,    // compact Today: field top padding (docs/04)
 } as const;
 
 export const radius = { sm: 8, md: 14, lg: 16, sheet: 28, full: 999 } as const;
@@ -89,6 +91,7 @@ export const size = {
   icon: 17,          // SF Symbol beside Body text
   iconSmall: 13,     // SF Symbol beside Caption text
   hairline: 1,       // input and outline borders (hairlines use StyleSheet.hairlineWidth)
+  fieldHeight: 50,   // text inputs: same height as a button (proposed, M5)
 } as const;
 
 /** Dynamic Type caps (maxFontSizeMultiplier): Hero/Display 1.3, everything else 2.0. */

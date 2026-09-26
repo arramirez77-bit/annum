@@ -1,0 +1,37 @@
+# M5 lock, part 1 (run with scripts/maestro-lock.sh, which presents a matching face):
+# first run with the sample bank, Face ID on, reminders on (system prompt) → Today.
+appId: com.highdesert.annum
+name: 'Lock 1: turn on Face ID and reminders'
+---
+- runFlow: ../common/start-over.yaml
+- tapOn:
+    id: 'welcome-start'
+- tapOn:
+    id: 'onboarding-skip'
+- tapOn:
+    id: 'connect-bank'
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-continue'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-continue'
+- assertVisible: 'Keep it private with Face ID'
+- tapOn:
+    id: 'face-id-on'
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-reminders'
+    timeout: 20000
+- tapOn:
+    id: 'reminders-on'
+- runFlow:
+    when:
+      visible: 'Allow'
+    commands:
+      - tapOn: 'Allow'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 15000
+- assertVisible: 'You can spend about .*'

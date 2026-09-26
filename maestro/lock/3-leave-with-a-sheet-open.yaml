@@ -1,0 +1,40 @@
+# M5 lock, part 3 (the runner presents a matching face): unlock from S5 → the same data. Then,
+# with the re-lock shortened to 5 seconds (development builds), open Settings and a sheet, and
+# leave the app.
+appId: com.highdesert.annum
+name: 'Lock 3: unlock, then leave with a sheet open'
+---
+- tapOn:
+    id: 'lock-unlock'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 20000
+- assertVisible: 'You can spend about .*'
+- longPressOn:
+    id: 'status-pill'
+- scrollUntilVisible:
+    element:
+      id: 'dev-quick-lock'
+    direction: DOWN
+- tapOn:
+    id: 'dev-quick-lock'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 5000
+- tapOn:
+    id: 'open-settings'
+- tapOn:
+    id: 'number-spend'
+- extendedWaitUntil:
+    visible:
+      id: 'edit-number-spend'
+    timeout: 5000
+- pressKey: Home
+# Stay away longer than the (shortened) 5 seconds.
+- extendedWaitUntil:
+    visible:
+      id: 'not-on-screen'
+    timeout: 8000
+    optional: true

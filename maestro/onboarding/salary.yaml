@@ -1,0 +1,118 @@
+# M5: salary mode end to end. First run as Salary with the sample bank (development builds),
+# no tax features anywhere, a full first weekly review, and it all survives a restart.
+appId: com.highdesert.annum
+name: Salary end to end
+---
+- runFlow: ../common/start-over.yaml
+- tapOn:
+    id: 'welcome-start'
+- tapOn:
+    id: 'income-salary'
+- assertNotVisible: 'Your next invoice'
+- tapOn:
+    id: 'pay-amount'
+- inputText: '2500'
+- runFlow: ../common/close-number-pad.yaml
+- tapOn:
+    id: 'onboarding-continue'
+- tapOn:
+    id: 'connect-bank'
+- assertVisible: 'Accounts found'
+- assertVisible: 'Woodgrove checking.*\$3,800.*Sample bank.*'
+- assertVisible: 'Fabrikam Invest.*Entered by hand.*'
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-continue'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-continue'
+- tapOn:
+    id: 'face-id-later'
+- assertNotVisible: 'Quarterly taxes.*'
+- assertVisible: 'Paydays.*'
+- tapOn:
+    id: 'reminders-later'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 10000
+- assertVisible: 'You can spend about \$.* until payday on .*'
+- assertNotVisible: 'Tax reserve.*'
+- takeScreenshot: m5-salary-today
+
+# Money: no Tax bucket, no Taxes link.
+- tapOn: 'Money'
+- assertNotVisible:
+    id: 'open-taxes'
+- assertNotVisible: 'Tax, .*'
+- tapOn: 'Today'
+
+# The first weekly review, start to finish.
+- tapOn:
+    id: 'today-button'
+- extendedWaitUntil:
+    visible: 'Do these balances look right\?'
+    timeout: 8000
+- assertVisible: 'Step 1 of 6'
+- tapOn:
+    id: 'review-primary'
+- assertVisible: 'Step 2 of 6'
+- assertNotVisible: 'Tax, work expense'
+- scrollUntilVisible:
+    element:
+      id: 'review-primary'
+    direction: DOWN
+- tapOn:
+    id: 'review-primary'
+- assertVisible: 'Step 3 of 6'
+- scrollUntilVisible:
+    element:
+      id: 'review-primary'
+    direction: DOWN
+- tapOn:
+    id: 'review-primary'
+- assertVisible: 'Step 4 of 6'
+- tapOn:
+    id: 'habit-amount'
+- inputText: '1000'
+- runFlow: ../common/close-number-pad.yaml
+- tapOn:
+    id: 'review-primary'
+- assertVisible: 'Step 5 of 6'
+- scrollUntilVisible:
+    element:
+      id: 'move-moved'
+    direction: DOWN
+- tapOn:
+    id: 'move-moved'
+- extendedWaitUntil:
+    visible: 'You spent \$.*'
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: 'review-done-button'
+    direction: DOWN
+- tapOn:
+    id: 'review-done-button'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 5000
+- assertVisible: 'Start weekly review'
+- assertNotVisible: '.*Estimate.*'
+
+# A cold start keeps the finished review, the habit, and salary mode.
+- runFlow: ../common/relaunch.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 30000
+- assertVisible: 'Start weekly review'
+- tapOn: 'Review'
+- assertVisible: '.*reviewed.*'
+- tapOn: 'Today'
+- tapOn:
+    id: 'open-settings'
+- assertNotVisible:
+    id: 'module-tax'
+- assertVisible: 'Usual transfer, \$1,000 weekly'

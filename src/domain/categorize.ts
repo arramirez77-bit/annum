@@ -78,3 +78,26 @@ export function ruleFromCorrection(
     taxCategory: tax ? taxCategory : undefined,
   };
 }
+
+/** Spending categories offered on S9 (a transaction's own suggestion is always offered too). */
+export const CATEGORIES = [
+  'Groceries',
+  'Dining',
+  'Gas',
+  'Shopping',
+  'Software',
+  'Bills',
+  'Travel',
+  'Health',
+  'Other',
+] as const;
+
+/** Work-expense groups on S9 and S2, in plain words. */
+export const TAX_CATEGORIES = [
+  'Equipment',
+  'Software',
+  'Home office',
+  'Travel',
+  'Meals',
+  'Other',
+] as const;

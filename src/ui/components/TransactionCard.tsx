@@ -17,7 +17,8 @@ interface TransactionCardProps {
   selectedCategory?: string;
   tax: boolean;
   onSelectCategory: (category: string) => void;
-  onToggleTax: () => void;
+  /** Leave out when the Tax module is off: the Tax chip disappears. */
+  onToggleTax?: () => void;
   testID?: string;
 }
 
@@ -69,7 +70,7 @@ export function TransactionCard({
             onPress={() => onSelectCategory(category)}
           />
         ))}
-        <Chip kind="tax" label="Tax" selected={tax} onPress={onToggleTax} />
+        {onToggleTax ? <Chip kind="tax" label="Tax" selected={tax} onPress={onToggleTax} /> : null}
       </View>
     </View>
   );

@@ -69,6 +69,7 @@ export function SettingsRow(props: SettingsRowProps) {
             value={props.value}
             onValueChange={props.onValueChange}
             accessibilityLabel={label}
+            testID={testID ? `${testID}-switch` : undefined}
           />
         </View>
         {separator}

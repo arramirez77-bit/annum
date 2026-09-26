@@ -13,7 +13,7 @@ name: Weekly review
     visible: 'Do these balances look right\?'
     timeout: 8000
 - assertVisible: 'Step 1 of 5'
-- assertVisible: 'Heads up\. Fabrikam Invest and Student loan are entered by hand, so they show your last update\.'
+- assertVisible: 'Heads up\. Fabrikam Invest and Student loan are entered by hand, so they show your last update\. Tap one to change it\.'
 - tapOn:
     id: 'review-primary'
 # 05 Tag — then Finish later, and come back to the same step

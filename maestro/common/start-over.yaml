@@ -1,0 +1,34 @@
+# Opens Annum (Metro on :8082) and erases this Simulator's Annum data through the development
+# Scenarios screen, so a flow starts on Welcome like a first launch.
+appId: com.highdesert.annum
+---
+- stopApp
+- openLink: 'exp+annum://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082'
+- extendedWaitUntil:
+    visible:
+      id: 'dev-entry|status-pill'
+    timeout: 30000
+- runFlow:
+    when:
+      visible:
+        id: 'dev-entry'
+    commands:
+      - longPressOn:
+          id: 'dev-entry'
+- runFlow:
+    when:
+      visible:
+        id: 'status-pill'
+    commands:
+      - longPressOn:
+          id: 'status-pill'
+- scrollUntilVisible:
+    element:
+      id: 'dev-start-over'
+    direction: DOWN
+- tapOn:
+    id: 'dev-start-over'
+- extendedWaitUntil:
+    visible:
+      id: 'welcome'
+    timeout: 10000

@@ -1,0 +1,53 @@
+# M5: Settings on the seed data. Turning the Tax module off hides tax features everywhere;
+# numbers are editable; S9 edits a transaction and writes a merchant rule.
+appId: com.highdesert.annum
+name: Settings, modules, transaction detail
+---
+- runFlow:
+    file: common/open-scenario.yaml
+    env:
+      SCENARIO: on-track
+- tapOn:
+    id: 'open-settings'
+- assertVisible: 'Set aside for taxes, 30%'
+- tapOn:
+    id: 'module-tax-switch'
+- assertNotVisible: 'Set aside for taxes, 30%'
+# Runway target: 5 → 6 months of $3,000.
+- tapOn:
+    id: 'number-runway'
+- tapOn: '6 months'
+- tapOn:
+    id: 'number-save'
+- assertVisible: 'Runway target, \$18,000 · 6 months'
+- takeScreenshot: m5-settings
+- runFlow: common/go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 5000
+- assertNotVisible: 'Tax reserve.*'
+- assertVisible: 'Runway, 4\.2 mo, Up 0\.2 this week · \$18k target'
+# Money: no Tax bucket or Taxes link; transactions have no Tax filter.
+- tapOn: 'Money'
+- assertNotVisible:
+    id: 'open-taxes'
+- scrollUntilVisible:
+    element: 'All transactions'
+    direction: DOWN
+    centerElement: true
+- tapOn: 'All transactions'
+- assertNotVisible:
+    id: 'filter-tax'
+# S9: Corner Market → Dining, then "Always treat Corner Market this way".
+- tapOn:
+    id: 'txn-t2'
+- assertVisible: 'Changes save as you go\.'
+- assertNotVisible: 'Work expense'
+- tapOn:
+    id: 'detail-category-Dining'
+- assertVisible: 'Saved\.'
+- tapOn:
+    id: 'detail-rule'
+- assertVisible: 'Saved\. Future Corner Market charges get Dining\.'
+- takeScreenshot: m5-transaction

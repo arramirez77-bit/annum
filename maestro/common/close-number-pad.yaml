@@ -1,0 +1,14 @@
+# Closes the number pad with its "Done" bar. The bar slides up with the keyboard, so wait for the
+# animation, tap, and try again (up to 3 times) while the bar is still showing.
+appId: com.highdesert.annum
+---
+- repeat:
+    while:
+      visible:
+        id: 'keyboard-done'
+    times: 3
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: 'keyboard-done'
+          optional: true

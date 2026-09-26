@@ -1,0 +1,31 @@
+# M5 lock, part 5 (the runner presents a matching face): unlock → still on Settings (the place is
+# kept; only the sheet closed). Turn the lock off → a cold start opens straight to Today. Erase.
+appId: com.highdesert.annum
+name: 'Lock 5: unlock keeps your place; turn the lock off'
+---
+- tapOn:
+    id: 'lock-unlock'
+- extendedWaitUntil:
+    visible:
+      id: 'settings'
+    timeout: 20000
+- assertNotVisible:
+    id: 'edit-number-spend'
+- scrollUntilVisible:
+    element:
+      id: 'privacy-lock'
+    direction: DOWN
+- tapOn:
+    id: 'privacy-lock-switch'
+- waitForAnimationToEnd
+- assertVisible:
+    id: 'privacy-lock-switch'
+    checked: false
+- runFlow: ../common/relaunch.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 30000
+- assertNotVisible:
+    id: 'lock-screen'
+- runFlow: ../common/start-over.yaml

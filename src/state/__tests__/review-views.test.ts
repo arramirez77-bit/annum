@@ -44,7 +44,7 @@ describe('Weekly Review views', () => {
       ['Student loan', '$8,000 owed', 'Entered by hand'],
     ]);
     expect(v.manualNote).toBe(
-      'Fabrikam Invest and Student loan are entered by hand, so they show your last update.',
+      'Fabrikam Invest and Student loan are entered by hand, so they show your last update. Tap one to change it.',
     );
   });
 
@@ -194,7 +194,7 @@ describe('Transactions and Taxes', () => {
 
   test('E5: no transactions yet', () => {
     expect(buildTransactionsView({ ...data(), transactions: [] }, 'all').empty).toBe(
-      'No transactions yet. They appear after your first import, or add one by hand.',
+      'No transactions yet. They appear once a bank is connected or a file from your bank is imported.',
     );
   });
 

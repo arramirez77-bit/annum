@@ -1,0 +1,28 @@
+# M5 lock, part 2 (the runner presents a face that doesn't match): a cold start is locked (S5).
+# Face ID doesn't match, the person cancels iOS's "Try Again", and the lock offers the passcode.
+# While iOS's Face ID prompt is up, Annum is covered (privacy cover) and the prompt is outside
+# the app, so Maestro sees neither: the flow taps the prompt's Cancel by position until the
+# lock screen shows its passcode option.
+appId: com.highdesert.annum
+name: 'Lock 2: cold start is locked; Face ID not recognized'
+---
+- runFlow: ../common/relaunch.yaml
+- repeat:
+    while:
+      notVisible:
+        id: 'lock-passcode'
+    times: 10
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'not-on-screen'
+          timeout: 3000
+          optional: true
+      - tapOn:
+          point: '50%, 59%'
+- assertVisible:
+    id: 'lock-screen'
+- assertVisible: 'Your money stays on this phone\.'
+- assertVisible: 'Unlock with Face ID'
+- assertNotVisible: 'You can spend.*'
+- takeScreenshot: m5-lock-e6

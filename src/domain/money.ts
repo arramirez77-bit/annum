@@ -1,6 +1,6 @@
 /** Core formulas — docs/03 "Core formulas". */
-import { addDays, daysBetween, inHalfOpen } from './dates';
-import type { Account, AppData, Cents, ISODate } from './types';
+import { addDays, addMonths, daysBetween, inHalfOpen } from './dates';
+import type { Account, AppData, Cents, ISODate, PaySchedule } from './types';
 
 /** When no income is recorded at all, plan over this many days. (Decision: PROGRESS.md.) */
 export const NO_INCOME_HORIZON_DAYS = 30;
@@ -28,16 +28,37 @@ export interface NextIncome {
   daysLate?: number;
 }
 
+/** The next payday on or after `today`, stepping the schedule forward by its cadence. */
+export function nextPayday(pay: PaySchedule, today: ISODate): ISODate {
+  let next = pay.next;
+  for (let k = 1; next < today; k++) {
+    next =
+      pay.cadence === 'monthly'
+        ? addMonths(pay.next, k)
+        : addDays(pay.next, k * (pay.cadence === 'weekly' ? 7 : 14));
+  }
+  return next;
+}
+
 /**
  * Salary: the next paycheck. Freelance: the earliest unreceived expected income on or after
  * today. If an unreceived invoice's date has passed, it's late: assume it arrives
  * `lateAssumeDays` after today (unless another income is due sooner) and flag it.
+ * Both: whichever comes first, the paycheck or the invoice.
  */
 export function nextIncome(data: AppData, today: ISODate = data.today): NextIncome {
   const pay = data.settings.paySchedule;
-  if (data.settings.incomeType === 'salary' && pay) {
-    return { date: pay.next, kind: 'paycheck', amount: pay.amount };
-  }
+  const paycheck: NextIncome | undefined =
+    pay && data.settings.incomeType !== 'freelance'
+      ? { date: nextPayday(pay, today), kind: 'paycheck', amount: pay.amount }
+      : undefined;
+  if (data.settings.incomeType === 'salary' && paycheck) return paycheck;
+  const invoice = nextInvoice(data, today);
+  if (paycheck && (invoice.kind === 'none' || paycheck.date <= invoice.date)) return paycheck;
+  return invoice;
+}
+
+function nextInvoice(data: AppData, today: ISODate): NextIncome {
   const unreceived = data.expectedIncome.filter((i) => !i.received);
   const upcoming = unreceived
     .filter((i) => i.date >= today)

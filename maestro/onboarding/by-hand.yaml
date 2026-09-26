@@ -1,0 +1,93 @@
+# M5: first run entering balances by hand → Today (estimate) → a restart keeps the data →
+# Delete everything removes it (a restart then shows Welcome).
+appId: com.highdesert.annum
+name: Onboarding by hand, restart, Delete everything
+---
+- runFlow: ../common/start-over.yaml
+- tapOn:
+    id: 'welcome-start'
+- tapOn:
+    id: 'income-freelance'
+- tapOn:
+    id: 'invoice-amount'
+- inputText: '5000'
+- runFlow: ../common/close-number-pad.yaml
+- tapOn:
+    id: 'invoice-source'
+- inputText: 'Northwind Studio'
+- pressKey: Enter
+- tapOn:
+    id: 'onboarding-continue'
+- tapOn:
+    id: 'connect-by-hand'
+- assertVisible: 'Your accounts'
+- tapOn:
+    id: 'account-checking'
+- tapOn:
+    id: 'balance-amount'
+- inputText: '3800'
+- tapOn:
+    id: 'balance-save'
+- tapOn:
+    id: 'account-savings'
+- tapOn:
+    id: 'balance-amount'
+- inputText: '19100'
+- tapOn:
+    id: 'balance-save'
+- assertVisible: 'Checking.*\$3,800.*'
+- assertVisible: 'Savings.*\$19,100.*'
+- tapOn:
+    id: 'monthly-spend'
+- inputText: '3000'
+- runFlow: ../common/close-number-pad.yaml
+- tapOn:
+    id: 'onboarding-continue'
+- tapOn:
+    id: 'face-id-later'
+- tapOn:
+    id: 'reminders-later'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 10000
+- assertVisible: 'You can spend about \$3,800 until your next invoice on .*'
+- assertVisible: '.*Estimate.*'
+- takeScreenshot: m5-by-hand-today
+
+# A cold start keeps everything (encrypted database on the phone).
+- runFlow: ../common/relaunch.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 30000
+- assertVisible: 'You can spend about \$3,800 until your next invoice on .*'
+- assertVisible: '.*~6 mo.*'
+
+# Delete everything, then a cold start shows Welcome.
+- tapOn:
+    id: 'open-settings'
+- scrollUntilVisible:
+    element:
+      id: 'privacy-delete'
+    direction: DOWN
+- tapOn:
+    id: 'privacy-delete'
+- assertVisible:
+    id: 'delete-confirm'
+    enabled: false
+- tapOn:
+    id: 'delete-confirm-field'
+- inputText: 'DELETE'
+- pressKey: Enter
+- tapOn:
+    id: 'delete-confirm'
+- extendedWaitUntil:
+    visible:
+      id: 'welcome'
+    timeout: 10000
+- runFlow: ../common/relaunch.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'welcome'
+    timeout: 30000

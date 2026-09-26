@@ -2,13 +2,11 @@
 appId: com.highdesert.annum
 name: Component gallery
 ---
-- stopApp
-- openLink: 'exp+annum://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082'
-- extendedWaitUntil:
-    visible:
-      id: 'status-pill'
-    timeout: 30000
-# The gallery link lives on the dev scenario switcher (long-press the status pill).
+# The gallery link lives on the dev scenario switcher; open a scenario, then come back to it.
+- runFlow:
+    file: common/open-scenario.yaml
+    env:
+      SCENARIO: on-track
 - longPressOn:
     id: 'status-pill'
 - scrollUntilVisible:

@@ -71,3 +71,11 @@ Teller has no public sign-up right now (Andy, 2026-09-25), so no provider is cho
 - **Plaid** free Trial — verify its current limits and terms first.
 - **SimpleFIN** — about $15 a year; needs Andy's approval (the budget is $0).
 - **File import only** — $0.
+
+## Encrypted backup (M5)
+
+**Question:** can "Export all data" / "Import backup" stay encrypted without adding a crypto library?
+
+**Answer: yes, with SQLCipher itself.** Export attaches a new file with a passphrase key (`ATTACH … KEY`) and copies everything with `sqlcipher_export`; SQLCipher derives that key with PBKDF2 (256,000 rounds). Import opens the file with the passphrase on a copy, brings it to the current schema, then replaces each table in one transaction.
+
+**Verified** in the iOS 27 Simulator by the development check on the Spikes screen (`maestro/backup.yaml`): the file is written, has no plain SQLite header, a wrong passphrase changes nothing, and the right one restores the exported values.

@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -49,6 +49,9 @@ export default function TransactionsScreen() {
                   subtitle={r.subtitle}
                   value={r.value}
                   last={i === g.rows.length - 1}
+                  onPress={() =>
+                    router.push({ pathname: '/money/transaction/[id]', params: { id: r.id } })
+                  }
                   testID={`txn-${r.id}`}
                 />
               ))}

@@ -1,0 +1,8 @@
+# Goes back one pushed screen by tapping the header's back button. Maestro's iOS 27 snapshot
+# doesn't include native header buttons, so this taps where the button sits (iPhone 18 Pro).
+appId: com.highdesert.annum
+---
+- waitForAnimationToEnd
+- tapOn:
+    point: '8%, 10%'
+- waitForAnimationToEnd

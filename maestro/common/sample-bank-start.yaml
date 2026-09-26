@@ -1,0 +1,24 @@
+# From Welcome: the quickest first run — skip the income step, connect the sample bank
+# (development builds), no Face ID, no reminders → Today with the phone's own (fictional) data.
+appId: com.highdesert.annum
+---
+- tapOn:
+    id: 'welcome-start'
+- tapOn:
+    id: 'onboarding-skip'
+- tapOn:
+    id: 'connect-bank'
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-continue'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-continue'
+- tapOn:
+    id: 'face-id-later'
+- tapOn:
+    id: 'reminders-later'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 10000

@@ -1,0 +1,79 @@
+# M5: Export all data / Import backup. The round trip runs on the real storage code from the
+# development Spikes screen (the iOS share sheet and Files picker are outside the app, where
+# Maestro can't reach): wrong and right passphrase, a new phone (restore from Welcome), and a
+# phone whose key is missing (the can't-open screen, then restore). Then Export opens the share
+# sheet with the encrypted file.
+appId: com.highdesert.annum
+name: Backup round trip
+---
+- runFlow: common/start-over.yaml
+- runFlow: common/sample-bank-start.yaml
+- longPressOn:
+    id: 'status-pill'
+- scrollUntilVisible:
+    element:
+      id: 'open-spikes'
+    direction: DOWN
+- tapOn:
+    id: 'open-spikes'
+- scrollUntilVisible:
+    element:
+      id: 'run-backup'
+    direction: DOWN
+- tapOn:
+    id: 'run-backup'
+- scrollUntilVisible:
+    element:
+      id: 'backup-result'
+    direction: DOWN
+    timeout: 40000
+- assertVisible: 'Backup: all checks pass'
+- assertVisible: 'File is encrypted.*Pass.*'
+- assertVisible: 'Wrong passphrase changes nothing.*Pass.*'
+- assertVisible: 'Right passphrase restores.*Pass.*'
+- assertVisible: 'New phone: restore from Welcome.*Pass.*'
+- assertVisible: 'Key missing: calm screen, then restore.*Pass.*'
+- takeScreenshot: m5-backup-check
+# Export from Settings on the phone's own data: passphrase twice, then the iOS share sheet.
+- runFlow: common/relaunch.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 30000
+- tapOn:
+    id: 'open-settings'
+- scrollUntilVisible:
+    element:
+      id: 'privacy-export'
+    direction: DOWN
+- tapOn:
+    id: 'privacy-export'
+- assertVisible:
+    id: 'export-confirm'
+    enabled: false
+- tapOn:
+    id: 'export-passphrase'
+- inputText: 'short'
+- assertVisible: 'At least 8 characters\.'
+- inputText: ' but long now'
+- tapOn:
+    id: 'export-again'
+- inputText: 'short but long now'
+- pressKey: Enter
+- waitForAnimationToEnd
+- takeScreenshot: m5-export-share-sheet
+# Demo data has nothing to export.
+- runFlow:
+    file: common/open-scenario.yaml
+    env:
+      SCENARIO: on-track
+- tapOn:
+    id: 'open-settings'
+- scrollUntilVisible:
+    element:
+      id: 'privacy-export'
+    direction: DOWN
+- tapOn:
+    id: 'privacy-export'
+- assertVisible: 'Demo data isn’t saved, so there’s nothing to export\.'
+- runFlow: common/start-over.yaml

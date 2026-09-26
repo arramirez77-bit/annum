@@ -1,7 +1,8 @@
-import { Stack } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { taxApplies } from '@/domain';
 import { buildTaxesView } from '@/state/review-views';
 import { useAppStore } from '@/state/store';
 import { color, layout, space } from '@/theme';
@@ -14,6 +15,7 @@ export default function TaxesScreen() {
   const v = buildTaxesView(data);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  if (!taxApplies(data)) return <Redirect href="/money" />;
 
   const run = async (kind: 'csv' | 'pdf') => {
     setBusy(true);

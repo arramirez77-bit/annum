@@ -43,7 +43,10 @@ export interface Account {
   statementDue?: ISODate | null;
   /** ISO datetime of the last sync. */
   lastSynced?: string;
-  source: 'teller' | 'import' | 'manual';
+  /** Accounts entered by hand: the day the balance was last typed in. */
+  enteredOn?: ISODate;
+  /** demo: the sample bank in development builds (stands in for a bank connection). */
+  source: 'teller' | 'import' | 'manual' | 'demo';
   tellerAccountId?: string;
   enrollmentId?: string;
   status: 'ok' | 'stale' | 'disconnected';

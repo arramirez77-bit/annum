@@ -41,7 +41,14 @@
           "faceIDPermission": "Annum uses Face ID to keep your money private."
         }
       ],
-      "expo-sharing"
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Annum uses Face ID to keep your money private."
+        }
+      ],
+      "expo-sharing",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

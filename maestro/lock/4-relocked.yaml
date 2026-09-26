@@ -1,0 +1,26 @@
+# M5 lock, part 4 (the runner presents a face that doesn't match): coming back after the re-lock
+# time shows the lock again, with the sheet closed underneath so nothing shows above the lock.
+appId: com.highdesert.annum
+name: 'Lock 4: coming back locks again'
+---
+- launchApp:
+    appId: com.highdesert.annum
+    stopApp: false
+- repeat:
+    while:
+      notVisible:
+        id: 'lock-passcode'
+    times: 10
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'not-on-screen'
+          timeout: 3000
+          optional: true
+      - tapOn:
+          point: '50%, 59%'
+- assertVisible:
+    id: 'lock-screen'
+- assertNotVisible:
+    id: 'edit-number-spend'
+- assertNotVisible: 'You can spend.*'

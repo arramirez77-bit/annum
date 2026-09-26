@@ -6,6 +6,7 @@ import {
   availableToSpend,
   billsDueNext30,
   BUCKET_KEYS,
+  CATEGORIES,
   formatCents,
   formatCompactThousands,
   formatDollarChange,
@@ -25,6 +26,7 @@ import {
   taxApplies,
   taxCategoryOf,
   taxSummary,
+  TAX_CATEGORIES,
   toTag,
   unsplitPreview,
   weekReport,
@@ -61,6 +63,7 @@ export function buildBalancesView(data: AppData, now: Date) {
     id: a.id,
     title: a.name,
     subtitle: a.source === 'manual' ? 'Entered by hand' : syncedLabel,
+    editable: a.source === 'manual',
     value:
       a.type === 'card' || a.type === 'loan'
         ? `${formatDollars(a.balance)} owed`
@@ -71,7 +74,7 @@ export function buildBalancesView(data: AppData, now: Date) {
     title: 'Do these balances look right?',
     rows,
     manualNote: manual.length
-      ? `${listNames(manual)} ${manual.length === 1 ? 'is' : 'are'} entered by hand, so ${manual.length === 1 ? 'it shows' : 'they show'} your last update.`
+      ? `${listNames(manual)} ${manual.length === 1 ? 'is' : 'are'} entered by hand, so ${manual.length === 1 ? 'it shows' : 'they show'} your last update. Tap one to change it.`
       : undefined,
     primary: 'Looks right',
   };
@@ -105,6 +108,7 @@ export function buildTagView(data: AppData) {
         ? 'Every transaction already has a category.'
         : "We've guessed each category. Change any that are off.",
     items,
+    showTax: taxApplies(data),
     primary: 'Looks right · Next',
   };
 }
@@ -335,11 +339,11 @@ export function buildSplitView(data: AppData, id: string, split: Split) {
 
 export function buildSetupView(data: AppData, taxRate: number, targetMonths: number) {
   const target = data.settings.monthlySpend * targetMonths;
-  const freelance = data.settings.incomeType !== 'salary';
+  const taxes = taxApplies(data);
   return {
     title: 'Before your first split',
-    showTax: freelance,
-    note: freelance
+    showTax: taxes,
+    note: taxes
       ? `${Math.round(taxRate * 100)}% goes to Tax, and Runway fills to ${formatCompactThousands(target)} (${targetMonths} months of spending) before anything goes to Invest.`
       : `Runway fills to ${formatCompactThousands(target)} (${targetMonths} months of spending) before anything goes to Invest.`,
     target,
@@ -353,6 +357,7 @@ export type TransactionFilter = 'all' | 'untagged' | 'tax';
 
 export function buildTransactionsView(data: AppData, filter: TransactionFilter) {
   const accounts = new Map(data.accounts.map((a) => [a.id, a.name]));
+  const taxes = taxApplies(data);
   const shown = data.transactions
     .filter((t) => filter === 'all' || (filter === 'tax' ? t.tax : !t.reviewed))
     .sort((a, b) => b.date.localeCompare(a.date) || a.merchant.localeCompare(b.merchant));
@@ -372,7 +377,7 @@ export function buildTransactionsView(data: AppData, filter: TransactionFilter) 
     group.rows.push({
       id: t.id,
       title: t.merchant,
-      subtitle: [category, t.tax ? 'Tax' : undefined, accounts.get(t.accountId)]
+      subtitle: [category, taxes && t.tax ? 'Tax' : undefined, accounts.get(t.accountId)]
         .filter(Boolean)
         .join(' · '),
       value: formatSignedCents(t.amount),
@@ -382,12 +387,12 @@ export function buildTransactionsView(data: AppData, filter: TransactionFilter) 
     filters: [
       { value: 'all' as const, label: 'All' },
       { value: 'untagged' as const, label: 'Needs a look' },
-      { value: 'tax' as const, label: 'Tax' },
+      ...(taxes ? [{ value: 'tax' as const, label: 'Tax' }] : []),
     ],
     groups,
     empty:
       data.transactions.length === 0
-        ? 'No transactions yet. They appear after your first import, or add one by hand.'
+        ? 'No transactions yet. They appear once a bank is connected or a file from your bank is imported.'
         : shown.length === 0
           ? 'Nothing matches this filter.'
           : undefined,
@@ -420,5 +425,34 @@ export function buildTaxesView(data: AppData) {
       .map((t) => `${t.merchant} ${formatCents(t.amount)} (${taxCategoryOf(t)})`),
     primary: 'Export for my accountant',
     quiet: 'Export as PDF',
+  };
+}
+
+// S9 Transaction detail --------------------------------------------------------
+
+export function buildTransactionDetail(data: AppData, id: string) {
+  const t = data.transactions.find((x) => x.id === id);
+  if (!t) return undefined;
+  const account = data.accounts.find((a) => a.id === t.accountId)?.name;
+  const category = t.category ?? t.suggestedCategory ?? 'Other';
+  const categories = [
+    ...new Set([category, ...(t.suggestedCategory ? [t.suggestedCategory] : []), ...CATEGORIES]),
+  ];
+  const taxCategory = taxCategoryOf(t);
+  return {
+    id: t.id,
+    merchant: t.merchant,
+    amount: formatSignedCents(t.amount),
+    meta: [formatShortDate(t.date), account, t.pending ? 'Pending' : undefined]
+      .filter(Boolean)
+      .join(' · '),
+    category,
+    categories,
+    showTaxes: taxApplies(data),
+    tax: t.tax,
+    taxCategory,
+    taxCategories: [...new Set([...TAX_CATEGORIES, taxCategory])],
+    ruleLabel: `Always treat ${t.merchant} this way`,
+    ruleDone: `Saved. Future ${t.merchant} charges get ${category}${t.tax && taxApplies(data) ? ', tagged as a work expense' : ''}.`,
   };
 }

@@ -89,11 +89,14 @@ npm run lint       # ESLint + Prettier + token check (no raw colors/sizes outsid
 npm run typecheck  # TypeScript
 npx expo-doctor    # Expo project health
 maestro test maestro/               # all flow tests on the Simulator (needs `npm start` running)
+scripts/maestro-lock.sh <sim-udid>  # the Face ID lock flows (Maestro can't answer Face ID; this script does)
 ```
 
 Flow tests use [Maestro](https://maestro.mobile.dev): `brew install openjdk@17 mobile-dev-inc/tap/maestro`, and set `JAVA_HOME` to `$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home`.
 
-**Demo scenarios and the component gallery (development builds):** long-press the status pill on Today to switch scenarios (on track, heads up, stale sync, late invoice, first run, salary). The same screen links to the component gallery and the M0.5 spikes (SPIKES.md).
+**Demo scenarios and the component gallery (development builds):** long-press the status pill on Today (or the mark on Welcome and on the lock screen) to switch scenarios (on track, heads up, stale sync, late invoice, first run, salary). Demo data is never saved and never touches your own. The same screen has **Use my data** (back to this phone's data), **Erase this phone's Annum data and start over** (first launch again), links to the component gallery and the spikes (SPIKES.md), and a test-only "Lock after 5 seconds away".
+
+**Sample bank (development builds):** until a bank provider is chosen (M7), "Connect a bank" during setup adds a sample bank with made-up numbers, so you can try the whole app. It never syncs, so after two days Today says it hasn't synced.
 
 ## How the project is organized
 
@@ -126,6 +129,8 @@ Flow tests use [Maestro](https://maestro.mobile.dev): `brew install openjdk@17 m
 | Blank screen after an upgrade | `npx expo prebuild --clean`, then `npm run ios:device` again |
 | "Port 8082 is running … in another window" | Annum's dev server is already running in another Terminal window. Use that one, or close it first |
 | Expo's gear "Tools" button covers the settings icon | Development builds only. Drag it aside, or turn it off in the developer menu (shake the phone) |
+| After updating, a screen doesn't open or Face ID isn't asked | The phone has an older build without M5's native modules. Rebuild once: `npm run ios:device` |
+| Annum shows Welcome, but you had data | Only after Delete everything or a fresh install. If you exported a backup, use **Restore from a backup** |
 
 ## Pushing to GitHub
 
@@ -139,6 +144,21 @@ git push origin --delete ci-check            # tidy up
 ```
 
 `npm install` turns on the pre-commit hook automatically. If you cloned without running it, turn it on by hand with `git config core.hooksPath .githooks` (needs `brew install gitleaks`).
+
+## Where your data lives
+
+- **On your iPhone, in one encrypted file.** Balances, transactions, settings and reviews are saved in a SQLCipher-encrypted database inside Annum. There's no Annum account and no Annum server with your money data.
+- **The key is in the iPhone Keychain, and it never leaves the phone.** Annum makes a random 256-bit key the first time you finish setup. Face ID (or your passcode) opens Annum; the key itself is protected by your iPhone passcode.
+- **Every change saves by itself**, a moment after you make it and again when you leave the app. Quitting and reopening keeps everything.
+- **Face ID lock (optional):** Annum asks when it opens and after 5 minutes away. While Annum isn't on screen (App Switcher, Face ID prompt), it shows a plain cover instead of your numbers.
+
+**Getting a new phone:** your iCloud backup includes the encrypted file, but not its key (the key is "this device only"), so an iCloud restore alone can't open your data. Before you switch:
+1. Old phone: Annum → Settings → **Export all data**. Choose a passphrase (at least 8 characters) and save the file to Files or AirDrop it. Keep the passphrase somewhere safe; Annum can't recover it.
+2. New phone: install Annum, tap **Restore from a backup** on the first screen, choose the file, type the passphrase.
+
+If a phone restored from iCloud ever shows "Annum can't open the data on this phone", that's this case: choose **Restore from a backup** (or **Start fresh**).
+
+**Delete everything** (Settings → Privacy) removes the database, the Keychain entries, Annum's reminders, and any exported files from the phone. It can't be undone.
 
 ## Security & privacy
 

@@ -13,7 +13,8 @@ name: Scenario on-track
 - assertVisible: 'Tax reserve, \$3,000, Next quarterly date Jan 15'
 - assertVisible: 'Start weekly review'
 - takeScreenshot: scenario-on-track
-# The settings button opens Settings (a stub until M5).
+# The settings button opens Settings (S3).
 - tapOn:
     id: 'open-settings'
-- assertVisible: 'Modules, your numbers, reminders and privacy arrive in M5\.'
+- assertVisible: 'Set aside for taxes, 30%'
+- assertVisible: 'Runway target, \$15,000 · 5 months'

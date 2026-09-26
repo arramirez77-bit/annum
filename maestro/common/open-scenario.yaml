@@ -1,14 +1,27 @@
-# Opens Annum on Today (Metro on :8082) and switches to ${SCENARIO} via the status pill.
+# Opens Annum (Metro on :8082) and switches to ${SCENARIO}. Works from Today (long-press the
+# status pill) or from Welcome / the lock screen (long-press the mark), in development builds.
 appId: com.highdesert.annum
 ---
 - stopApp
 - openLink: 'exp+annum://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082'
 - extendedWaitUntil:
     visible:
-      id: 'status-pill'
+      id: 'dev-entry|status-pill'
     timeout: 30000
-- longPressOn:
-    id: 'status-pill'
+- runFlow:
+    when:
+      visible:
+        id: 'dev-entry'
+    commands:
+      - longPressOn:
+          id: 'dev-entry'
+- runFlow:
+    when:
+      visible:
+        id: 'status-pill'
+    commands:
+      - longPressOn:
+          id: 'status-pill'
 - tapOn:
     id: 'scenario-${SCENARIO}'
 - extendedWaitUntil:

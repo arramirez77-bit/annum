@@ -154,6 +154,12 @@ function Balances({ onNext }: { onNext: () => void }) {
             subtitle={r.subtitle}
             value={r.value}
             last={i === v.rows.length - 1}
+            onPress={
+              r.editable
+                ? () => router.push({ pathname: '/account/[id]/balance', params: { id: r.id } })
+                : undefined
+            }
+            testID={`balance-${r.id}`}
           />
         ))}
       </View>
@@ -184,7 +190,7 @@ function Tag({ onNext }: { onNext: () => void }) {
           selectedCategory={t.selected}
           tax={t.tax}
           onSelectCategory={(c) => chooseCategory(t.id, c)}
-          onToggleTax={() => toggleTax(t.id)}
+          onToggleTax={v.showTax ? () => toggleTax(t.id) : undefined}
         />
       ))}
       <Button

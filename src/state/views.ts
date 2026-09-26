@@ -81,6 +81,20 @@ export function spendSentence(income: NextIncome, perDay: Cents, days: number): 
   }
 }
 
+/** Compact Today (01c, screens under 700pt): one line, "until Oct 13 · about $50 a day". */
+export function compactSentence(income: NextIncome, perDay: Cents, days: number): string {
+  const daily = `about ${formatDollars(perDay)} a day`;
+  if (days <= 0) return `today · about ${formatDollars(perDay)}`;
+  switch (income.kind) {
+    case 'paycheck':
+      return `until payday ${formatShortDate(income.date)} · ${daily}`;
+    case 'none':
+      return `next 30 days · ${daily}`;
+    default:
+      return `until ${formatShortDate(income.date)} · ${daily}`;
+  }
+}
+
 /** The one heads-up cause Today names (most important first). */
 export function causeSentence(cause: HeadsUpCause, income: NextIncome): string {
   switch (cause.kind) {
@@ -94,12 +108,12 @@ export function causeSentence(cause: HeadsUpCause, income: NextIncome): string {
 }
 
 export interface TodayRow {
-  id: 'runway' | 'tax' | 'what-if';
+  id: 'runway' | 'tax' | 'income' | 'what-if';
   title: string;
   subtitle?: string;
   value?: string;
   bucket: BucketKey | 'none';
-  route?: '/what-if';
+  route?: '/what-if' | '/income/new' | '/settings/number/spend' | '/settings/number/pay';
 }
 
 export interface TodayView {
@@ -112,8 +126,12 @@ export interface TodayView {
   lead: string;
   amount: Cents;
   sentence: string;
+  /** 01c: the one-line sentence for short screens. */
+  compactSentence: string;
   cause?: string;
   staleNote?: string;
+  /** Nothing to plan with yet (every step of onboarding skipped). */
+  emptyNote?: string;
   rows: TodayRow[];
   button: { variant: 'field' | 'caution'; label: string };
   /** One sentence VoiceOver reads for the hero. */
@@ -142,16 +160,26 @@ export function buildTodayView(data: AppData, now: Date): TodayView {
     : change
       ? `${formatMonthsChange(change.runwayMonths)} this week · ${target} target`
       : `${target} target`;
+  const noSpend = data.settings.monthlySpend <= 0;
   const rows: TodayRow[] = [
-    {
-      id: 'runway',
-      title: 'Runway',
-      bucket: 'runway',
-      value: estimate
-        ? `~${estimatedRunwayMonths(data)} mo`
-        : `${formatMonths(runwayMonths(data))} mo`,
-      subtitle: runwaySubtitle,
-    },
+    noSpend
+      ? {
+          id: 'runway',
+          title: 'Runway',
+          bucket: 'runway',
+          value: 'Not set yet',
+          subtitle: 'Tell Annum what a month costs you',
+          route: '/settings/number/spend',
+        }
+      : {
+          id: 'runway',
+          title: 'Runway',
+          bucket: 'runway',
+          value: estimate
+            ? `~${estimatedRunwayMonths(data)} mo`
+            : `${formatMonths(runwayMonths(data))} mo`,
+          subtitle: runwaySubtitle,
+        },
   ];
   if (taxApplies(data)) {
     rows.push({
@@ -162,6 +190,16 @@ export function buildTodayView(data: AppData, now: Date): TodayView {
       subtitle: data.taxYear
         ? `Next quarterly date ${formatShortDate(data.taxYear.nextQuarterlyDue)}`
         : undefined,
+    });
+  }
+  if (ats.nextIncome.kind === 'none') {
+    const salary = data.settings.incomeType === 'salary';
+    rows.push({
+      id: 'income',
+      title: salary ? 'When’s your next payday?' : 'When’s your next invoice?',
+      subtitle: 'Until then, Annum plans 30 days ahead',
+      bucket: 'none',
+      route: salary ? '/settings/number/pay' : '/income/new',
     });
   }
   rows.push({ id: 'what-if', title: 'What would this do?', bucket: 'none', route: '/what-if' });
@@ -184,8 +222,12 @@ export function buildTodayView(data: AppData, now: Date): TodayView {
     lead,
     amount: spend.amount,
     sentence,
+    compactSentence: compactSentence(ats.nextIncome, spend.perDay, spend.days),
     cause,
     staleNote,
+    emptyNote: data.accounts.every((a) => a.balance === 0)
+      ? 'No balances yet, so there’s nothing to count. Add them in Settings → Accounts.'
+      : undefined,
     rows,
     button,
     heroLabel: [`${lead} ${formatDollars(spend.amount)} ${sentence}`, cause]

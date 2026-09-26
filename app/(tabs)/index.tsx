@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -16,10 +16,13 @@ import { color, layout, motion, opacity, radius, space, symbols } from '@/theme'
 import { Button, GuardrailNote, Icon, LedgerRow, StatusPill, Text } from '@/ui/components';
 import { useCountUp } from '@/ui/motion';
 
-// 01 Today (+02 heads-up, O5 estimate, E1 stale, E2 late, P2 salary). docs/05.
+// 01 Today (+02 heads-up, O5 estimate, E1 stale, E2 late, P2 salary, 01c compact). docs/05.
 export default function TodayScreen() {
   const v = useTodayView();
   const demo = useAppStore((s) => s.mode === 'demo');
+  const saveProblem = useAppStore((s) => s.saveProblem);
+  // 01c: short screens (iPhone SE) get the Display hero and a one-line sentence. docs/04.
+  const compact = useWindowDimensions().height < layout.compactHeight;
   const reduceMotion = useReducedMotion();
   const shown = useCountUp(v.amount);
 
@@ -74,7 +77,7 @@ export default function TodayScreen() {
             <StatusPill
               status={v.status}
               testID="status-pill"
-              onLongPress={demo ? () => router.push('/dev/scenarios') : undefined}
+              onLongPress={demo || __DEV__ ? () => router.push('/dev/scenarios') : undefined}
             />
             <Pressable
               onPress={() => router.push('/settings')}
@@ -100,13 +103,19 @@ export default function TodayScreen() {
             accessibilityRole="header"
             accessibilityLabel={v.heroLabel}
             testID="today-hero"
-            style={{ marginTop: space[48], gap: space[4] }}
+            style={{ marginTop: compact ? layout.todayTopCompact : space[48], gap: space[4] }}
           >
             <Text variant="sentence">{v.lead}</Text>
-            <Text variant="hero" money testID="today-amount">
+            <Text variant={compact ? 'display' : 'hero'} money testID="today-amount">
               {formatDollars(shown)}
             </Text>
-            <Text variant="sentence">{v.sentence}</Text>
+            <Text
+              variant="sentence"
+              numberOfLines={compact ? 1 : undefined}
+              adjustsFontSizeToFit={compact}
+            >
+              {compact ? v.compactSentence : v.sentence}
+            </Text>
             {v.cause ? (
               <View style={{ marginTop: space[8] }}>
                 <Text variant="sentence" tone={secondary} testID="today-cause">
@@ -131,6 +140,17 @@ export default function TodayScreen() {
               backgroundColor: color.bgSheet,
             }}
           >
+            {saveProblem ? (
+              <GuardrailNote tone="heads-up" surface="light" testID="save-note">
+                Annum couldn’t save your last change on this phone. It will try again with your next
+                one.
+              </GuardrailNote>
+            ) : null}
+            {v.emptyNote ? (
+              <GuardrailNote tone="info" surface="light" testID="empty-note">
+                {v.emptyNote}
+              </GuardrailNote>
+            ) : null}
             {v.staleNote ? (
               <GuardrailNote tone="heads-up" surface="light" testID="stale-note">
                 {v.staleNote}

@@ -74,3 +74,104 @@ describe('review and deposit', () => {
     });
   });
 });
+
+describe('M5: history, accounts, modules', () => {
+  test('finishing a review records it and starts a new week from today', () => {
+    s().markTransferMoved(105000);
+    s().completeReview();
+    expect(s().reviews).toEqual([
+      { id: 'review-2026-09-23', date: '2026-09-23', transfer: 105000 },
+    ]);
+    expect(s().data.weekStart).toMatchObject({ date: '2026-09-23', runway: 1260000 });
+  });
+
+  test('a confirmed split is kept as history with its deposit', () => {
+    s().confirmDeposit(proposeSplit(s().data, 1000000), true);
+    expect(s().splits).toHaveLength(1);
+    expect(s().splits[0]).toMatchObject({
+      depositId: s().data.pendingDeposit?.id,
+      date: '2026-09-23',
+    });
+    expect(s().deposits.find((d) => d.id === s().data.pendingDeposit?.id)?.confirmed).toBe(true);
+  });
+
+  test('accounts by hand: add, update, stop tracking (its transactions go too)', () => {
+    s().saveAccount({
+      id: 'a1',
+      name: 'Fabrikam 401k',
+      type: 'brokerage',
+      balance: 500000,
+      source: 'manual',
+      status: 'ok',
+    });
+    expect(s().data.accounts.find((a) => a.id === 'a1')?.balance).toBe(500000);
+    s().saveAccount({ ...s().data.accounts.find((a) => a.id === 'a1')!, balance: 600000 });
+    expect(s().data.accounts.filter((a) => a.id === 'a1')).toHaveLength(1);
+    s().stopTracking('chk');
+    expect(s().data.accounts.some((a) => a.id === 'chk')).toBe(false);
+    expect(s().data.transactions.some((t) => t.accountId === 'chk')).toBe(false);
+  });
+
+  test('S9: editing a transaction and "always treat" writes a merchant rule', () => {
+    s().editTransaction('t2', { category: 'Dining', tax: true, taxCategory: 'Meals' });
+    expect(s().data.transactions.find((t) => t.id === 't2')).toMatchObject({
+      category: 'Dining',
+      tax: true,
+    });
+    expect(s().alwaysTreat('t2')).toEqual({
+      merchant: 'corner market',
+      category: 'Dining',
+      tax: true,
+      taxCategory: 'Meals',
+    });
+    expect(s().rules).toHaveLength(1);
+  });
+
+  test('paycheck from Settings: set, then remove', () => {
+    s().setPaySchedule({ amount: 250000, cadence: 'biweekly', next: '2026-10-05' });
+    expect(s().data.settings.paySchedule).toEqual({
+      amount: 250000,
+      cadence: 'biweekly',
+      next: '2026-10-05',
+    });
+    s().setPaySchedule(undefined);
+    expect(s().data.settings).not.toHaveProperty('paySchedule');
+  });
+
+  test('modules and numbers from Settings', () => {
+    s().setModules({ tax: false });
+    expect(s().data.settings.modules).toEqual({ tax: false, debt: false, invest: true });
+    s().setNumbers({ monthlySpend: 400000, runwayTarget: 2000000 });
+    expect(s().data.settings).toMatchObject({ monthlySpend: 400000, runwayTarget: 2000000 });
+  });
+
+  test('real mode recomputes the Taxes totals from transactions', () => {
+    const data = s().data;
+    s().hydrate(
+      {
+        data,
+        prefs: s().prefs,
+        deposits: [],
+        splits: [],
+        reviews: [],
+        rules: [],
+        deferred: [],
+        reviewStep: 1,
+        pendingTransfer: null,
+        startedOn: '2026-09-01',
+      },
+      false,
+    );
+    expect(s()).toMatchObject({ mode: 'real', phase: 'ready', loaded: true });
+    s().toggleTax('t2');
+    expect(s().data.taxYear?.byCategory).toEqual({ Software: 2000, Groceries: 8000 });
+  });
+
+  test('the date only moves in real mode; reset returns to first run', () => {
+    s().setToday('2026-09-30');
+    expect(s().data.today).toBe('2026-09-23'); // demo keeps the fixture's day
+    s().reset();
+    expect(s()).toMatchObject({ phase: 'onboarding', mode: 'real', loaded: false });
+    expect(s().data.accounts).toEqual([]);
+  });
+});
