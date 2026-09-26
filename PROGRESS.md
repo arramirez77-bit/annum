@@ -7,7 +7,7 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 | Milestone | Status | Evidence |
 | --- | --- | --- |
 | M0 Project setup & dev build | ✅ Done (268f564) | Runs on iPhone + iOS 27 Simulator; 33 tests; lint/typecheck/expo-doctor green; CI green |
-| M0.5 Loop setup + spikes | ⏳ Spikes after M3 | Baseline re-verified; this file; Human checkpoints listed. Spikes: SQLCipher, widget — to run next; bank sync **pending: provider undecided** |
+| M0.5 Loop setup + spikes | ✅ Done | Baseline; this file; Human checkpoints. Spikes (SPIKES.md): **SQLCipher proven** (4.7.0 linked, file unreadable without key); **widgets plumbing proven** on branch `spike/widgets` (expo-widgets builds with scene support, extension embedded, App Group data written; on-screen render → device, M8); **bank sync pending: provider undecided** |
 | M1 Domain engine | ✅ Done | `src/domain/` (13 modules, no RN imports); tests/spec now runs the 25 cases on the real engine, reference copy deleted; 81 tests (was 33); lint/typecheck/format green; Simulator still renders |
 | M2 Design system components | ✅ Done | 19 components + Mark/Wordmark in `src/ui/components/`, native TopBar/Sheet presets; dev gallery `app/dev/components.tsx`; token check in `npm run lint`; 97 tests (was 81); Maestro `maestro/gallery.yaml` passes on the iOS 27 Simulator (split edit $2,500 → Free $2,800, Tax chip checked). Not visually compared to Figma screens (H1) |
 | M3 Today, Money, What would this do? | ✅ Done | Zustand store + tested view builders (`src/state/`); Today (field cross-fade, count-up), Money (+E3, salary), What-if modal (fits/guardrail, Wait until → deferred purchase), scenario switcher, settings stub. 112 tests. Maestro: 6 scenario flows + what-if + gallery all pass on the iOS 27 Simulator |
@@ -41,7 +41,8 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 
 - Milestone numbering follows `docs/06-BUILD-PLAN.md` (M0–M8). The loop instructions mentioned M0.5, TestFlight in "M6" and the App Group in "M9"; the rest of that message was cut off, so docs/06 wins until clarified.
 - **Bank sync (Andy, 2026-09-25):** Teller has no public sign-up, so the provider is undecided. File import (S11) and manual accounts (S10) are the data path; sync sits behind a provider interface in `src/data/` so Teller, Plaid or SimpleFIN can plug in later without touching screens. The Teller-only Cloudflare Worker is on hold. At M7: stop and present the options.
-- **M0.5 order:** the SQLCipher and widget spikes run after M3 (they inform M5 storage and M8 widgets, not M1–M4).
+- **M0.5 order:** the SQLCipher and widget spikes ran after M3 (they inform M5 storage and M8 widgets, not M1–M4).
+- **Widgets approach (proposal, decide at M8):** `expo-widgets` (Expo-maintained) instead of `docs/02`'s `@bacons/apple-targets`; see SPIKES.md §2.
 
 **M1 — defaults chosen where docs/03 is silent (please review):**
 1. **No expected income recorded** (freelance): plan over the next **30 days** (`kind: 'none'`), so Today can say "over the next 30 days" and suggest adding an invoice.

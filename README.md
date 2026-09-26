@@ -5,6 +5,7 @@ A calm personal-finance iPhone app for freelancers, built with Expo (React Nativ
 **Status:** M0 (project setup) is done: a dark Annum shell with three native tabs runs on iPhone as a development build. The app is built one milestone at a time (see `docs/06-BUILD-PLAN.md`).
 
 - `START-HERE.md`: how the project is run
+- `PROGRESS.md`, `SPIKES.md`: build log, open human checkpoints, and feasibility spikes
 - `CLAUDE.md`: rules and stack for Claude Code
 - `docs/`: product, architecture, data model, design system, screens, build plan
 - `fixtures/`: fictional demo data and test scenarios
@@ -92,7 +93,7 @@ maestro test maestro/               # all flow tests on the Simulator (needs `np
 
 Flow tests use [Maestro](https://maestro.mobile.dev): `brew install openjdk@17 mobile-dev-inc/tap/maestro`, and set `JAVA_HOME` to `$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home`.
 
-**Demo scenarios and the component gallery (development builds):** long-press the status pill on Today to switch scenarios (on track, heads up, stale sync, late invoice, first run, salary). The same screen links to the component gallery.
+**Demo scenarios and the component gallery (development builds):** long-press the status pill on Today to switch scenarios (on track, heads up, stale sync, late invoice, first run, salary). The same screen links to the component gallery and the M0.5 spikes (SPIKES.md).
 
 ## How the project is organized
 
