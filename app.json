@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Annum",
+    "slug": "annum",
+    "version": "0.1.0",
+    "platforms": ["ios"],
+    "orientation": "portrait",
+    "scheme": "annum",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#111E19",
+    "ios": {
+      "bundleIdentifier": "com.highdesert.annum",
+      "appleTeamId": "YHZESG76UG",
+      "supportsTablet": false
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#111E19"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f072493d-428e-496f-b175-46d99ea783f5"
+      }
+    },
+    "owner": "arramirez77"
+  }
+}

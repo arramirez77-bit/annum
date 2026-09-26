@@ -36,14 +36,25 @@ maestro/screenshots/
 docs/screens/*
 !docs/screens/README.md
 
-# ── Tooling (M0 adds the Expo template's entries) ────────────────────
+# ── Tooling (from the Expo SDK 57 template) ─────────────────────────
 node_modules/
 .expo/
 dist/
 web-build/
 expo-env.d.ts
-/ios
-/android
+.kotlin/
+*.orig.*
+.metro-health-check*
 *.tsbuildinfo
 npm-debug.*
+yarn-debug.*
+yarn-error.*
 .DS_Store
+
+# Generated native folders (rebuilt by `expo prebuild`; never edit by hand)
+/ios
+/android
+
+# Build output (EAS local builds, archives)
+build-*.tar.gz
+*.ipa

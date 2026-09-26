@@ -1,0 +1,16 @@
+# Design handoff: src/theme/index.ts stays a diff-able copy of src-starter/theme.ts
+src-starter/
+src/theme/index.ts
+
+# Hand-written docs and data
+docs/
+fixtures/
+*.md
+
+# Generated
+node_modules/
+ios/
+android/
+.expo/
+dist/
+package-lock.json
