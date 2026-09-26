@@ -83,11 +83,16 @@ Annum always uses **port 8082**, so it never clashes with other Expo projects on
 ### 6. Checks
 
 ```sh
-npm test           # Jest: the 25 docs/03 test cases, engine unit tests, fixture and theme checks
-npm run lint       # ESLint + Prettier
+npm test           # Jest: the 25 docs/03 test cases, engine unit tests, fixture, theme and component tests
+npm run lint       # ESLint + Prettier + token check (no raw colors/sizes outside src/theme)
 npm run typecheck  # TypeScript
 npx expo-doctor    # Expo project health
+maestro test maestro/gallery.yaml   # flow tests on the Simulator (needs `npm start` running)
 ```
+
+Flow tests use [Maestro](https://maestro.mobile.dev): `brew install openjdk@17 mobile-dev-inc/tap/maestro`, and set `JAVA_HOME` to `$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home`.
+
+**Component gallery (development builds only):** on Today, tap **Component gallery** to see every component in every state.
 
 ## How the project is organized
 
@@ -96,7 +101,10 @@ npx expo-doctor    # Expo project health
 | `app/` | Screens and navigation (Expo Router). `app/(tabs)/` holds Today, Review and Money |
 | `src/theme/` | Design tokens: colors, type, spacing, motion, SF Symbols. The only place raw values live |
 | `src/domain/` | The money engine: pure TypeScript formulas from `docs/03-DATA-MODEL.md`, with unit tests in `__tests__/` |
-| `src/data/`, `src/services/`, `src/state/`, `src/ui/` | Storage and bank data, device services, app state, components (later milestones) |
+| `src/ui/components/` | Design system components (docs/04), theme tokens only |
+| `src/data/`, `src/services/`, `src/state/` | Storage, demo data and bank data; device services (haptics…); app state |
+| `maestro/` | Maestro flow tests |
+| `scripts/check-tokens.js` | The token check `npm run lint` runs |
 | `tests/spec/` | The docs/03 test cases, run against the engine in `src/domain/` with the demo fixtures |
 | `fixtures/` | Fictional demo data and scenarios |
 | `worker/` | Cloudflare Worker for Teller (M6) |

@@ -1,0 +1,20 @@
+/** Design system components — docs/04-DESIGN-SYSTEM.md. Theme tokens only. */
+export { AmountInput, formatDollarDigits, parseDollarsToCents } from './AmountInput';
+export { BucketBar, type BarSegment } from './BucketBar';
+export { BucketDot } from './BucketDot';
+export { BucketRow } from './BucketRow';
+export { Button, type ButtonVariant } from './Button';
+export { Chip } from './Chip';
+export { GuardrailNote } from './GuardrailNote';
+export { Icon } from './Icon';
+export { LedgerRow } from './LedgerRow';
+export { Mark, Wordmark } from './Mark';
+export { OptionCard } from './OptionCard';
+export { ScreenPlaceholder } from './ScreenPlaceholder';
+export { SegmentedControl } from './SegmentedControl';
+export { SettingsGroup, SettingsRow } from './SettingsRow';
+export { StatusPill } from './StatusPill';
+export { StepIndicator } from './StepIndicator';
+export { Text, type TextTone, type TextVariant } from './Text';
+export { Toggle } from './Toggle';
+export { TransactionCard } from './TransactionCard';

@@ -9,8 +9,8 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 | M0 Project setup & dev build | ✅ Done (268f564) | Runs on iPhone + iOS 27 Simulator; 33 tests; lint/typecheck/expo-doctor green; CI green |
 | M0.5 Loop setup | ✅ Done | Baseline re-verified; this file; Human checkpoints listed |
 | M1 Domain engine | ✅ Done | `src/domain/` (13 modules, no RN imports); tests/spec now runs the 25 cases on the real engine, reference copy deleted; 81 tests (was 33); lint/typecheck/format green; Simulator still renders |
-| M2 Design system components | ⏳ Next | |
-| M3 Today, Money, What would this do? | — | |
+| M2 Design system components | ✅ Done | 19 components + Mark/Wordmark in `src/ui/components/`, native TopBar/Sheet presets; dev gallery `app/dev/components.tsx`; token check in `npm run lint`; 97 tests (was 81); Maestro `maestro/gallery.yaml` passes on the iOS 27 Simulator (split edit $2,500 → Free $2,800, Tax chip checked). Not visually compared to Figma screens (H1) |
+| M3 Today, Money, What would this do? | ⏳ Next | |
 | M4 Weekly Review + Deposit split | — | |
 | M5 Onboarding, storage, Face ID, Settings | — | |
 | M6 Real bank data, background refresh, notifications | — | |
@@ -35,7 +35,7 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 | H5 | M7 | App Store Connect: create app record (Annum, `com.highdesert.annum`), invite the second user as a team user for internal TestFlight; optional API key (.p8 outside the repo) | Open |
 | H6 | M8 | App Group `group.com.highdesert.annum` — likely registered automatically by Xcode; manual clicks only if that fails | Open |
 | H7 | M5–M8 | On-device checks: Face ID, notification permission + Sunday reminder, VoiceOver walkthrough, adding lock-screen widgets | Open |
-| H8 | M3+ | OK to install Maestro (Homebrew, free, needs Java) for flow tests — assumed yes unless told otherwise | Assumed |
+| H8 | M3+ | OK to install Maestro (Homebrew, free, needs Java) for flow tests — assumed yes unless told otherwise | Installed (Maestro 2.10 + OpenJDK 17 via Homebrew, M2) |
 
 ## Decisions log
 
@@ -54,6 +54,17 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 10. **Recurring bills:** ≥ 3 payments to the same merchant, every amount within ±10% of the typical amount, every gap 6–8 days (weekly), 13–15 (biweekly) or 27–32 (monthly); dropped if nothing for more than two cycles. Proposed bills stay unconfirmed until the user confirms.
 11. **Money display** rounds down to whole dollars (never overstates what's spendable); transactions show cents.
 12. **Demo data** loads through `src/data/demo.ts` (the only place that reads `fixtures/`), keeping `src/domain/` free of I/O.
+
+**M2 — design system (please review; Figma screens not visible yet, see H1):**
+1. **New tokens** (values from docs/04 unless marked): `size` (bucketDot 12, pillDot 7, noteDot 8, bucketBar 16, bucketBarGap 3, step 22×4, markMin 16, markLockup 72 from the Figma lockup, radio 22, icon 17, iconSmall 13, hairline 1), `fontScale` (1.3 / 2.0 from the theme comment), `opacity` (pressed 0.8; **disabled 0.4 proposed**), symbols `radioOff`/`radioOn`.
+2. **Mark** uses the exact arc paths from Figma "Annum / Mark" (node 53:3), filled from bucket tokens (not a baked SVG), so bucket colors stay in the theme. Today dot: textPrimary on dark, textOnLight on light (matches the Figma "On light" lockup).
+3. **Chip colors:** category unselected = raised surface; selected = primary action fill. Tax unselected = Tax-colored outline; selected = Tax fill + checkmark (docs/04).
+4. **Button:** destructive = filled statusDestructive with dark text; quiet = secondary text; secondary on the light sheet = subtle dark overlay.
+5. **Tab highlight color** stays `textPrimary`: the Figma Tab Bar component isn't visible to the connected account (H1), so it couldn't be checked.
+6. **TopBar/Sheet** are native (docs/04 "prefer native"): presets in `src/ui/navigation.ts` (pushed header shown in the gallery; flow header and form sheet used from M3/M4).
+7. **Number-pad inputs** have no Return key: screens with inputs use `keyboardDismissMode="on-drag"` and `automaticallyAdjustKeyboardInsets`.
+8. **Split amount chip** is 36pt; a surrounding tap area focuses it so the target is 44pt.
+9. **Tests:** React Native Testing Library 14 (async `render`/`fireEvent`); Jest mocks `react-native-worklets` and runs Reanimated's `setUpTests()` (`jest.setup.ts`).
 
 ## Dependabot (Expo-owned transitive packages — not CI failures, don't downgrade Expo)
 

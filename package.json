@@ -9,7 +9,7 @@
     "ios:device": "expo run:ios --device --port 8082",
     "test": "jest",
     "test:watch": "jest --watch",
-    "lint": "expo lint app src tests",
+    "lint": "expo lint app src tests && node scripts/check-tokens.js",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -40,6 +40,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@testing-library/react-native": "^14.0.1",
     "@types/jest": "29.5.14",
     "@types/react": "~19.2.2",
     "eslint": "^9.0.0",

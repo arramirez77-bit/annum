@@ -1,0 +1,48 @@
+# M2 component gallery (dev builds). Run: maestro test maestro/gallery.yaml (Metro on :8082)
+appId: com.highdesert.annum
+name: Component gallery
+---
+- stopApp
+- openLink: 'exp+annum://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082'
+- extendedWaitUntil:
+    visible:
+      id: 'open-gallery'
+    timeout: 30000
+- tapOn:
+    id: 'open-gallery'
+- extendedWaitUntil:
+    visible: 'Mark'
+    timeout: 10000
+- takeScreenshot: gallery-01
+# Split editing: Tax → $2,500 moves $500 into Free ($2,300 → $2,800); total unchanged.
+- scrollUntilVisible:
+    element:
+      id: 'split-tax-amount'
+    direction: DOWN
+- tapOn:
+    id: 'split-tax-amount'
+- eraseText: 10
+- inputText: '2500'
+# Number pad has no Return key: dragging the page dismisses it (keyboardDismissMode on-drag).
+- swipe:
+    direction: UP
+- scrollUntilVisible:
+    element: 'Free, .2,800. Absorbs changes'
+    direction: DOWN
+- assertVisible: 'Free, .2,800. Absorbs changes'
+- scrollUntilVisible:
+    element: 'Total .10,000 — Free absorbs every edit.'
+    direction: UP
+- assertVisible: 'Total .10,000 — Free absorbs every edit.'
+- takeScreenshot: gallery-split-edited
+# Tax chip is a checkbox that toggles.
+- scrollUntilVisible:
+    element:
+      id: 'chip-tax'
+    direction: UP
+- tapOn:
+    id: 'chip-tax'
+# iOS exposes the checkbox state as its accessibility value (what VoiceOver reads).
+- assertVisible:
+    id: 'chip-tax'
+    text: 'checkbox, checked'

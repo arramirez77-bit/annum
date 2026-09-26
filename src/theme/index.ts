@@ -74,6 +74,29 @@ export const layout = {
 
 export const radius = { sm: 8, md: 14, lg: 16, sheet: 28, full: 999 } as const;
 
+/** Component sizes from docs/04 (added in M2). */
+export const size = {
+  bucketDot: 12,     // BucketDot
+  pillDot: 7,        // StatusPill dot
+  noteDot: 8,        // GuardrailNote dot
+  bucketBar: 16,     // BucketBar height
+  bucketBarGap: 3,   // gap between BucketBar segments
+  stepWidth: 22,     // StepIndicator segment
+  stepHeight: 4,
+  markMin: 16,       // Annum mark minimum size
+  markLockup: 72,    // mark beside the wordmark (Figma lockup)
+  radio: 22,         // OptionCard radio symbol
+  icon: 17,          // SF Symbol beside Body text
+  iconSmall: 13,     // SF Symbol beside Caption text
+  hairline: 1,       // input and outline borders (hairlines use StyleSheet.hairlineWidth)
+} as const;
+
+/** Dynamic Type caps (maxFontSizeMultiplier): Hero/Display 1.3, everything else 2.0. */
+export const fontScale = { large: 1.3, default: 2.0 } as const;
+
+/** Pressed = 0.8 (docs/04). Disabled is a proposed value (M2) pending the Figma check. */
+export const opacity = { pressed: 0.8, disabled: 0.4 } as const;
+
 /**
  * Type uses the iOS system font (SF Pro). Sizes are the defaults at the standard
  * Dynamic Type setting; enable allowFontScaling and cap with maxFontSizeMultiplier
@@ -125,6 +148,8 @@ export const symbols = {
   tabReview: 'list.bullet',
   tabMoney: 'tray.2',
   tabMoneySelected: 'tray.2.fill',
+  radioOff: 'circle',
+  radioOn: 'checkmark.circle.fill',
 } as const;
 
 /** Haptics (expo-haptics). Never on heads-up states. */
@@ -133,5 +158,5 @@ export const haptics = {
   select: 'selection',      // chip taps, segmented control
 } as const;
 
-export const theme = { color, space, layout, radius, type, money, motion, symbols, haptics };
+export const theme = { color, space, layout, radius, size, fontScale, opacity, type, money, motion, symbols, haptics };
 export default theme;
