@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { TextInput, View } from 'react-native';
 
 import type { Cents } from '@/domain';
 import { color, fontScale, money, radius, size, space, type } from '@/theme';
 
+import { KeyboardDoneBar } from './KeyboardDoneBar';
 import { Text } from './Text';
 
 const MAX_DIGITS = 9; // up to $999,999,999
@@ -38,6 +39,7 @@ export function AmountInput({
   testID,
 }: AmountInputProps) {
   const [focused, setFocused] = useState(false);
+  const accessoryId = `amount-done-${useId()}`;
   const filled = valueCents !== null;
   return (
     <View style={{ gap: space[8] }}>
@@ -68,6 +70,7 @@ export function AmountInput({
           onBlur={() => setFocused(false)}
           autoFocus={autoFocus}
           keyboardType="number-pad"
+          inputAccessoryViewID={accessoryId}
           placeholder="0"
           placeholderTextColor={color.textSecondary}
           selectionColor={color.textPrimary}
@@ -81,6 +84,7 @@ export function AmountInput({
           ]}
         />
       </View>
+      <KeyboardDoneBar nativeID={accessoryId} active={focused} />
       {helper ? (
         <Text variant="callout" tone="secondary" accessibilityLiveRegion="polite">
           {helper}

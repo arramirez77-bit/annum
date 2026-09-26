@@ -1,0 +1,32 @@
+# M4: first run — quick setup (O6), then the first split of unsplit savings.
+appId: com.highdesert.annum
+name: First split
+---
+- runFlow:
+    file: common/open-scenario.yaml
+    env:
+      SCENARIO: first-run
+- tapOn: 'Money'
+- tapOn:
+    id: 'split-now'
+- extendedWaitUntil:
+    visible: 'Before your first split'
+    timeout: 8000
+- assertVisible: '30% goes to Tax, and Runway fills to \$15k \(5 months of spending\) before anything goes to Invest\.'
+- tapOn:
+    id: 'setup-continue'
+- extendedWaitUntil:
+    visible: 'Split your \$19,100 savings'
+    timeout: 8000
+- scrollUntilVisible:
+    element:
+      id: 'deposit-confirm'
+    direction: DOWN
+- tapOn:
+    id: 'deposit-confirm'
+- extendedWaitUntil:
+    visible: 'Tax, \$4,500\. .*'
+    timeout: 8000
+- assertVisible: 'Runway, \$12,600\. .*'
+- assertNotVisible:
+    id: 'split-now'

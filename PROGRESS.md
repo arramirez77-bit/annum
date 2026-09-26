@@ -11,7 +11,7 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 | M1 Domain engine | ✅ Done | `src/domain/` (13 modules, no RN imports); tests/spec now runs the 25 cases on the real engine, reference copy deleted; 81 tests (was 33); lint/typecheck/format green; Simulator still renders |
 | M2 Design system components | ✅ Done | 19 components + Mark/Wordmark in `src/ui/components/`, native TopBar/Sheet presets; dev gallery `app/dev/components.tsx`; token check in `npm run lint`; 97 tests (was 81); Maestro `maestro/gallery.yaml` passes on the iOS 27 Simulator (split edit $2,500 → Free $2,800, Tax chip checked). Not visually compared to Figma screens (H1) |
 | M3 Today, Money, What would this do? | ✅ Done | Zustand store + tested view builders (`src/state/`); Today (field cross-fade, count-up), Money (+E3, salary), What-if modal (fits/guardrail, Wait until → deferred purchase), scenario switcher, settings stub. 112 tests. Maestro: 6 scenario flows + what-if + gallery all pass on the iOS 27 Simulator |
-| M4 Weekly Review + Deposit split | — | |
+| M4 Weekly Review + Deposit split | ✅ Done | Review flow (5–6 steps, Finish later resumes), tagging with rules and live Taxes totals, Move money + pending transfer, Week reviewed; deposit split sheet + O6 first-split setup; Transactions with filters; Taxes with CSV + PDF export (share sheet). 147 tests. Maestro 12/12 flows (review, deposit, first split, taxes export added) on the iOS 27 Simulator |
 | M5 Onboarding, storage, Face ID, Settings | — | |
 | M6 Real bank data, background refresh, notifications | — | |
 | M7 Polish, accessibility, TestFlight | — | |
@@ -78,6 +78,19 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 6. **Runway row in estimate mode:** "~6 mo · Estimated from savings · $15k target"; Tax reserve shows "Not set aside yet" until the first split.
 7. **Unsplit Money (E3):** "Split my savings now" opens a stub until M4 builds the deposit split.
 8. **Screens that scroll under the floating tab bar** use automatic content insets; Today keeps the light sheet color under the tab bar.
+
+**M4 — Weekly Review, deposit split, Transactions, Taxes (please review):**
+1. **Tag chips:** the suggestion plus "Other" (there's no second-best category source until rules and history build up). Picking a different category or changing the Tax chip writes a merchant rule ("latest correction wins").
+2. **Tax chip ↔ Taxes total:** tagging moves the transaction's amount into (or out of) its tax category immediately, on top of the year's totals.
+3. **"Open {bank} to move it":** a small list of bank websites; for a bank Annum doesn't know (like the fictional Woodgrove), the button is replaced by "I already moved it" and a one-line how-to. "Change amount" lets the transfer differ from the suggestion; the pending transfer uses that amount.
+4. **Heads-up buttons** ("See what I can move", "See my options") still open the Review tab; a dedicated options screen isn't specified.
+5. **Where a landed deposit shows:** Money shows "$10,000 from Northwind Studio landed Sep 23…" with **Split it** (notifications will also open it, M6).
+6. **First split:** "Split my savings now" goes through O6 (tax %, Runway target) then the split built with the first-split rule; confirming labels the money without changing the savings balance. A landed deposit adds to savings and to the buckets together (buckets always equal savings).
+7. **Split editing:** "Edit amounts" unlocks the amount chips; Free always absorbs changes; an edit bigger than what's left is capped with a heads-up line.
+8. **Number pads** get a "Done" bar (they have no Return key). Maestro reports the bar's position wrongly, so flows close the keyboard by tapping plain text instead; people use Done.
+9. **Review progress, rules, pending transfer** live in memory until M5 adds encrypted storage. Finishing a review ends estimate mode; the Review tab then shows "This week is reviewed" with "Review again".
+10. **Transactions:** filters All / Needs a look / Tax; tapping a transaction (S9 detail) arrives in M5. E5 shows the explanation now; "Add one by hand" comes with manual entry (M5–M6).
+11. **Exports:** CSV = tagged transactions (date, merchant, tax category, amount, account); PDF = totals, categories and tagged transactions, plain black on white. Files are written to the app's cache folder and shared with the iOS share sheet.
 
 ## Dependabot (Expo-owned transitive packages — not CI failures, don't downgrade Expo)
 

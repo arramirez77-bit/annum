@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useId, useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { formatDollars, type BucketKey, type Cents } from '@/domain';
@@ -6,6 +6,7 @@ import { color, fontScale, layout, money, radius, space, type } from '@/theme';
 
 import { formatDollarDigits, parseDollarsToCents } from './AmountInput';
 import { BucketDot } from './BucketDot';
+import { KeyboardDoneBar } from './KeyboardDoneBar';
 import { Text } from './Text';
 
 interface BucketRowProps {
@@ -32,6 +33,8 @@ export function BucketRow({
 }: BucketRowProps) {
   const split = variant === 'split';
   const input = useRef<TextInput>(null);
+  const [focused, setFocused] = useState(false);
+  const accessoryId = `split-done-${useId()}`;
   // The chip is 36pt; this keeps the tap target at 44pt and focuses the field.
   const slop = (layout.touchTarget - layout.chipHeight) / 2;
   return (
@@ -78,6 +81,9 @@ export function BucketRow({
             value={formatDollarDigits(amount)}
             onChangeText={(text) => onChangeAmount(parseDollarsToCents(text) ?? 0)}
             keyboardType="number-pad"
+            inputAccessoryViewID={accessoryId}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             selectionColor={color.textPrimary}
             allowFontScaling
             maxFontSizeMultiplier={fontScale.default}
@@ -88,6 +94,7 @@ export function BucketRow({
               { color: color.textPrimary, fontVariant: [...money.fontVariant] },
             ]}
           />
+          <KeyboardDoneBar nativeID={accessoryId} active={focused} />
         </Pressable>
       ) : (
         <Text variant="headline" money>

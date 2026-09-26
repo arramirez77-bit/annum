@@ -1,0 +1,103 @@
+# M4: a full weekly review on the seed data. Finish later resumes at the same step.
+appId: com.highdesert.annum
+name: Weekly review
+---
+- runFlow:
+    file: common/open-scenario.yaml
+    env:
+      SCENARIO: on-track
+- tapOn:
+    id: 'today-button'
+# 04 Balances
+- extendedWaitUntil:
+    visible: 'Do these balances look right\?'
+    timeout: 8000
+- assertVisible: 'Step 1 of 5'
+- assertVisible: 'Heads up\. Fabrikam Invest and Student loan are entered by hand, so they show your last update\.'
+- tapOn:
+    id: 'review-primary'
+# 05 Tag — then Finish later, and come back to the same step
+- extendedWaitUntil:
+    visible: '3 new this week\.'
+    timeout: 5000
+- tapOn:
+    id: 'review-finish-later'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 5000
+- tapOn: 'Review'
+- extendedWaitUntil:
+    visible: '3 new this week\.'
+    timeout: 5000
+- assertVisible: 'Step 2 of 5'
+# Correct Corner Market to "Other" and tag Fuel Stop as a work expense.
+- scrollUntilVisible:
+    element:
+      id: 'tag-t3'
+    direction: DOWN
+- tapOn:
+    text: 'Other'
+    index: 1
+- tapOn:
+    text: 'Tax, work expense'
+    index: 2
+- scrollUntilVisible:
+    element:
+      id: 'review-primary'
+    direction: DOWN
+- tapOn:
+    id: 'review-primary'
+# 06 What changed
+- extendedWaitUntil:
+    visible: 'Free to spend, \$1,000\. Down \$400 — what you spent this week'
+    timeout: 5000
+- assertVisible: 'Runway, 4\.2 months\. Up 0\.2 months'
+- assertVisible: 'Dining was \$150 this week, more than usual \(4-week average \$100\)\.'
+- scrollUntilVisible:
+    element:
+      id: 'review-primary'
+    direction: DOWN
+- tapOn:
+    id: 'review-primary'
+# 07 Move money
+- extendedWaitUntil:
+    visible: 'Move \$1,050 from savings to checking\.'
+    timeout: 5000
+- assertVisible: 'You usually move \$1,000\. This week needs \$1,050\.'
+- scrollUntilVisible:
+    element:
+      id: 'move-moved'
+    direction: DOWN
+- tapOn:
+    id: 'move-moved'
+# 08 Week reviewed
+- extendedWaitUntil:
+    visible: 'You spent \$400'
+    timeout: 5000
+- assertVisible: '\$29 over your \$371 allowance'
+- scrollUntilVisible:
+    element: 'Moving to checking, \$1,050, Pending until it shows up in checking'
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      id: 'review-done-button'
+    direction: DOWN
+- assertVisible: "Next review Sunday, Sep 27\\. We'll remind you\\."
+- tapOn:
+    id: 'review-done-button'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 5000
+# Tagging Fuel Stop ($50) moved it into the Taxes total.
+- tapOn: 'Money'
+- scrollUntilVisible:
+    element:
+      id: 'open-taxes'
+    direction: DOWN
+- tapOn:
+    id: 'open-taxes'
+- extendedWaitUntil:
+    visible: "You've tagged \\$3,850 in work expenses across 22 items this year\\."
+    timeout: 5000

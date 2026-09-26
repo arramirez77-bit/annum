@@ -40,7 +40,8 @@
         {
           "faceIDPermission": "Annum uses Face ID to keep your money private."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

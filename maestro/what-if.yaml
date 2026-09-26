@@ -26,11 +26,8 @@ name: What would this do?
 - assertVisible: 'Free to spend, \$0'
 - assertVisible: 'Heads up\. This would dip \$1,000 into Runway \(4\.2 → 3\.9 months\)\. Waiting until Oct 13, when your invoice arrives, keeps Runway whole\.'
 - takeScreenshot: what-if-guardrail
-# A short upward drag inside the page dismisses the number pad (keyboardDismissMode on-drag).
-# A downward swipe would close the modal instead.
-- swipe:
-    start: 50%, 45%
-    end: 50%, 30%
+# Tapping plain text closes the number pad (see deposit.yaml).
+- tapOn: 'If I spend'
 - tapOn: 'Wait until Oct 13'
 - extendedWaitUntil:
     visible:

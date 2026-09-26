@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
-import { formatDollars } from '@/domain';
+import { formatDollars, formatShortDate } from '@/domain';
 import { useMoneyView } from '@/state/hooks';
+import { useAppStore } from '@/state/store';
 import { color, layout, space } from '@/theme';
 import {
   BucketBar,
@@ -17,6 +18,8 @@ import {
 // 03 Money (+E3 not split yet, P2 salary). docs/05.
 export default function MoneyScreen() {
   const v = useMoneyView();
+  const deposit = useAppStore((s) => s.data.pendingDeposit);
+  const landed = deposit && !deposit.confirmed ? deposit : undefined;
 
   return (
     <ScrollView
@@ -61,8 +64,22 @@ export default function MoneyScreen() {
           <Button
             variant="primary"
             label="Split my savings now"
-            onPress={() => router.push('/deposit/unsplit')}
+            onPress={() => router.push('/deposit/unsplit/setup')}
             testID="split-now"
+          />
+        </View>
+      ) : null}
+
+      {landed && !v.unsplit ? (
+        <View style={{ gap: space[12] }}>
+          <GuardrailNote tone="info" testID="deposit-landed">
+            {`${formatDollars(landed.amount)}${landed.source ? ` from ${landed.source}` : ''} landed ${formatShortDate(landed.date)}. Split it so every dollar has a job.`}
+          </GuardrailNote>
+          <Button
+            variant="primary"
+            label="Split it"
+            onPress={() => router.push(`/deposit/${landed.id}`)}
+            testID="split-deposit"
           />
         </View>
       ) : null}

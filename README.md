@@ -84,7 +84,7 @@ Annum always uses **port 8082**, so it never clashes with other Expo projects on
 ### 6. Checks
 
 ```sh
-npm test           # Jest: the 25 docs/03 test cases, engine unit tests, fixture, theme and component tests
+npm test           # Jest: the 25 docs/03 test cases, engine, view, store, component and export tests
 npm run lint       # ESLint + Prettier + token check (no raw colors/sizes outside src/theme)
 npm run typecheck  # TypeScript
 npx expo-doctor    # Expo project health

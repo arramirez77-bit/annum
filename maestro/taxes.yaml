@@ -1,0 +1,26 @@
+# M4: Taxes totals and the accountant CSV export (share sheet opens).
+appId: com.highdesert.annum
+name: Taxes export
+---
+- runFlow:
+    file: common/open-scenario.yaml
+    env:
+      SCENARIO: on-track
+- tapOn: 'Money'
+- scrollUntilVisible:
+    element:
+      id: 'open-taxes'
+    direction: DOWN
+- tapOn:
+    id: 'open-taxes'
+- extendedWaitUntil:
+    visible: "You've tagged \\$3,800 in work expenses across 21 items this year\\."
+    timeout: 5000
+- assertVisible: 'Equipment, \$2,000, 3 items'
+- assertVisible: 'Tax reserve, \$3,000, Next quarterly date Jan 15'
+- tapOn:
+    id: 'export-csv'
+- extendedWaitUntil:
+    visible: '.*annum-work-expenses-2026.*'
+    timeout: 10000
+- takeScreenshot: taxes-share-sheet

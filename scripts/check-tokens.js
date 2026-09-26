@@ -37,7 +37,8 @@ const SKIP = [
   /\/src\/theme\//,
   /__tests__\//,
   /\.test\.tsx?$/,
-  /\/src\/ui\/components\/Mark\.tsx$/,
+  /\/src\/ui\/components\/Mark\.tsx$/, // brand geometry from Figma (SVG path data)
+  /\/src\/data\/export-html\.ts$/, // print stylesheet for the accountant PDF, not app UI
 ];
 
 function walk(dir, files = []) {

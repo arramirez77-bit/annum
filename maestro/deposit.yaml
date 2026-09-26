@@ -1,0 +1,46 @@
+# M4: split the landed $10,000; editing Tax keeps the total (Free absorbs the change).
+appId: com.highdesert.annum
+name: Deposit split
+---
+- runFlow:
+    file: common/open-scenario.yaml
+    env:
+      SCENARIO: on-track
+- tapOn: 'Money'
+- scrollUntilVisible:
+    element:
+      id: 'split-deposit'
+    direction: DOWN
+- tapOn:
+    id: 'split-deposit'
+- extendedWaitUntil:
+    visible: '\$10,000 just landed'
+    timeout: 8000
+- tapOn:
+    id: 'deposit-edit'
+- tapOn:
+    id: 'deposit-tax-amount'
+- eraseText: 10
+- inputText: '2500'
+# Tapping plain text closes the number pad (the Done bar works for people, but Maestro
+# reports its position wrongly and would tap the keypad).
+- tapOn: 'From Northwind Studio\.'
+- scrollUntilVisible:
+    element: 'Free, \$2,800\. Yours to spend'
+    direction: DOWN
+- takeScreenshot: deposit-edited
+- scrollUntilVisible:
+    element:
+      id: 'deposit-confirm'
+    direction: DOWN
+- tapOn:
+    id: 'deposit-confirm'
+# Money was scrolled down to reach "Split it"; go back up to the savings total.
+- scrollUntilVisible:
+    element: 'Savings, \$29,100'
+    direction: UP
+    timeout: 10000
+- assertVisible: 'Tax, \$5,500\. .*'
+- assertVisible: 'Free, \$4,300\. .*'
+- assertNotVisible:
+    id: 'split-deposit'
