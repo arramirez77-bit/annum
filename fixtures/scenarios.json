@@ -18,6 +18,24 @@
   },
   "late-invoice": {
     "today": "2026-10-17",
+    "accounts": {
+      "chk": {
+        "balance": 17500
+      },
+      "card": {
+        "statementBalance": 0
+      },
+      "sav": {
+        "balance": 1760000
+      }
+    },
+    "buckets": {
+      "tax": 300000,
+      "bills": 200000,
+      "runway": 1260000,
+      "invest": 0,
+      "free": 0
+    },
     "expectedIncome": {
       "i1": {
         "received": false
@@ -26,6 +44,11 @@
     "_lateAssumeDays": 5
   },
   "first-run": {
+    "accounts": {
+      "chk": {
+        "balance": 380000
+      }
+    },
     "settings": {
       "isEstimate": true
     },

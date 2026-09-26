@@ -5,7 +5,7 @@ Nine milestones. Each ends with something Andy can open on his iPhone and check.
 | # | Milestone | Andy can check | Rough size |
 | --- | --- | --- | --- |
 | M0 | Project setup & dev build | A dark "Annum" screen running on his iPhone | small |
-| M1 | Domain engine | Test report: all 18 cases pass | medium |
+| M1 | Domain engine | Test report: all 25 cases pass | medium |
 | M2 | Design system components | Component gallery on his phone | medium |
 | M3 | Today, Money, What would this do? | Tabs work on demo data; scenario switcher flips states | medium |
 | M4 | Weekly Review + Deposit split | Full review flow; editable split | large |
@@ -38,7 +38,7 @@ Acceptance:
 
 Acceptance:
 - `src/domain/`: types, money (ATS, per day, runway), dates (local calendar math), waterfall, whatIf, transfer, status, report, scenarios (deep-merge loader), categorize (rules), recurring (detection).
-- All 18 test cases in `03-DATA-MODEL.md` pass, plus edge cases: no expected income, income today, negative ATS, empty transactions, DST change.
+- All 25 test cases in `03-DATA-MODEL.md` pass, plus edge cases: no expected income, income today, negative ATS, empty transactions, DST change.
 - Integer cents throughout; no React Native imports in `src/domain/`.
 
 > **Prompt:** "Do M1. Implement src/domain exactly per docs/03-DATA-MODEL.md, test-first with Jest. Show me the test output. If any formula is ambiguous, ask me before choosing."

@@ -46,6 +46,7 @@ export interface Transaction {
 export interface Deposit { id: string; date: ISODate; amount: Cents; source?: string; split?: Buckets; confirmed: boolean }
 export interface DeferredPurchase { id: string; label: string; amount: Cents; waitUntil: ISODate; status: 'waiting' | 'bought' | 'dropped' }
 export type TodayStatus = 'on-track' | 'heads-up' | 'estimate';
+export interface WeekStart { date: ISODate; availableToSpend: Cents; runway: Cents }  // snapshot saved when the review week starts
 ```
 
 ## Core formulas (`src/domain/money.ts`)
@@ -113,8 +114,23 @@ suggestion = Σ card statements + bills due in the next 7 days
 ## Weekly report (`src/domain/report.ts`)
 
 - `spent` = Σ outflows this review week (excluding transfers, card payments, and savings moves)
-- `allowance` = perDay × 7 at the start of the week
+- `allowance` = perDay × 7 at the start of the week, where that perDay = `weekStart.availableToSpend / daysUntil(nextIncomeDate)` counted from `weekStart.date`, rounded down to whole dollars. Seed: 1,400 / 26 days → $53 → $371.
 - Top 3 categories by spend, each compared with the 4-week average: "more than usual" if > +20%, "less than usual" if < −20%, else "about usual."
+
+**What changed this week** (06 What changed, and Today's Runway subtitle), measured against the `weekStart` snapshot:
+- **Free-to-spend change** = ATS now − `weekStart.availableToSpend`. Seed: 1,000 − 1,400 = −400 → "Down $400 — what you spent this week."
+- **Runway change** = (`buckets.runway` − `weekStart.runway`) ÷ `monthlySpend`, one decimal. Seed: (12,600 − 12,000) ÷ 3,000 = +0.2 → "Up 0.2 months" on 06; Today's subtitle reads "Up 0.2 this week · $15k target" (target in compact thousands).
+
+## Estimates (first run, unsplit savings)
+
+While `settings.isEstimate` is true and savings aren't split yet (every bucket is 0):
+- **Estimated spend** = checking − bills and card statements due before the next income (the ATS formula with Free = 0). Per day as usual. First-run: 3,800 − 2,000 − 500 = $1,300.
+- **Estimated Runway** = savings ÷ `monthlySpend`, shown as "~N months" rounded to the nearest whole month. First-run: 19,100 ÷ 3,000 = 6.37 → "~6 months".
+- **Unsplit preview** (E3 on Money) uses the first-split rule, and the four amounts add up to the savings balance:
+  1. **Tax** = `round(taxRate × income received this calendar quarter)` (freelance/both only). Income received = income transactions plus landed deposits, each counted once. Seed: $5,000 (Sep 21) + $10,000 (Sep 23) = $15,000 → $4,500.
+  2. **Bills** = bills due in the next 30 days (inclusive) → $2,000.
+  3. **Runway** = the rest → $12,600 (4.2 months).
+  4. **Free** = $0.
 
 ## Test cases (must pass in Jest via `jest-expo`)
 
@@ -140,5 +156,12 @@ Using `fixtures/seed.json` (today = 2026-09-23):
 | 16 | Timezone | "days until" is identical at 11:59 PM and 12:01 AM local on the same date |
 | 17 | Bill due on day 30 (seed + a confirmed $300 bill due Oct 23 = today + 30); deposit $10,000 | Included in "next 30 days": Bills **300** (2,300 due − 2,000 held); Tax 3,000; Runway 2,400; Invest **2,150** (50% of the remaining 4,300); Free **2,150**; total **= 10,000** |
 | 18 | Bill due on the income date (seed + a confirmed $300 bill due Oct 13) | Excluded from ATS (window is Sep 23 – Oct 12): ATS stays **$1,000**, not $700; per day **$50** |
+| 19 | Allowance at start of week (weekStart Sep 17: $1,400, 26 days to Oct 13) | per day **$53** → allowance **$371**; spent $400 → **$29 over** |
+| 20 | Free-to-spend change this week | 1,000 − 1,400 = **−$400** → "Down $400 — what you spent this week" |
+| 21 | Runway change this week | (12,600 − 12,000) ÷ 3,000 = **+0.2** → "Up 0.2 months"; Today subtitle "Up 0.2 this week · $15k target" |
+| 22 | Tax items (S2) | Equipment **3** · Software **12** · Home office **4** · Travel **2** (21 items, $3,800) |
+| 23 | Late invoice amounts (late-invoice scenario: checking 175, card statement paid, Free 0) | ATS **$175**; Oct 17 → assumed Oct 22 = 5 days → **$35/day**; status **heads-up** |
+| 24 | First-run estimate (first-run scenario: checking 3,800, savings 19,100 unsplit) | Estimated spend 3,800 − 2,000 − 500 = **$1,300** (per day **$65**); Runway 19,100 ÷ 3,000 = 6.37 → **"~6 months"**; status **estimate** |
+| 25 | Unsplit preview (E3, first-run scenario) | Income this quarter 5,000 + 10,000 = 15,000 → Tax **4,500**; Bills **2,000**; Runway **12,600** (4.2 months); Free **0**; total **= 19,100** |
 
 Scenario overrides live in `fixtures/scenarios.json`.

@@ -1,6 +1,6 @@
 # Screen values
 
-The numbers the Figma screens below show, computed by a script from `fixtures/seed.json` and `fixtures/scenarios.json` using the rules in `docs/03-DATA-MODEL.md`. Nothing here is estimated. If a fixture or rule changes, recompute; don't edit these by hand.
+The numbers the Figma screens below show, computed by a script from `fixtures/seed.json` and `fixtures/scenarios.json` using the rules in `docs/03-DATA-MODEL.md`. Nothing here is guessed. If a fixture or rule changes, recompute; don't edit these by hand.
 
 Today is **Sep 23, 2026** unless a scenario says otherwise. Money is shown in whole dollars except transaction amounts. Per day is rounded down to whole dollars.
 
@@ -18,9 +18,9 @@ Today is **Sep 23, 2026** unless a scenario says otherwise. Money is shown in wh
 
 | Value | Shows |
 | --- | --- |
-| Free to spend: change this week | **Not in the fixtures** (see Open items) |
-| Free to spend: one-line reason | **Not in the fixtures** (see Open items) |
-| Runway: change this week | **Not in the fixtures** (see Open items) |
+| Free to spend: change this week | Down $400 ($1,000 now − $1,400 on Sep 17) |
+| Free to spend: one-line reason | "Down $400 — what you spent this week" |
+| Runway: change this week | Up 0.2 months (($12,600 now − $12,000 on Sep 17) ÷ $3,000) |
 | Notable category | Dining: $150 this week vs $100 4-week average (+$50, +50%) |
 
 Notable category = the category furthest from its 4-week average. Dining is furthest by both percentage and dollars.
@@ -30,8 +30,8 @@ Notable category = the category furthest from its 4-week average. Dining is furt
 | Value | Shows |
 | --- | --- |
 | Spent this week | $400 |
-| Weekly allowance (per day × 7) | $350 ($50 × 7) |
-| Over / under | $50 over |
+| Weekly allowance (per day × 7) | $371 ($53 × 7; $1,400 spendable on Sep 17 ÷ 26 days) |
+| Over / under | $29 over |
 
 | # | Category | This week | 4-week average | Change | Label |
 | --- | --- | --- | --- | --- | --- |
@@ -39,13 +39,13 @@ Notable category = the category furthest from its 4-week average. Dining is furt
 | 2 | Groceries | $120 | $120 | 0% | about usual |
 | 3 | Gas | $40 | $60 | −33.3% | less than usual |
 
-Spent and categories come from `thisWeek` in the seed (the full week, starting Sep 17). The sample transactions above are a subset: their outflows total $165. The allowance uses today's per day, because the fixtures hold a single snapshot.
+Spent and categories come from `thisWeek` in the seed (the full week, starting Sep 17). The sample transactions above are a subset: their outflows total $165. The allowance uses per day at the start of the week, from `weekStart`.
 
 ## 01 Today
 
 | Value | Shows |
 | --- | --- |
-| Runway subtitle: change this week ("Up $X this week") | **Not in the fixtures** (see Open items) |
+| Runway subtitle | "Up 0.2 this week · $15k target" |
 
 ## 07 Move money
 
@@ -59,33 +59,42 @@ Items due in the next 7 days (Sep 23 – Sep 30, inclusive).
 
 ## S2 Taxes · 2026
 
-Tagged total: **$3,800**
+Tagged total: **$3,800** (21 items)
 
 | Tax category | Total | Items |
 | --- | --- | --- |
-| Equipment | $2,000 | **Not in the fixtures** (see Open items) |
-| Software | $1,000 | **Not in the fixtures** (see Open items) |
-| Home office | $500 | **Not in the fixtures** (see Open items) |
-| Travel | $300 | **Not in the fixtures** (see Open items) |
-
-Only one sample transaction is tax-tagged (Litware, Software), so item counts can't come from the transactions either.
+| Equipment | $2,000 | 3 |
+| Software | $1,000 | 12 |
+| Home office | $500 | 4 |
+| Travel | $300 | 2 |
 
 ## E2 Late invoice (today Oct 17)
 
 | Value | Shows |
 | --- | --- |
-| Available to Spend | $3,500 |
-| Per day | $700 (5 days) |
+| Available to Spend | $175 |
+| Per day | $35 (5 days) |
 | Assumed arrival | Oct 22 (today + 5 days) |
-
-Note: this scenario only moves "today". Balances keep their Sep 23 values, and every seed bill and the card statement fall due before Oct 17, so nothing is subtracted. That's why per day rises (from $50 to $700) instead of stretching.
 
 ## O5 First run (estimate)
 
 | Value | Shows |
 | --- | --- |
-| Estimated spend ("You can spend about") | $0 (raw −$500: checking $2,000 + Free $0 − bills $2,000 − Contoso Card $500) |
-| Estimated Runway | 0.0 months (Runway bucket is $0 because savings of $19,100 aren't split yet) |
+| Estimated spend ("You can spend about") | $1,300 (checking $3,800 − bills $2,000 − Contoso Card statement $500) |
+| Per day | about $65 (20 days) |
+| Estimated Runway | ~6 months (savings $19,100 ÷ $3,000 = 6.37) |
+
+## E3 Money · not split yet (first run)
+
+Unsplit preview of the $19,100 in savings.
+
+| Bucket | Amount | How |
+| --- | --- | --- |
+| Tax | $4,500 | 30% of $15,000 income this quarter ($5,000 on Sep 21 + $10,000 on Sep 23) |
+| Bills | $2,000 | bills due in the next 30 days (Sep 23 – Oct 23) |
+| Runway | $12,600 | the rest, about 4.2 months |
+| Free | $0 | — |
+| Total | $19,100 | equals savings |
 
 ## P2 Salary
 
@@ -102,11 +111,3 @@ Note: this scenario only moves "today". Balances keep their Sep 23 values, and e
 | Runway target | $15,000 (6 months) |
 | Available to Spend | $1,100 |
 | Per day | $91 (12 days) |
-
-## Open items
-
-Items 1 and 2 need data the fixtures don't have yet, so nothing was guessed. Item 3 is computed correctly, but may not be what the design intends.
-
-1. **Weekly changes** (06 Free to spend change + reason, 06 Runway change, 01 "Up $X this week"): the fixtures hold only today's state, with no start-of-week snapshot to compare against.
-2. **S2 item counts:** `taxYear.byCategory` has yearly totals but no counts.
-3. **E2 and O5 read oddly as computed** (per day rises on the late invoice; first run shows $0 and 0.0 months). The scenarios may need adjusting.
