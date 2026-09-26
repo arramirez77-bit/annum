@@ -62,3 +62,8 @@ export const formatShortDate = (d: ISODate): string => shortDate.format(new Date
 /** "Sunday, Sep 27". */
 export const formatWeekdayDate = (d: ISODate): string =>
   weekdayDate.format(new Date(`${d}T00:00:00Z`));
+
+const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' });
+
+/** "Wednesday" (a local calendar date's weekday). */
+export const formatWeekday = (d: ISODate): string => weekday.format(new Date(`${d}T00:00:00Z`));

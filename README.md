@@ -90,6 +90,7 @@ npm run typecheck  # TypeScript
 npx expo-doctor    # Expo project health
 maestro test maestro/               # all flow tests on the Simulator (needs `npm start` running)
 scripts/maestro-lock.sh <sim-udid>  # the Face ID lock flows (Maestro can't answer Face ID; this script does)
+scripts/maestro-files.sh <sim-udid> # bank-file import flows (copies the fictional files in fixtures/bank-files)
 ```
 
 Flow tests use [Maestro](https://maestro.mobile.dev): `brew install openjdk@17 mobile-dev-inc/tap/maestro`, and set `JAVA_HOME` to `$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home`.
@@ -144,6 +145,13 @@ git push origin --delete ci-check            # tidy up
 ```
 
 `npm install` turns on the pre-commit hook automatically. If you cloned without running it, turn it on by hand with `git config core.hooksPath .githooks` (needs `brew install gitleaks`).
+
+## Getting your numbers in (until a bank connection is chosen)
+
+- **Import a file:** on your bank's website, download the account's transactions as **CSV** or **OFX/QFX** (Quicken). In Annum: Money → **Import a file** → Choose file, or open the download from Files or Mail and pick **Annum**. Tell Annum which account it is and the balance today; it adds what's new and skips what it already has. The weekly review offers this first.
+- **By hand:** Settings → Accounts for balances (brokerage, loans), Money → All transactions → **Add one by hand** for a purchase a file doesn't have.
+- **Bills:** Money → Bills. Annum proposes bills it notices in checking; you confirm them.
+- Bank files you open in Annum are deleted from the phone after they're read. Nothing is uploaded anywhere.
 
 ## Where your data lives
 

@@ -16,3 +16,8 @@ declare module 'node:sqlite' {
     close(): void;
   }
 }
+
+/** Tests read the fictional bank files in fixtures/ (Jest runs from the project root). */
+declare module 'fs' {
+  export function readFileSync(path: string, encoding: 'utf8'): string;
+}

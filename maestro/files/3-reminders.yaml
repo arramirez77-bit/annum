@@ -1,0 +1,54 @@
+# M6: turning on the weekly review reminder schedules it with iOS; turning it off removes it.
+appId: com.highdesert.annum
+name: 'Files 3: reminders are scheduled'
+---
+- runFlow: ../common/start-over.yaml
+- runFlow: ../common/sample-bank-start.yaml
+- tapOn:
+    id: 'open-settings'
+- scrollUntilVisible:
+    element:
+      id: 'reminder-weekly'
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: 'reminder-weekly'
+- tapOn:
+    id: 'weekly-toggle-switch'
+- runFlow:
+    when:
+      visible: 'Allow'
+    commands:
+      - tapOn: 'Allow'
+- extendedWaitUntil:
+    visible:
+      id: 'weekly-day-0'
+    timeout: 5000
+# Scheduling waits a moment after the change.
+- extendedWaitUntil:
+    visible:
+      id: 'not-on-screen'
+    timeout: 2500
+    optional: true
+- runFlow: ../common/go-back.yaml
+- runFlow: ../common/go-back.yaml
+- longPressOn:
+    id: 'status-pill'
+- scrollUntilVisible:
+    element:
+      id: 'open-spikes'
+    direction: DOWN
+- tapOn:
+    id: 'open-spikes'
+- scrollUntilVisible:
+    element:
+      id: 'show-reminders'
+    direction: DOWN
+- tapOn:
+    id: 'show-reminders'
+- scrollUntilVisible:
+    element:
+      id: 'reminders-scheduled'
+    direction: DOWN
+- assertVisible: 'Scheduled: .*weekly-review.*'
+- runFlow: ../common/start-over.yaml

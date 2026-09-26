@@ -24,9 +24,13 @@ export function accountRow(a: Account) {
         : 'Entered by hand'
       : a.source === 'demo'
         ? `Sample bank · updated ${a.lastSynced ? time.format(new Date(a.lastSynced)) : ''}`.trim()
-        : a.lastSynced
-          ? `Updated ${time.format(new Date(a.lastSynced))}`
-          : 'Connected';
+        : a.source === 'import'
+          ? a.lastSynced
+            ? `Imported ${formatShortDate(a.lastSynced.slice(0, 10))}`
+            : 'From a file'
+          : a.lastSynced
+            ? `Updated ${time.format(new Date(a.lastSynced))}`
+            : 'Connected';
   return {
     id: a.id,
     title: a.name,
@@ -36,6 +40,6 @@ export function accountRow(a: Account) {
       : owes(a)
         ? `${formatDollars(a.balance)} owed`
         : formatDollars(a.balance),
-    editable: byHand,
+    editable: byHand || a.source === 'import',
   };
 }

@@ -46,12 +46,19 @@ export function todayStatus(
 }
 
 /** Accounts not synced for more than 48 hours. Manually entered accounts are never stale. */
+/**
+ * Imported accounts are refreshed by hand, about weekly, so they count as out of date after a
+ * week instead of 48 hours (a note every few days would teach people to ignore it).
+ */
+export const IMPORT_STALE_AFTER_HOURS = 7 * 24;
+
 export function staleAccounts(data: AppData, now: Date): Account[] {
   return data.accounts.filter(
     (a) =>
       a.source !== 'manual' &&
       !!a.lastSynced &&
-      (now.getTime() - Date.parse(a.lastSynced)) / 3_600_000 > STALE_AFTER_HOURS,
+      (now.getTime() - Date.parse(a.lastSynced)) / 3_600_000 >
+        (a.source === 'import' ? IMPORT_STALE_AFTER_HOURS : STALE_AFTER_HOURS),
   );
 }
 

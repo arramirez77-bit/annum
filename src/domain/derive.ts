@@ -3,6 +3,7 @@
  * derived from transactions here, and first-run data is built from onboarding answers.
  */
 import { addDays, daysBetween, inClosed } from './dates';
+import { rollBills } from './bills';
 import { availableToSpend, sum } from './money';
 import { fourWeekAverage, isSpending, summarizeSpending } from './report';
 import { taxCategoryOf } from './review';
@@ -67,11 +68,12 @@ export function taxYearFrom(transactions: readonly Transaction[], today: ISODate
   return { year, byCategory, itemsByCategory, nextQuarterlyDue: nextQuarterlyDue(today) };
 }
 
-/** Recompute everything that depends on transactions and the date. */
+/** Recompute everything that depends on transactions and the date; passed bills roll forward. */
 export function withDerived(data: AppData): AppData {
   const start = reviewWeekStart(data.today, data.weekStart);
   return {
     ...data,
+    bills: rollBills(data.bills, data.today),
     thisWeek: weekSummaryFrom(data.transactions, start, data.today),
     taxYear: taxYearFrom(data.transactions, data.today),
   };

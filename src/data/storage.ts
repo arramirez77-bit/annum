@@ -111,14 +111,19 @@ export function wipeStorage(): Promise<void> {
   });
 }
 
-/** Tax exports, PDFs, backups and picked files in the cache folder. */
+/** Tax exports, PDFs, backups, picked files, and bank files opened with "Open in Annum". */
 export function clearExportedFiles(): void {
   const cache = new Directory(Paths.cache);
-  if (!cache.exists) return;
-  for (const item of cache.list()) {
-    if (item instanceof File && item.name.startsWith('annum-')) item.delete();
-    if (item instanceof Directory && ['Print', 'DocumentPicker'].includes(item.name)) item.delete();
+  if (cache.exists) {
+    for (const item of cache.list()) {
+      if (item instanceof File && item.name.startsWith('annum-')) item.delete();
+      if (item instanceof Directory && ['Print', 'DocumentPicker'].includes(item.name)) {
+        item.delete();
+      }
+    }
   }
+  const inbox = new Directory(Paths.document, 'Inbox');
+  if (inbox.exists) inbox.delete();
 }
 
 /**

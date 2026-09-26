@@ -4,13 +4,22 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { setPrivacyCoverColor } from '../modules/privacy-cover';
-import { boot, startAutosave, startLifecycle, watchNavigation } from '@/state/session';
+import { configureNotifications } from '@/services/notifications';
+import {
+  boot,
+  startAutosave,
+  startLifecycle,
+  startReminderLinks,
+  startReminders,
+  watchNavigation,
+} from '@/state/session';
 import { useAppStore } from '@/state/store';
 import { color } from '@/theme';
 import { Gate } from '@/ui/flows/Gate';
 import { formSheet, modalScreen, pushedHeader } from '@/ui/navigation';
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
+configureNotifications();
 
 // Dark only (v1). Navigation chrome uses theme tokens so there is never a white flash.
 const navigationTheme = {
@@ -40,13 +49,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     setPrivacyCoverColor(color.bgBase);
-    const stopAutosave = startAutosave();
-    const stopLifecycle = startLifecycle();
+    const stops = [startAutosave(), startLifecycle(), startReminders(), startReminderLinks()];
     void boot();
-    return () => {
-      stopAutosave();
-      stopLifecycle();
-    };
+    return () => stops.forEach((stop) => stop());
   }, []);
 
   useEffect(() => {
@@ -72,6 +77,9 @@ export default function RootLayout() {
             options={pushedHeader('Import backup', 'Settings')}
           />
           <Stack.Screen name="settings/delete" options={modalScreen} />
+          <Stack.Screen name="bills" options={pushedHeader('Bills', 'Back')} />
+          <Stack.Screen name="bill/[id]" options={formSheet([0.8, 1])} />
+          <Stack.Screen name="transaction/new" options={modalScreen} />
         </Stack.Protected>
         <Stack.Protected guard={phase === 'onboarding'}>
           <Stack.Screen name="(onboarding)" />

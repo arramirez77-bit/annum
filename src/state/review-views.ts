@@ -70,9 +70,13 @@ export function buildBalancesView(data: AppData, now: Date) {
         : formatDollars(a.balance),
   }));
   const manual = data.accounts.filter((a) => a.source === 'manual').map((a) => a.name);
+  const imported = data.accounts.filter((a) => a.source === 'import').map((a) => a.name);
   return {
     title: 'Do these balances look right?',
     rows,
+    importNote: imported.length
+      ? `${listNames(imported)} ${imported.length === 1 ? 'comes' : 'come'} from files. Import this week’s download first, so the review sees every purchase.`
+      : undefined,
     manualNote: manual.length
       ? `${listNames(manual)} ${manual.length === 1 ? 'is' : 'are'} entered by hand, so ${manual.length === 1 ? 'it shows' : 'they show'} your last update. Tap one to change it.`
       : undefined,

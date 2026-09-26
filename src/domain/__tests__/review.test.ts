@@ -5,6 +5,7 @@ import {
   confirmSplit,
   nextReviewDate,
   proposeSplit,
+  savingsBalance,
   spendBar,
   taxCsv,
   taxSummary,
@@ -94,5 +95,15 @@ describe('weekly review helpers', () => {
         '2026-09-21,Litware,Software,20.00,Contoso Card\n' +
         '2026-09-22,"Pens, ""Fine""",Office,80.00,Woodgrove checking\n',
     );
+  });
+});
+
+describe('an imported deposit is already in the savings balance', () => {
+  test('confirming its split labels the money without adding it to savings again', () => {
+    const data = { ...seed, pendingDeposit: { ...seed.pendingDeposit!, inBalance: true } };
+    const split = proposeSplit(data, data.pendingDeposit.amount);
+    const after = confirmSplit(data, split, true);
+    expect(savingsBalance(after)).toBe(savingsBalance(data));
+    expect(after.pendingDeposit?.confirmed).toBe(true);
   });
 });

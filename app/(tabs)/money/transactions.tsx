@@ -5,7 +5,7 @@ import { ScrollView, View } from 'react-native';
 import { buildTransactionsView, type TransactionFilter } from '@/state/review-views';
 import { useAppStore } from '@/state/store';
 import { color, layout, space } from '@/theme';
-import { Chip, GuardrailNote, LedgerRow, Text } from '@/ui/components';
+import { Button, Chip, GuardrailNote, LedgerRow, Text } from '@/ui/components';
 import { pushedHeader } from '@/ui/navigation';
 
 // S1 Transactions (+E5 none yet). docs/05.
@@ -35,6 +35,14 @@ export default function TransactionsScreen() {
           ))}
         </View>
         {v.empty ? <GuardrailNote tone="info">{v.empty}</GuardrailNote> : null}
+        {v.empty && filter === 'all' ? (
+          <Button
+            variant="secondary"
+            label="Add one by hand"
+            onPress={() => router.push('/transaction/new')}
+            testID="txn-add-by-hand"
+          />
+        ) : null}
         {v.groups.map((g) => (
           <View key={g.date} style={{ gap: space[4] }}>
             <Text variant="footnote" tone="secondary" accessibilityRole="header">
@@ -58,6 +66,14 @@ export default function TransactionsScreen() {
             </View>
           </View>
         ))}
+        {!v.empty ? (
+          <Button
+            variant="quiet"
+            label="Add one by hand"
+            onPress={() => router.push('/transaction/new')}
+            testID="txn-add-more"
+          />
+        ) : null}
       </ScrollView>
     </>
   );

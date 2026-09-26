@@ -19,9 +19,14 @@ import {
   type OpenResult,
 } from '@/data/storage';
 import { isLockEnabled, setLockEnabled } from '@/data/secure';
-import { localISODate, newAppData } from '@/domain';
+import { localISODate, newAppData, planReminders } from '@/domain';
 import { authenticate, type UnlockResult } from '@/services/lock';
-import { clearAllNotifications } from '@/services/notifications';
+import {
+  clearAllNotifications,
+  onReminderTapped,
+  scheduleReminders,
+  takeLaunchReminder,
+} from '@/services/notifications';
 
 import { relockAfterMs, shouldRelock } from './lock-rules';
 import { useOnboarding, type OnboardingDraft } from './onboarding';
@@ -91,6 +96,8 @@ const SHEETS = new Set([
   'settings/export',
   'settings/delete',
   'account/[id]/balance',
+  'bill/[id]',
+  'transaction/new',
 ]);
 
 type NavState = { routes: { name: string; state?: NavState }[] };
@@ -166,6 +173,65 @@ export function startLifecycle(): () => void {
     }
   });
   return () => sub.remove();
+}
+
+/* ---------- reminders (local notifications) ---------- */
+
+let lastPlan = '';
+let reminderTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Schedule the reminder plan again whenever it changes (real data only). */
+export function startReminders(): () => void {
+  const check = () => {
+    const s = store();
+    if (s.mode !== 'real' || !s.loaded) return;
+    const now = new Date();
+    const plan = planReminders(s.data, s.prefs.reminders, s.prefs.showAmountsOnLockScreen, {
+      date: localISODate(now),
+      hour: now.getHours(),
+      minute: now.getMinutes(),
+    });
+    const json = JSON.stringify(plan);
+    if (json === lastPlan) return;
+    if (reminderTimer) clearTimeout(reminderTimer);
+    reminderTimer = setTimeout(() => {
+      lastPlan = json;
+      void scheduleReminders(plan).catch(() => {
+        lastPlan = ''; // try again with the next change
+      });
+    }, 1000);
+  };
+  const unsubscribe = useAppStore.subscribe((s, prev) => {
+    if (s.data !== prev.data || s.prefs !== prev.prefs || s.loaded !== prev.loaded) check();
+  });
+  return () => {
+    unsubscribe();
+    if (reminderTimer) clearTimeout(reminderTimer);
+  };
+}
+
+let pendingLink: string | null = null;
+
+const openLink = (url: string) => {
+  // navigate (not push): it switches tabs for /review and /money/taxes.
+  if (store().phase === 'ready') router.navigate(url as Parameters<typeof router.navigate>[0]);
+  else pendingLink = url; // after unlock
+};
+
+/** A tapped reminder opens its screen; if Annum is locked or starting, after that. */
+export function startReminderLinks(): () => void {
+  const stopTaps = onReminderTapped(openLink);
+  const unsubscribe = useAppStore.subscribe((s, prev) => {
+    if (s.phase === 'ready' && prev.phase !== 'ready') {
+      const url = pendingLink ?? takeLaunchReminder();
+      pendingLink = null;
+      if (url) setTimeout(() => router.navigate(url as Parameters<typeof router.navigate>[0]), 0);
+    }
+  });
+  return () => {
+    stopTaps();
+    unsubscribe();
+  };
 }
 
 /* ---------- onboarding ---------- */
@@ -255,6 +321,7 @@ export async function restoreFrom(uri: string, passphrase: string): Promise<Rest
 export async function deleteEverything(): Promise<void> {
   if (timer) clearTimeout(timer);
   timer = null;
+  lastPlan = '';
   await wipeStorage();
   await clearAllNotifications();
   useOnboarding.getState().clear();

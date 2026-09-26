@@ -7,8 +7,12 @@ import { create } from 'zustand';
 import { demoScenario, type ScenarioName } from '@/data/demo';
 import { DEFAULT_PREFS, type PendingTransfer, type Prefs } from '@/data/repo';
 import {
+  applyImport,
   applyTaxChanges,
   confirmSplit,
+  currentDeposit,
+  mergeImport,
+  proposeBills,
   localISODate,
   newAppData,
   ruleFromCorrection,
@@ -18,11 +22,14 @@ import {
   withDerived,
   type Account,
   type AppData,
+  type Bill,
   type Cadence,
+  type CsvMapping,
   type CategoryRule,
   type Cents,
   type DeferredPurchase,
   type ExpectedIncome,
+  type ImportedTransaction,
   type ISODate,
   type Settings,
   type Split,
@@ -39,6 +46,24 @@ export type { PendingTransfer };
  * ready: the app · blocked: the data can't be opened on this phone (calm recovery screen).
  */
 export type Phase = 'booting' | 'onboarding' | 'locked' | 'ready' | 'blocked';
+
+/** S11: one file's statement, ready to add to an account (existing or new). */
+export interface ImportPlan {
+  account: Account;
+  transactions: ImportedTransaction[];
+}
+
+export interface ImportOutcome {
+  added: number;
+  duplicates: number;
+  range?: { from: ISODate; to: ISODate };
+  /** Expected income that arrived with this file. */
+  received: { source: string; amount: Cents }[];
+  /** A landed invoice to split (Money → Split it). */
+  depositId?: string;
+  /** New bills Annum noticed. */
+  proposals: number;
+}
 export type Blocked = 'key-missing' | 'newer' | 'cant-open';
 
 export interface AppState extends Persisted {
@@ -97,10 +122,24 @@ export interface AppState extends Persisted {
   /** Salary / Both: the paycheck that defines "next income" (undefined removes it). */
   setPaySchedule: (pay: Settings['paySchedule']) => void;
   setPrefs: (prefs: Partial<Prefs>) => void;
+  /** S11: add a file's transactions to an account; returns what happened. */
+  importStatement: (plan: ImportPlan) => ImportOutcome;
+  rememberMapping: (headerKey: string, mapping: CsvMapping) => void;
+  /** E5 "Add one by hand". */
+  addTransaction: (transaction: Transaction) => void;
+  /** Bills: confirm or dismiss a proposal, add or edit, remove. */
+  confirmBill: (id: string) => void;
+  dismissBill: (id: string) => void;
+  saveBill: (bill: Bill) => void;
+  removeBill: (id: string) => void;
 }
 
 let nextId = 1;
 const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${nextId++}`;
+
+/** "2026-09-25T14:05:00", local time (how lastSynced is written). */
+export const localDateTime = (now: Date): string =>
+  `${localISODate(now)}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
 
 const empty = (today: ISODate): Persisted => ({
   data: newAppData({ today, incomeType: 'freelance', accounts: [] }),
@@ -149,6 +188,8 @@ export const useAppStore = create<AppState>((set, get) => {
   };
   const accounts = (change: (list: Account[]) => Account[]) =>
     commit({ ...get().data, accounts: change(get().data.accounts) });
+  const bills = (change: (list: Bill[]) => Bill[]) =>
+    commit({ ...get().data, bills: change(get().data.bills) });
 
   return {
     ...empty(localISODate(new Date())),
@@ -281,9 +322,12 @@ export const useAppStore = create<AppState>((set, get) => {
       const { data, splits, deposits } = get();
       const next = confirmSplit(data, split, landed);
       const depositId = landed ? data.pendingDeposit?.id : undefined;
-      commit(next);
+      const history = depositsWith(deposits, next.pendingDeposit);
+      // Another imported invoice may be waiting: Money offers it next.
+      const upNext = currentDeposit(history);
+      commit({ ...next, ...(upNext ? { pendingDeposit: upNext } : {}) });
       set({
-        deposits: depositsWith(deposits, next.pendingDeposit),
+        deposits: history,
         splits: [
           ...splits,
           { id: newId('split'), date: data.today, split, ...(depositId ? { depositId } : {}) },
@@ -333,6 +377,76 @@ export const useAppStore = create<AppState>((set, get) => {
       commit({ ...get().data, settings: paySchedule ? { ...rest, paySchedule } : rest });
     },
     setPrefs: (prefs) => set({ prefs: { ...get().prefs, ...prefs } }),
+
+    importStatement: (plan) => {
+      const { data, rules, deposits, prefs } = get();
+      const account: Account = {
+        ...plan.account,
+        source: plan.account.source === 'manual' ? 'import' : plan.account.source,
+        lastSynced: localDateTime(new Date()),
+      };
+      const accounts = data.accounts.some((a) => a.id === account.id)
+        ? data.accounts.map((a) => (a.id === account.id ? account : a))
+        : [...data.accounts, account];
+      const merge = mergeImport(data.transactions, plan.transactions, account.id, rules, () =>
+        newId('txn'),
+      );
+      const applied = applyImport({ ...data, accounts }, merge);
+      const proposals = proposeBills(applied.data);
+      commit({ ...applied.data, bills: [...applied.data.bills, ...proposals] });
+      set({
+        deposits: applied.deposits.reduce(
+          (list, d) => depositsWith(list, d),
+          depositsWith(deposits, data.pendingDeposit),
+        ),
+        prefs: {
+          ...prefs,
+          lastImport: {
+            account: account.name,
+            on: data.today,
+            ...(merge.range ? { from: merge.range.from, to: merge.range.to } : {}),
+            added: merge.added.length,
+            duplicates: merge.duplicates,
+          },
+        },
+      });
+      return {
+        added: merge.added.length,
+        duplicates: merge.duplicates,
+        ...(merge.range ? { range: merge.range } : {}),
+        received: applied.received.map((m) => ({
+          source: m.expected.source,
+          amount: m.transaction.amount,
+        })),
+        ...(applied.deposits.length && applied.data.pendingDeposit
+          ? { depositId: applied.data.pendingDeposit.id }
+          : {}),
+        proposals: proposals.length,
+      };
+    },
+
+    rememberMapping: (key, mapping) =>
+      set({
+        prefs: {
+          ...get().prefs,
+          importMappings: { ...get().prefs.importMappings, [key]: mapping },
+        },
+      }),
+
+    addTransaction: (transaction) =>
+      commit({ ...get().data, transactions: [...get().data.transactions, transaction] }),
+
+    confirmBill: (id) =>
+      bills((list) => list.map((b) => (b.id === id ? { ...b, confirmed: true } : b))),
+    dismissBill: (id) =>
+      bills((list) => list.map((b) => (b.id === id ? { ...b, dismissed: true } : b))),
+    saveBill: (bill) =>
+      bills((list) =>
+        list.some((b) => b.id === bill.id)
+          ? list.map((b) => (b.id === bill.id ? bill : b))
+          : [...list, bill],
+      ),
+    removeBill: (id) => bills((list) => list.filter((b) => b.id !== id)),
   };
 });
 

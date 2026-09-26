@@ -1,0 +1,13 @@
+# Opens ${FILE} (copied in by scripts/maestro-files.sh) the way "Open in Annum" does.
+appId: com.highdesert.annum
+---
+- openLink: 'annum://import?file=${BANK}${FILE}'
+- runFlow:
+    when:
+      visible: 'Open'
+    commands:
+      - tapOn: 'Open'
+- extendedWaitUntil:
+    visible:
+      id: 'import-review'
+    timeout: 15000

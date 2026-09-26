@@ -10,8 +10,9 @@ interface DateFieldProps {
   label: string;
   value: ISODate;
   onChange: (date: ISODate) => void;
-  /** Earliest pickable day. */
+  /** Earliest and latest pickable days. */
   minimum?: ISODate;
+  maximum?: ISODate;
   testID?: string;
 }
 
@@ -19,7 +20,7 @@ interface DateFieldProps {
 const toDate = (d: ISODate) => new Date(`${d}T12:00:00`);
 
 /** Label on the left, the native compact date button on the right (opens the iOS calendar). */
-export function DateField({ label, value, onChange, minimum, testID }: DateFieldProps) {
+export function DateField({ label, value, onChange, minimum, maximum, testID }: DateFieldProps) {
   return (
     <View
       style={{
@@ -41,6 +42,7 @@ export function DateField({ label, value, onChange, minimum, testID }: DateField
         themeVariant="dark"
         accentColor={color.textPrimary}
         minimumDate={minimum ? toDate(minimum) : undefined}
+        maximumDate={maximum ? toDate(maximum) : undefined}
         accessibilityLabel={label}
         onValueChange={(_, date) => onChange(localISODate(date))}
       />

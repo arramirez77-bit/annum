@@ -164,7 +164,18 @@ function Balances({ onNext }: { onNext: () => void }) {
         ))}
       </View>
       {v.manualNote ? <GuardrailNote tone="heads-up">{v.manualNote}</GuardrailNote> : null}
-      <Button variant="primary" label={v.primary} onPress={onNext} testID="review-primary" />
+      {v.importNote ? <Text tone="secondary">{v.importNote}</Text> : null}
+      <View style={{ gap: space[8] }}>
+        {v.importNote ? (
+          <Button
+            variant="secondary"
+            label="Import this week’s file"
+            onPress={() => router.push('/import')}
+            testID="review-import"
+          />
+        ) : null}
+        <Button variant="primary" label={v.primary} onPress={onNext} testID="review-primary" />
+      </View>
     </StepScroll>
   );
 }

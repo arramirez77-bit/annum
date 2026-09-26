@@ -50,12 +50,15 @@ export function updatedLabel(data: AppData, now: Date): string {
     )[0];
     return `Updated ${formatShortDate((oldest.lastSynced ?? data.today).slice(0, 10))}`;
   }
-  const synced = data.accounts
-    .map((a) => a.lastSynced)
-    .filter((s): s is string => !!s)
-    .sort();
-  const latest = synced[synced.length - 1];
-  return latest ? `Updated ${time.format(new Date(latest))}` : 'Entered by hand';
+  const latest = data.accounts
+    .filter((a) => !!a.lastSynced)
+    .sort((a, b) => (a.lastSynced ?? '').localeCompare(b.lastSynced ?? ''))
+    .pop();
+  if (!latest?.lastSynced) return 'Entered by hand';
+  // Imports happen by hand, so the day matters more than the time.
+  return latest.source === 'import'
+    ? `Imported ${formatShortDate(latest.lastSynced.slice(0, 10))}`
+    : `Updated ${time.format(new Date(latest.lastSynced))}`;
 }
 
 const incomeWord = (income: NextIncome) => (income.kind === 'paycheck' ? 'payday' : 'your invoice');
@@ -211,7 +214,9 @@ export function buildTodayView(data: AppData, now: Date): TodayView {
       : { variant: 'field', label: 'Start weekly review' };
 
   const staleNote = stale[0]
-    ? `${stale[0].name} hasn't synced since ${formatShortDate((stale[0].lastSynced ?? '').slice(0, 10))}, so this may be off by a few purchases.`
+    ? stale[0].source === 'import'
+      ? `${stale[0].name} was last imported ${formatShortDate((stale[0].lastSynced ?? '').slice(0, 10))}, so this may be off by a few purchases. Import this week’s file to catch up.`
+      : `${stale[0].name} hasn't synced since ${formatShortDate((stale[0].lastSynced ?? '').slice(0, 10))}, so this may be off by a few purchases.`
     : undefined;
 
   return {

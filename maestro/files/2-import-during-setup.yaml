@@ -1,0 +1,47 @@
+# M6: "Import a file from my bank" during setup: the file's account becomes the first account,
+# with its balance and "Imported …", and setup continues to Today.
+appId: com.highdesert.annum
+name: 'Files 2: import during setup'
+---
+- runFlow: ../common/start-over.yaml
+- tapOn:
+    id: 'welcome-start'
+- tapOn:
+    id: 'onboarding-skip'
+- tapOn:
+    id: 'connect-import'
+- assertVisible: 'Import a file from your bank'
+- runFlow:
+    file: ../common/open-bank-file.yaml
+    env:
+      FILE: woodgrove-checking.csv
+- tapOn:
+    id: 'import-account-new'
+- tapOn:
+    id: 'import-new-name'
+- inputText: 'Woodgrove checking'
+- pressKey: Enter
+- scrollUntilVisible:
+    element:
+      id: 'import-confirm'
+    direction: DOWN
+- tapOn:
+    id: 'import-confirm'
+- tapOn:
+    id: 'import-done'
+- assertVisible: 'Woodgrove checking.*\$4,305.*Imported .*'
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-continue'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-continue'
+- tapOn:
+    id: 'face-id-later'
+- tapOn:
+    id: 'reminders-later'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 10000
+- assertVisible: 'You can spend about \$4,305 over the next 30 days\..*'

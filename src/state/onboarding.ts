@@ -5,15 +5,20 @@
 import { create } from 'zustand';
 
 import type { DemoConnection } from '@/data/demo';
-import type {
-  Account,
-  Bill,
-  Cents,
-  ExpectedIncome,
-  IncomeType,
-  PaySchedule,
-  Transaction,
+import {
+  learnedMonthlySpend,
+  localISODate,
+  mergeImport,
+  type Account,
+  type Bill,
+  type Cents,
+  type ExpectedIncome,
+  type IncomeType,
+  type PaySchedule,
+  type Transaction,
 } from '@/domain';
+
+import { localDateTime, type ImportOutcome, type ImportPlan } from './store';
 
 export type ConnectPath = 'demo' | 'manual' | 'import';
 
@@ -40,6 +45,8 @@ interface OnboardingState extends OnboardingDraft {
   setAccount: (account: Account) => void;
   removeAccount: (id: string) => void;
   setMonthlySpend: (amount: Cents | null) => void;
+  /** S11 during setup: the file's account and transactions join the draft. */
+  importStatement: (plan: ImportPlan) => ImportOutcome;
   setLock: (on: boolean) => void;
   setReminders: (on: boolean) => void;
   clear: () => void;
@@ -71,7 +78,9 @@ const blank: OnboardingDraft = {
   reminders: false,
 };
 
-export const useOnboarding = create<OnboardingState>((set) => ({
+let draftId = 1;
+
+export const useOnboarding = create<OnboardingState>((set, get) => ({
   ...blank,
   setIncomeType: (incomeType) => set({ incomeType }),
   setPaySchedule: (paySchedule) => set({ paySchedule }),
@@ -99,6 +108,38 @@ export const useOnboarding = create<OnboardingState>((set) => ({
     })),
   removeAccount: (id) => set((s) => ({ accounts: s.accounts.filter((a) => a.id !== id) })),
   setMonthlySpend: (monthlySpend) => set({ monthlySpend }),
+  importStatement: (plan) => {
+    const s = get();
+    const account: Account = {
+      ...plan.account,
+      source: 'import',
+      lastSynced: localDateTime(new Date()),
+    };
+    const accounts = s.accounts.some((a) => a.id === account.id)
+      ? s.accounts.map((a) => (a.id === account.id ? account : a))
+      : [...s.accounts.filter((a) => a.balance !== 0 || a.source !== 'manual'), account];
+    const merge = mergeImport(
+      s.transactions,
+      plan.transactions,
+      account.id,
+      [],
+      () => `txn-draft-${draftId++}`,
+    );
+    const today = localISODate(new Date());
+    set({
+      path: 'import',
+      accounts,
+      transactions: merge.transactions,
+      monthlySpend: s.monthlySpend ?? learnedMonthlySpend(merge.transactions, today) ?? null,
+    });
+    return {
+      added: merge.added.length,
+      duplicates: merge.duplicates,
+      ...(merge.range ? { range: merge.range } : {}),
+      received: [],
+      proposals: 0,
+    };
+  },
   setLock: (lock) => set({ lock }),
   setReminders: (reminders) => set({ reminders }),
   clear: () => set(blank),

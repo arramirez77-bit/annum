@@ -45,6 +45,8 @@ export interface Account {
   lastSynced?: string;
   /** Accounts entered by hand: the day the balance was last typed in. */
   enteredOn?: ISODate;
+  /** Imported accounts: the last 4 digits from the bank file, to match the next file. */
+  last4?: string;
   /** demo: the sample bank in development builds (stands in for a bank connection). */
   source: 'teller' | 'import' | 'manual' | 'demo';
   tellerAccountId?: string;
@@ -63,6 +65,8 @@ export interface Bill {
   cadence: Cadence;
   confirmed: boolean;
   payFrom: 'checking';
+  /** A proposal the user said isn't a bill; it isn't proposed again. */
+  dismissed?: boolean;
 }
 
 export interface ExpectedIncome {
@@ -86,6 +90,8 @@ export interface Transaction {
   taxCategory?: string;
   reviewed: boolean;
   pending?: boolean;
+  /** The bank's id for it (OFX FITID, later a bank-sync id), used to skip duplicates. */
+  externalId?: string;
 }
 
 export interface Deposit {
@@ -95,6 +101,8 @@ export interface Deposit {
   source?: string;
   split?: Buckets;
   confirmed: boolean;
+  /** Imported: the account balance already includes it, so confirming doesn't add it again. */
+  inBalance?: boolean;
 }
 
 export interface DeferredPurchase {

@@ -1,0 +1,76 @@
+# M6: an OFX download with checking and savings together: import one account, then the next.
+appId: com.highdesert.annum
+name: 'Files 5: one file, two accounts'
+---
+- runFlow: ../common/start-over.yaml
+- tapOn:
+    id: 'welcome-start'
+- tapOn:
+    id: 'onboarding-skip'
+- tapOn:
+    id: 'connect-by-hand'
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-continue'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-continue'
+- tapOn:
+    id: 'face-id-later'
+- tapOn:
+    id: 'reminders-later'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 10000
+- runFlow:
+    file: ../common/open-bank-file.yaml
+    env:
+      FILE: woodgrove-both.ofx
+- assertVisible: 'This file has 2 accounts'
+- assertVisible:
+    id: 'import-statement-0'
+    selected: true
+- assertVisible:
+    id: 'import-account-checking'
+    selected: true
+- assertVisible:
+    id: 'import-balance'
+    text: '3,800'
+- scrollUntilVisible:
+    element:
+      id: 'import-confirm'
+    direction: DOWN
+- tapOn:
+    id: 'import-confirm'
+- extendedWaitUntil:
+    visible: 'Added 2 new transactions to Checking \(Sep 22 – Sep 23\)\.'
+    timeout: 5000
+- tapOn:
+    id: 'import-next-account'
+- assertVisible:
+    id: 'import-statement-1'
+    selected: true
+- assertVisible:
+    id: 'import-account-savings'
+    selected: true
+- assertVisible:
+    id: 'import-balance'
+    text: '19,100'
+- scrollUntilVisible:
+    element:
+      id: 'import-confirm'
+    direction: DOWN
+- tapOn:
+    id: 'import-confirm'
+- extendedWaitUntil:
+    visible: 'Added 1 new transaction to Savings \(Sep 21\)\.'
+    timeout: 5000
+- tapOn:
+    id: 'import-done'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 5000
+- assertVisible: 'You can spend about \$3,800 over the next 30 days\..*'
+- assertVisible: 'Runway, Not set yet.*'

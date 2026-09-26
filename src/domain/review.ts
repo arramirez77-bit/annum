@@ -54,9 +54,10 @@ export function applyTaxChanges(
  */
 export function confirmSplit(data: AppData, split: Split, landed: boolean): AppData {
   const amount = splitTotal(split);
+  const alreadyIn = data.pendingDeposit?.inBalance === true;
   let credited = false;
   const accounts = data.accounts.map((a) => {
-    if (!landed || credited || a.type !== 'savings') return a;
+    if (!landed || alreadyIn || credited || a.type !== 'savings') return a;
     credited = true;
     return { ...a, balance: a.balance + amount };
   });

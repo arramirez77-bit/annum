@@ -139,6 +139,12 @@ export default function SettingsScreen() {
         />
         <SettingsRow
           variant="chevron"
+          label="Bills"
+          onPress={() => router.push('/bills')}
+          testID="settings-bills"
+        />
+        <SettingsRow
+          variant="chevron"
           label="Add expected income"
           onPress={() => router.push('/income/new')}
           testID="settings-add-income"

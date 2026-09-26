@@ -7,6 +7,7 @@ import type {
   Account,
   Bill,
   Buckets,
+  CsvMapping,
   Cents,
   CategoryRule,
   DeferredPurchase,
@@ -41,9 +42,22 @@ export interface ReviewRecord {
   transfer?: Cents;
 }
 
-/** Preferences that aren't money settings (S3 Notifications and Privacy). */
+/** S11: what the last import did, for the result row. */
+export interface LastImport {
+  account: string;
+  on: ISODate;
+  from?: ISODate;
+  to?: ISODate;
+  added: number;
+  duplicates: number;
+}
+
+/** Preferences that aren't money settings (S3 Notifications and Privacy, S11 imports). */
 export interface Prefs {
   showAmountsOnLockScreen: boolean;
+  /** CSV column mappings the user confirmed, by the file's header row. */
+  importMappings: Record<string, CsvMapping>;
+  lastImport: LastImport | null;
   reminders: {
     /** Weekly review: 0 = Sunday … 6 = Saturday, at hour:minute. Null = off. */
     weekly: { weekday: number; hour: number; minute: number } | null;
@@ -55,6 +69,8 @@ export interface Prefs {
 
 export const DEFAULT_PREFS: Prefs = {
   showAmountsOnLockScreen: true,
+  importMappings: {},
+  lastImport: null,
   reminders: { weekly: null, cardStatements: false, quarterlyTaxes: false, deposits: false },
 };
 
@@ -113,7 +129,7 @@ const TABLES = [
     list: (s) => s.transactions,
     id: (t) => t.id,
     columns: ['account_id', 'date', 'amount', 'external_id'],
-    values: (t) => [t.accountId, t.date, t.amount, null],
+    values: (t) => [t.accountId, t.date, t.amount, t.externalId ?? null],
   }),
   table<Bill>({
     name: 'bills',

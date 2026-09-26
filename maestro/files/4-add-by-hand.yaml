@@ -1,0 +1,41 @@
+# M6 / E5: a purchase the bank file doesn't have, added by hand, shows in Transactions.
+appId: com.highdesert.annum
+name: 'Files 4: add a transaction by hand'
+---
+- runFlow: ../common/start-over.yaml
+- runFlow: ../common/sample-bank-start.yaml
+- tapOn: 'Money'
+- scrollUntilVisible:
+    element:
+      id: 'open-transactions'
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: 'open-transactions'
+- scrollUntilVisible:
+    element:
+      id: 'txn-add-more'
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: 'txn-add-more'
+- tapOn:
+    id: 'txn-amount'
+- inputText: '12'
+- runFlow: ../common/close-number-pad.yaml
+- tapOn:
+    id: 'txn-merchant'
+- inputText: 'Farmers Market'
+- pressKey: Enter
+- tapOn:
+    id: 'txn-category-Groceries'
+- scrollUntilVisible:
+    element:
+      id: 'txn-add'
+    direction: DOWN
+- tapOn:
+    id: 'txn-add'
+- extendedWaitUntil:
+    visible: 'Farmers Market, −\$12\.00, Groceries · .*'
+    timeout: 5000
+- runFlow: ../common/start-over.yaml

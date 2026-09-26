@@ -11,7 +11,29 @@
     "ios": {
       "bundleIdentifier": "com.highdesert.annum",
       "appleTeamId": "YHZESG76UG",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "Bank download",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": ["public.comma-separated-values-text", "com.highdesert.annum.ofx"]
+          }
+        ],
+        "UTImportedTypeDeclarations": [
+          {
+            "UTTypeIdentifier": "com.highdesert.annum.ofx",
+            "UTTypeDescription": "OFX bank download",
+            "UTTypeConformsTo": ["public.data"],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": ["ofx", "qfx"],
+              "public.mime-type": ["application/x-ofx", "application/vnd.intu.qfx"]
+            }
+          }
+        ],
+        "LSSupportsOpeningDocumentsInPlace": false
+      }
     },
     "plugins": [
       "expo-router",

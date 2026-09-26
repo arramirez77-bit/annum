@@ -1,0 +1,121 @@
+# M6: a CSV from checking → preview (7 transactions, balance from the file) → import → the
+# repeated rent is proposed as a bill → confirmed → Today counts it. Importing again adds
+# nothing. Then an OFX card statement becomes a new card account.
+appId: com.highdesert.annum
+name: 'Files 1: import CSV and OFX, confirm a bill'
+---
+- runFlow: ../common/start-over.yaml
+- tapOn:
+    id: 'welcome-start'
+- tapOn:
+    id: 'onboarding-skip'
+- tapOn:
+    id: 'connect-by-hand'
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-continue'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-continue'
+- tapOn:
+    id: 'face-id-later'
+- tapOn:
+    id: 'reminders-later'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 10000
+
+- runFlow:
+    file: ../common/open-bank-file.yaml
+    env:
+      FILE: woodgrove-checking.csv
+- assertVisible: '7 transactions from Jul 25 – Sep 25\.'
+- assertVisible: 'Rent Payment - City Homes.*'
+- tapOn:
+    id: 'import-account-checking'
+- assertVisible:
+    id: 'import-balance'
+    text: '4,305'
+- scrollUntilVisible:
+    element:
+      id: 'import-confirm'
+    direction: DOWN
+- assertVisible: 'Import 7 transactions'
+- tapOn:
+    id: 'import-confirm'
+- extendedWaitUntil:
+    visible:
+      id: 'import-result'
+    timeout: 5000
+- assertVisible: 'Added 7 new transactions to Checking \(Jul 25 – Sep 25\)\.'
+- assertVisible: 'Annum noticed 1 payment that looks like a bill\.'
+- takeScreenshot: m6-import-result
+- tapOn:
+    id: 'import-bills'
+- assertVisible: 'Annum noticed these'
+- assertVisible: 'About \$1,600 monthly · next Oct 25'
+- tapOn:
+    id: 'confirm-bill-rent-payment-city-homes'
+- assertVisible: 'Rent Payment - City Homes, \$1,600, Due Oct 25 · monthly'
+- takeScreenshot: m6-bills
+- runFlow: ../common/go-back.yaml
+- tapOn:
+    id: 'import-done'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 5000
+- assertVisible: 'You can spend about \$2,705 over the next 30 days\. About \$90 a day\.'
+- assertVisible: '.*Imported .*'
+
+# The same file again: nothing new.
+- runFlow:
+    file: ../common/open-bank-file.yaml
+    env:
+      FILE: woodgrove-checking.csv
+- tapOn:
+    id: 'import-account-checking'
+- assertVisible: '.*7 are already in Annum and will be skipped\.'
+- scrollUntilVisible:
+    element:
+      id: 'import-confirm'
+    direction: DOWN
+- assertVisible:
+    id: 'import-confirm'
+    enabled: false
+- assertVisible: 'Nothing new to import'
+- runFlow: ../common/go-back.yaml
+
+# An OFX card statement: a new card account, what's owed from the file.
+- runFlow:
+    file: ../common/open-bank-file.yaml
+    env:
+      FILE: contoso-card.ofx
+- assertVisible: '3 transactions from Sep 15 – Sep 24\.'
+- assertVisible:
+    id: 'import-account-new'
+    selected: true
+- tapOn:
+    id: 'import-new-name'
+- inputText: 'Contoso Card'
+- pressKey: Enter
+- assertVisible:
+    id: 'import-balance'
+    text: '570'
+- scrollUntilVisible:
+    element:
+      id: 'import-confirm'
+    direction: DOWN
+- tapOn:
+    id: 'import-confirm'
+- extendedWaitUntil:
+    visible: 'Added 3 new transactions to Contoso Card \(Sep 15 – Sep 24\)\.'
+    timeout: 5000
+- tapOn:
+    id: 'import-done'
+- tapOn:
+    id: 'open-settings'
+- scrollUntilVisible:
+    element: 'Contoso Card.*\$570 owed.*'
+    direction: DOWN

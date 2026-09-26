@@ -4,6 +4,7 @@
  */
 import type { PendingTransfer, Prefs, ReviewRecord, SplitRecord, Stored } from '@/data/repo';
 import {
+  currentDeposit,
   withDerived,
   type AppData,
   type CategoryRule,
@@ -70,12 +71,8 @@ export function storedFrom(p: Persisted): Stored {
   };
 }
 
-/** The deposit Money and the split sheet talk about: the latest one. */
-const latestDeposit = (deposits: readonly Deposit[]): Deposit | undefined =>
-  [...deposits].sort((a, b) => a.date.localeCompare(b.date)).pop();
-
 export function persistedFrom(stored: Stored, today: ISODate): Persisted {
-  const pendingDeposit = latestDeposit(stored.deposits);
+  const pendingDeposit = currentDeposit(stored.deposits);
   const data: AppData = withDerived({
     today,
     settings: stored.settings,

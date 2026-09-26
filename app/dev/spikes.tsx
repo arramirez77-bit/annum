@@ -36,6 +36,12 @@ function Spikes() {
     }
   };
 
+  const [reminders, setReminders] = useState<string[] | null>(null);
+  const showReminders = async () => {
+    const { scheduledReminderIds } = await import('@/services/notifications');
+    setReminders(await scheduledReminderIds());
+  };
+
   const passed = steps?.every((s) => s.pass) ?? false;
   return (
     <ScrollView
@@ -94,6 +100,17 @@ function Spikes() {
             />
           ))}
         </View>
+      ) : null}
+      <Button
+        variant="secondary"
+        label="Show scheduled reminders"
+        onPress={showReminders}
+        testID="show-reminders"
+      />
+      {reminders ? (
+        <Text testID="reminders-scheduled">
+          {reminders.length ? `Scheduled: ${reminders.join(', ')}` : 'Scheduled: none'}
+        </Text>
       ) : null}
       {backup ? (
         <Text testID="backup-result">

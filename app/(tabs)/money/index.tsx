@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
-import { formatDollars, formatShortDate } from '@/domain';
+import { formatDollars, formatShortDate, proposedBills } from '@/domain';
 import { useMoneyView } from '@/state/hooks';
 import { useAppStore } from '@/state/store';
 import { color, layout, space } from '@/theme';
@@ -20,6 +20,7 @@ export default function MoneyScreen() {
   const v = useMoneyView();
   const deposit = useAppStore((s) => s.data.pendingDeposit);
   const landed = deposit && !deposit.confirmed ? deposit : undefined;
+  const toReview = useAppStore((s) => proposedBills(s.data.bills).length);
 
   return (
     <ScrollView
@@ -103,8 +104,21 @@ export default function MoneyScreen() {
           variant="chevron"
           label="All transactions"
           onPress={() => router.push('/money/transactions')}
-          last={!v.showTaxes}
           testID="open-transactions"
+        />
+        <SettingsRow
+          variant="value"
+          label="Bills"
+          value={toReview ? `${toReview} to look at` : ''}
+          onPress={() => router.push('/bills')}
+          testID="open-bills"
+        />
+        <SettingsRow
+          variant="chevron"
+          label="Import a file"
+          onPress={() => router.push('/import')}
+          last={!v.showTaxes}
+          testID="open-import"
         />
         {v.showTaxes && v.taxYearLabel ? (
           <SettingsRow
