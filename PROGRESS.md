@@ -70,11 +70,20 @@ npm run worker:rotate-key
 
 What it does: makes a new random access key, gives it to the Worker as a Cloudflare secret (the old key is refused within seconds), and shows a QR code. The key is never written to a file or shown in this chat.
 
+**The QR code is the key.** Close it (press Enter; the command clears the screen) as soon as both phones have scanned it. Never screenshot it, photograph it, or send it to anyone: whoever has that picture could pair a phone.
+
 Then:
 1. **On each phone you still have** (including a new phone after **Restore from a backup**): Annum shows "Scan the new code from your laptop". Point the iPhone Camera at the QR code and tap **Open in Annum**. That's it: no bank sign-in, **no new connections**, the Plaid count doesn't change.
 2. **The lost phone can't scan the code**, so it can't reach your banks through Annum anymore. Its app is also behind Face ID or your passcode.
 3. **Old backups stay safe and still useful to you:** they hold bank tokens, but those only work together with the Plaid secret (only in Cloudflare) and a current access key (never in a backup). Restoring one later on a paired phone works without new connections.
 4. Also: use **Find My** to erase the lost iPhone.
+
+**No laptop? Cut off the lost phone from any browser** (phone or borrowed computer):
+1. Sign in at dash.cloudflare.com.
+2. **Workers & Pages** → **annum** → **Settings** → **Variables and Secrets**.
+3. Next to `ANNUM_WORKER_KEY`, choose **Edit**, and replace the value with any long random text (at least 40 characters — for example a strong password your iPhone suggests; you'll never need it). Choose **Deploy**.
+
+The old key stops working right away, so the lost phone is cut off. Your own phones are paused too: bank updates stop until you're back at your laptop, but everything on the phones, file import and typing balances keep working. When you have the laptop, run `npm run worker:rotate-key` and scan the new code on each phone as above. (Cloudflare sometimes renames dashboard menus; the Worker's secrets are always under its settings.)
 
 Why not a fully automatic fix: the Worker can only tell your phones from the lost one by something the lost phone doesn't have, and that's the new code. Ending the bank connections at Plaid would lock out the thief too, but it would also make every backup's connections useless and reconnecting would use new slots, so the command doesn't do that.
 
