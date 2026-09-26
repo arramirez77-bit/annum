@@ -18,6 +18,8 @@ export interface Settings {
   habitTransfer: { amount: Cents; cadence: 'weekly' | 'biweekly' | 'monthly' };
   modules: { tax: boolean; debt: boolean; invest: boolean };
   isEstimate: boolean;                    // true until the first weekly review completes
+  investShare: number;                    // share of what's left that goes to Invest once Runway is full (0.5)
+  paySchedule?: { amount: Cents; cadence: 'weekly' | 'biweekly' | 'monthly'; next: ISODate };  // salary
 }
 
 export interface Account {
@@ -40,7 +42,7 @@ export interface ExpectedIncome { id: string; source: string; amount: Cents; dat
 export interface Transaction {
   id: string; accountId: string; date: ISODate; merchant: string; amount: Cents;   // negative = money out
   category?: string; suggestedCategory?: string; tax: boolean; taxCategory?: string;
-  reviewed: boolean;
+  reviewed: boolean; pending?: boolean;   // pending: shown, but not counted as spending until posted
 }
 
 export interface Deposit { id: string; date: ISODate; amount: Cents; source?: string; split?: Buckets; confirmed: boolean }

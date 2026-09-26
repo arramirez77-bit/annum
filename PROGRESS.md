@@ -1,0 +1,63 @@
+# Progress
+
+Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public repo: no real names, balances, transactions or secrets here. Real banks are "Bank A", "Bank B"…
+
+## Status
+
+| Milestone | Status | Evidence |
+| --- | --- | --- |
+| M0 Project setup & dev build | ✅ Done (268f564) | Runs on iPhone + iOS 27 Simulator; 33 tests; lint/typecheck/expo-doctor green; CI green |
+| M0.5 Loop setup | ✅ Done | Baseline re-verified; this file; Human checkpoints listed |
+| M1 Domain engine | ✅ Done | `src/domain/` (13 modules, no RN imports); tests/spec now runs the 25 cases on the real engine, reference copy deleted; 81 tests (was 33); lint/typecheck/format green; Simulator still renders |
+| M2 Design system components | ⏳ Next | |
+| M3 Today, Money, What would this do? | — | |
+| M4 Weekly Review + Deposit split | — | |
+| M5 Onboarding, storage, Face ID, Settings | — | |
+| M6 Real bank data, background refresh, notifications | — | |
+| M7 Polish, accessibility, TestFlight | — | |
+| M8 Widgets | — | |
+
+## Baseline (M0.5, 2026-09-25)
+
+- `main` = 268f564, working tree clean, local == origin.
+- `npm test`: 33 passed (25 docs/03 spec cases + 5 bucket-sum checks + 3 theme checks). Lint, typecheck pass. CI on main: success.
+- Expo SDK 57.0.25 still latest stable (58 in preview). Xcode 27 only → `ios.enableSceneSupport` stays on.
+- Metro: port **8082** (8081 belongs to another project).
+
+## Human checkpoints (open)
+
+| # | Needed for | What | Status |
+| --- | --- | --- | --- |
+| H1 | M2+ visual checks | 40 screen PNGs in `docs/screens/` (git-ignored), **or** a link to the Figma file/branch that has the Screens, component, Tab Bar and Widgets pages. The connected Figma account only sees "Cover" and "Brand — Logo" in the Annum file. | Open |
+| H2 | M6 | Teller developer account: application ID (goes in local `.env`), paths to client certificate + key **outside the repo**, sandbox OK to start | Open |
+| H3 | M6 | Cloudflare account + `wrangler login` (browser approval) | Open |
+| H4 | M6 | Which banks to test (kept private; placeholders only in the repo) + go-ahead to use real accounts | Open |
+| H5 | M7 | App Store Connect: create app record (Annum, `com.highdesert.annum`), invite the second user as a team user for internal TestFlight; optional API key (.p8 outside the repo) | Open |
+| H6 | M8 | App Group `group.com.highdesert.annum` — likely registered automatically by Xcode; manual clicks only if that fails | Open |
+| H7 | M5–M8 | On-device checks: Face ID, notification permission + Sunday reminder, VoiceOver walkthrough, adding lock-screen widgets | Open |
+| H8 | M3+ | OK to install Maestro (Homebrew, free, needs Java) for flow tests — assumed yes unless told otherwise | Assumed |
+
+## Decisions log
+
+- Milestone numbering follows `docs/06-BUILD-PLAN.md` (M0–M8). The loop instructions mentioned M0.5, TestFlight in "M6" and the App Group in "M9"; the rest of that message was cut off, so docs/06 wins until clarified.
+
+**M1 — defaults chosen where docs/03 is silent (please review):**
+1. **No expected income recorded** (freelance): plan over the next **30 days** (`kind: 'none'`), so Today can say "over the next 30 days" and suggest adding an invoice.
+2. **Income due today:** per day divides by **1 day**, never 0.
+3. **Late invoice + another income due sooner:** the sooner income wins as the next income date; the late flag still triggers heads-up.
+4. **What if with nothing spendable** (ATS ≤ 0): the whole purchase counts as coming from Runway.
+5. **$0 card statements** (paid) are not subtracted and can't trigger the statement heads-up.
+6. **Spending** excludes Income, Transfer, Card payment, Savings categories and pending transactions. **4-week average** = spend in the 28 days before the week ÷ 4.
+7. **Split edit that would push Free below 0:** the edited field is capped at what fits (Free = 0) and a heads-up line shows. "Repeat the same edit twice → new default rule" is deferred to M4, where edits are recorded.
+8. **Staleness** ignores accounts entered by hand (they're updated in the weekly review, not synced).
+9. **Categorization:** merchants normalize (lowercase, store numbers/ref codes, punctuation and Inc/LLC removed); exact rule match wins, else the longest rule that prefixes the merchant. Latest correction replaces the old rule. Reviewed transactions are never re-suggested.
+10. **Recurring bills:** ≥ 3 payments to the same merchant, every amount within ±10% of the typical amount, every gap 6–8 days (weekly), 13–15 (biweekly) or 27–32 (monthly); dropped if nothing for more than two cycles. Proposed bills stay unconfirmed until the user confirms.
+11. **Money display** rounds down to whole dollars (never overstates what's spendable); transactions show cents.
+12. **Demo data** loads through `src/data/demo.ts` (the only place that reads `fixtures/`), keeping `src/domain/` free of I/O.
+
+## Dependabot (Expo-owned transitive packages — not CI failures, don't downgrade Expo)
+
+| Package | Via | Where it runs | Status |
+| --- | --- | --- | --- |
+| decode-uri-component 0.2.2 (medium) | expo-router → query-string | App (link parsing) | Open, waiting on Expo |
+| uuid 7.0.3 (medium) | expo-splash-screen → @expo/config-plugins → xcode | Build tooling only | Open, waiting on Expo |

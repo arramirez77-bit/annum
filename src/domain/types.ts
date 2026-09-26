@@ -1,0 +1,146 @@
+/** Domain types — docs/03-DATA-MODEL.md. All money is integer cents; dates are local calendar dates. */
+
+export type Cents = number;
+/** 'YYYY-MM-DD', a local calendar date (never a timestamp). */
+export type ISODate = string;
+export type IncomeType = 'freelance' | 'salary' | 'both';
+export type BucketKey = 'tax' | 'bills' | 'runway' | 'invest' | 'free';
+export type Cadence = 'weekly' | 'biweekly' | 'monthly';
+
+/** Fixed bucket order: the mark's arcs clockwise from 12, and the deposit split order. */
+export const BUCKET_KEYS: readonly BucketKey[] = ['tax', 'bills', 'runway', 'invest', 'free'];
+
+export interface PaySchedule {
+  amount: Cents;
+  cadence: Cadence;
+  next: ISODate;
+}
+
+export interface Settings {
+  incomeType: IncomeType;
+  /** 0.25 | 0.30 | 0.35 (freelance/both only). */
+  taxRate: number;
+  runwayTarget: Cents;
+  /** Estimated, then learned from 90 days of spending. */
+  monthlySpend: Cents;
+  habitTransfer: { amount: Cents; cadence: Cadence };
+  modules: { tax: boolean; debt: boolean; invest: boolean };
+  /** True until the first weekly review completes. */
+  isEstimate: boolean;
+  /** Share of what's left that goes to Invest once Runway is full (default 0.5). */
+  investShare: number;
+  /** Salary: the pay schedule that defines "next income". */
+  paySchedule?: PaySchedule;
+}
+
+export interface Account {
+  id: string;
+  name: string;
+  type: 'checking' | 'savings' | 'card' | 'brokerage' | 'loan';
+  /** Cards and loans: amount owed, positive. */
+  balance: Cents;
+  statementBalance?: Cents;
+  statementDue?: ISODate | null;
+  /** ISO datetime of the last sync. */
+  lastSynced?: string;
+  source: 'teller' | 'import' | 'manual';
+  tellerAccountId?: string;
+  enrollmentId?: string;
+  status: 'ok' | 'stale' | 'disconnected';
+}
+
+/** Labels on the savings account. Invariant: the five add up to the savings balance. */
+export type Buckets = Record<BucketKey, Cents>;
+
+export interface Bill {
+  id: string;
+  name: string;
+  amount: Cents;
+  due: ISODate;
+  cadence: Cadence;
+  confirmed: boolean;
+  payFrom: 'checking';
+}
+
+export interface ExpectedIncome {
+  id: string;
+  source: string;
+  amount: Cents;
+  date: ISODate;
+  received?: boolean;
+}
+
+export interface Transaction {
+  id: string;
+  accountId: string;
+  date: ISODate;
+  merchant: string;
+  /** Negative = money out. */
+  amount: Cents;
+  category?: string;
+  suggestedCategory?: string;
+  tax: boolean;
+  taxCategory?: string;
+  reviewed: boolean;
+  pending?: boolean;
+}
+
+export interface Deposit {
+  id: string;
+  date: ISODate;
+  amount: Cents;
+  source?: string;
+  split?: Buckets;
+  confirmed: boolean;
+}
+
+export interface DeferredPurchase {
+  id: string;
+  label: string;
+  amount: Cents;
+  waitUntil: ISODate;
+  status: 'waiting' | 'bought' | 'dropped';
+}
+
+export type TodayStatus = 'on-track' | 'heads-up' | 'estimate';
+
+/** Snapshot saved when the review week starts. */
+export interface WeekStart {
+  date: ISODate;
+  availableToSpend: Cents;
+  runway: Cents;
+}
+
+/** Spending this review week, by category, plus each category's 4-week average. */
+export interface WeekSummary {
+  start: ISODate;
+  spent: Cents;
+  byCategory: Record<string, Cents>;
+  fourWeekAvg: Record<string, Cents>;
+}
+
+export interface TaxYear {
+  year: number;
+  byCategory: Record<string, Cents>;
+  itemsByCategory: Record<string, number>;
+  nextQuarterlyDue: ISODate;
+}
+
+/** Everything the engine needs to answer "how much can I spend today?". */
+export interface AppData {
+  today: ISODate;
+  settings: Settings;
+  accounts: Account[];
+  buckets: Buckets;
+  bills: Bill[];
+  expectedIncome: ExpectedIncome[];
+  transactions: Transaction[];
+  weekStart?: WeekStart;
+  thisWeek?: WeekSummary;
+  taxYear?: TaxYear;
+  pendingDeposit?: Deposit;
+  /** Days after today a late invoice is assumed to arrive (default 5). */
+  lateAssumeDays: number;
+  /** True while savings haven't been split into buckets yet (first run). */
+  savingsUnsplit: boolean;
+}

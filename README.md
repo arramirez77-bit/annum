@@ -83,7 +83,7 @@ Annum always uses **port 8082**, so it never clashes with other Expo projects on
 ### 6. Checks
 
 ```sh
-npm test           # Jest: the 25 docs/03 test cases + fixture and theme checks
+npm test           # Jest: the 25 docs/03 test cases, engine unit tests, fixture and theme checks
 npm run lint       # ESLint + Prettier
 npm run typecheck  # TypeScript
 npx expo-doctor    # Expo project health
@@ -95,9 +95,9 @@ npx expo-doctor    # Expo project health
 | --- | --- |
 | `app/` | Screens and navigation (Expo Router). `app/(tabs)/` holds Today, Review and Money |
 | `src/theme/` | Design tokens: colors, type, spacing, motion, SF Symbols. The only place raw values live |
-| `src/domain/` | The money engine (M1): pure TypeScript formulas from `docs/03-DATA-MODEL.md` |
+| `src/domain/` | The money engine: pure TypeScript formulas from `docs/03-DATA-MODEL.md`, with unit tests in `__tests__/` |
 | `src/data/`, `src/services/`, `src/state/`, `src/ui/` | Storage and bank data, device services, app state, components (later milestones) |
-| `tests/spec/` | The docs/03 test cases. Until M1 they run against a test-only reference; M1 switches them to `src/domain/` |
+| `tests/spec/` | The docs/03 test cases, run against the engine in `src/domain/` with the demo fixtures |
 | `fixtures/` | Fictional demo data and scenarios |
 | `worker/` | Cloudflare Worker for Teller (M6) |
 
