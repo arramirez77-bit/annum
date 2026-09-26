@@ -11,7 +11,7 @@ app/
   (onboarding)/
     welcome.tsx                O1
     income.tsx                 O2 (Step 1 of 2)
-    connect.tsx                O3 Connect (Teller Connect in a web sheet) · E4 bank didn't connect (Step 2 of 2)
+    connect.tsx                O3 Connect (Plaid Link) · E4 bank didn't connect (Step 2 of 2)
     accounts.tsx               O4 Accounts found (+ add brokerage/loan by hand)
     face-id.tsx                O4b Keep it private with Face ID
     reminders.tsx              O4c Want a nudge on Sundays? → Today (estimate)
@@ -79,8 +79,8 @@ Top bar on every step: Back (not on step 1) · StepIndicator · "Finish later" (
 ### Onboarding
 - **O1 Welcome**: mark, wordmark, "Money, by the year.", three promises with bucket dots, Primary "Get started", Quiet "How your data stays private", "About 3 minutes. Every step can be skipped." 
 - **O2 Income type** (Step 1 of 2): OptionCards Freelance · Salary · Both → sets `incomeType` and modules.
-- **O3 Connect** (Step 2 of 2): numbered steps (Choose your bank → Sign in on your bank's secure page → Accounts appear), privacy note ("Free and read-only…"); Primary "Connect a bank" (Teller Connect sheet), Secondary "Import a file from my bank" → S11, Quiet "Enter balances by hand". **E4**: "That bank didn't connect" — nothing was saved; Primary "Try again", Quiet "Import a file instead".
-- **O4 Accounts found**: LedgerRows; brokerage and loans marked "entered by hand" / "tap to add balance" (→ S10); Secondary "Add another bank"; Primary "Continue".
+- **O3 Connect** (Step 2 of 2): numbered steps (Choose your bank → Sign in on your bank's secure page → Accounts appear), privacy note ("Free and read-only…"); Primary "Connect a bank" (Plaid Link), Secondary "Import a file from my bank" → S11, Quiet "Enter balances by hand". Before Link opens, a confirmation names the cost in connections: "This uses 1 of your 10 bank connections. 7 left for both phones." (see **Bank connections** below). **E4**: "That bank didn't connect" — nothing was saved and no connection was used; Primary "Try again", Quiet "Import a file instead".
+- **O4 Accounts found**: LedgerRows; brokerage and loans marked "entered by hand" / "tap to add balance" (→ S10); Secondary "Add another bank" (same confirmation as O3); Primary "Continue".
 - **O4b Face ID**: lock symbol, "Keep it private with Face ID", passcode-fallback note; Primary "Turn on Face ID", Quiet "Not now".
 - **O4c Reminders**: the four reminder types with timing; Primary "Turn on reminders" (system permission prompt), Quiet "Not now" → Today in estimate state.
 
@@ -90,12 +90,19 @@ Top bar on every step: Back (not on step 1) · StepIndicator · "Finish later" (
 - **S10 Edit balance** (sheet): account name, AmountInput "Balance today" with last-updated helper; Primary "Save", Quiet "Stop tracking this account".
 - **S11 Import a file**: three numbered steps, last-import result row (range, new, duplicates skipped); Primary "Choose file", Quiet "How to download from {bank}". **E5 empty**: info note + Secondary "Add one by hand".
 - **S2 Taxes**: tagged total sentence; categories; Tax reserve row; Primary "Export for my accountant" (CSV via share sheet), Quiet "Export as PDF" (`expo-print`).
-- **S3 Settings** (scrolls): Modules toggles; Your numbers (tax %, Runway target, usual transfer — tap to edit); Notifications (Weekly review day/time, Card statements, Quarterly taxes, Deposits and late invoices). Privacy (Face ID lock, Show amounts on lock screen, Connected banks — reconnect/disconnect Teller enrollments, Import a file, Export all data, Import backup, Delete everything).
+- **S3 Settings** (scrolls): Modules toggles; Your numbers (tax %, Runway target, usual transfer, paycheck, monthly spending, bills — tap to edit); Accounts (each account; "Bank connections: 7 of 10 left"; a connection that needs signing in again shows **Reconnect**, which repairs it without using a new one; "Add a bank" with the O3 confirmation; "Add an account by hand"; "Import a file"); Notifications (Weekly review day/time, Card statements, Quarterly taxes, Deposits and late invoices). Privacy (Face ID lock, Show amounts on lock screen, Export all data, Import backup, Delete everything).
 - **S4 Add expected income**: AmountInput, source, date; info note about late invoices; Primary "Add".
 - **S5 Locked / E6**: mark, "Your money stays on this phone.", Secondary "Unlock with Face ID"; failure → "Face ID didn't recognize you." + Quiet "Use passcode".
 - **S6 Invest handoff**: "$X is ready to invest" (Hero); LedgerRows Runway/Invest with dots; info note (Annum doesn't pick investments); Primary "I moved it", Quiet "Remind me tomorrow"; Close.
 - **S7 Waited-on purchase** (sheet): "Your invoice landed"; LedgerRows; Buy it / Wait again / Drop it.
-- **S8 Delete everything**: what goes; heads-up note; AmountInput "Type DELETE to confirm"; Secondary "Export my data first"; Destructive button disabled until the field equals DELETE.
+- **S8 Delete everything**: what goes; heads-up note; when banks are connected, a second heads-up: "Reconnecting banks later uses new connections — 7 of 10 left for both phones. A backup brings these connections back without using any." and a toggle "Also end my bank connections at Plaid" (off by default; turning it on means a backup can't bring them back); AmountInput "Type DELETE to confirm"; Secondary "Export my data first"; Destructive button disabled until the field equals DELETE.
+
+### Bank connections (Plaid Trial — the limit is for life)
+Annum runs on Plaid's free Trial: **10 bank logins in total, for life, shared by both phones**. Ending a connection doesn't give it back. So:
+- Every new connection is confirmed first, with the count ("This uses 1 of your 10 bank connections. 7 left for both phones."). With none left, "Connect a bank" explains why and offers "Import a file" instead.
+- A broken connection (the bank asks you to sign in again) is always repaired in place (**Reconnect**, Plaid's update mode), never by connecting again.
+- The count comes from the Worker, so both phones see the same number.
+- Backups carry the connections, so restoring on a new phone uses none.
 
 ## States checklist (every screen)
 
@@ -106,5 +113,5 @@ Top bar on every step: Back (not on step 1) · StepIndicator · "Finish later" (
 | Stale (>48h) | Heads-up note naming the bank and date; "about" prefix |
 | Offline | Footnote "Offline — showing what's on this phone." Actions that need the network are disabled with a reason. |
 | Locked | Content hidden behind S5; App Switcher snapshot blurred |
-| Connection problem | E4 pattern: nothing was saved, what to do next |
+| Connection problem | E4 pattern: nothing was saved (and no bank connection used), what to do next. A connection that needs signing in again → Reconnect |
 | Heads up | Umber, cause + one action; never red |

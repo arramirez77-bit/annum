@@ -10,11 +10,11 @@ Nine milestones. Each ends with something Andy can open on his iPhone and check.
 | M3 | Today, Money, What would this do? | Tabs work on demo data; scenario switcher flips states | medium |
 | M4 | Weekly Review + Deposit split | Full review flow; editable split | large |
 | M5 | Onboarding, encrypted storage, Face ID, Settings | Data survives restarts; Face ID lock; export/delete | large |
-| M6 | Real bank data (Teller + Worker + file import), background refresh, notifications | Real balances on Today; Sunday reminder arrives | large |
-| M7 | Polish, accessibility, TestFlight | App installed from TestFlight on both phones | medium |
+| M6 | Real data from files (import, bills), notifications | Real balances on Today from a bank download; Sunday reminder arrives | large |
+| M7 | Bank connection (Plaid Trial + Worker), background refresh, polish, accessibility, TestFlight | A bank connected on each phone; app installed from TestFlight on both | large |
 | M8 | Widgets | "You can spend" on the lock screen | medium |
 
-Andy's prerequisites: Apple Developer Program (already has it) before M0; free Teller developer account and free Cloudflare account before M6. **Budget: $0 new costs** — Claude Code must not add paid services.
+Andy's prerequisites: Apple Developer Program (already has it) before M0; free Plaid account (Trial plan) and free Cloudflare account before M7 (steps in `PROGRESS.md`, "Before M7"). **Budget: $0 new costs** — Claude Code must not add paid services.
 
 ---
 
@@ -93,31 +93,38 @@ Acceptance:
 
 > **Prompt:** "Do M5. Follow the storage and security section of docs/02-ARCHITECTURE.md exactly. Explain in plain language where my data lives and what happens if I get a new phone. Show that a restart keeps data and Delete everything removes it."
 
-## M6 — Real bank data, background refresh, notifications
+## M6 — Real data from files, bills, notifications
+
+(Bank connection moved to M7: Teller appears to have withdrawn its API in July 2026, and Andy chose Plaid Trial on 2026-09-26.)
 
 Acceptance:
-- **Worker** (`worker/`): Cloudflare Worker on the free plan with the Teller client certificate as an mTLS certificate binding; allowlisted read-only Teller paths; `X-Annum-Key` check; rate limit; no storage; no logging of bodies or tokens. Deployed with `wrangler`; README explains the one-time certificate upload.
-- **Teller Connect** in a WebView sheet from O3 (sandbox first, then real data); access tokens saved in the Keychain; E4 on cancel/failure.
-- Sync through the Worker: accounts, balances, transactions; dedupe by Teller ID; pending vs posted handled; "Updated 7:02 AM" on Today.
+- **File import** (S11): CSV (remembered column mapping per bank) and OFX/QFX; dedupe; result summary; "Open in Annum" from Files and Mail.
+- **Manual accounts** (S10) for brokerage and loans; "Add one by hand" for transactions.
+- Recurring bills proposed (Bills screen); categorization rules applied.
+- Local notifications per `02-ARCHITECTURE.md` with deep links; rescheduled after each import or settings change.
+- Demo mode still available in dev builds.
+
+## M7 — Bank connection (Plaid Trial), polish, accessibility, TestFlight
+
+Acceptance — bank connection:
+- **Worker** (`worker/`): Cloudflare Worker on the free plan holding `PLAID_CLIENT_ID` / `PLAID_SECRET` as secrets; an allowlist of Plaid calls (link token, token exchange, transactions sync, accounts, liabilities if the Trial includes them, item remove only on request); link tokens only ask for Trial products; `X-Annum-Key` check; rate limit; no logging of bodies or tokens. One number in Workers KV: connections used, shared by both phones; new connections refused at 10 (update mode always allowed). Deployed with `wrangler`; README explains the secrets.
+- **Spike first:** Plaid's React Native SDK (v13, Expo Modules) in a development build on Expo 57 / iOS 27, Sandbox. If it doesn't build or run, use Hosted Link in `ASWebAuthenticationSession` instead.
+- **Plaid Link** from O3 and Settings (Sandbox first, then real banks), after the "uses 1 of your 10" confirmation; access tokens saved in the encrypted database (so backups carry them; a backup with connections needs a passphrase of 12+ characters); E4 on cancel/failure.
+- **OAuth banks:** the Worker serves `apple-app-site-association`; `ios.associatedDomains` and the Dashboard's allowed redirect URI match it; a Chase-style OAuth bank works in Sandbox.
+- **Reconnect** through update mode only; never a new connection to fix one.
+- Sync through the Worker: accounts, balances, transactions (`/transactions/sync`); dedupe by Plaid ID; pending vs posted; "Updated 7:02 AM" on Today.
 - Sync on open (>6h), pull-to-refresh, and background refresh; re-auth needed → "Reconnect" state.
-- **File import** (S11): CSV (remembered column mapping per bank) and OFX/QFX; dedupe; result summary.
-- **Manual accounts** (S10) for brokerage and loans.
-- Recurring bills proposed; categorization rules applied.
-- Local notifications per `02-ARCHITECTURE.md` with deep links; rescheduled after each sync.
-- Verified with Andy's real accounts, with his go-ahead; demo mode still available in dev builds.
+- Delete everything warns that reconnecting uses new connections; optional "end my bank connections at Plaid".
+- Verified in Sandbox, then with Andy's real accounts on his go-ahead; file import keeps working.
 
-> **Prompt:** "Do M6. First read Teller's current docs (Connect, environments and free-tier limits, accounts/balances/transactions endpoints, mTLS) and Cloudflare's docs on mTLS certificate bindings for Workers, and confirm both work on free plans. Tell me what you found before writing any code. Keep the total cost at $0. Never log tokens, balances, or transactions."
-
-## M7 — Polish, accessibility, TestFlight
-
-Acceptance:
+Acceptance — polish and release:
 - Motion pass per the interaction table (count-ups, field cross-fade, sheets, bar resize) with Reduce Motion fallbacks; haptics per `04-DESIGN-SYSTEM.md`.
 - Accessibility: VoiceOver walkthrough of Today, What would this do?, and the Weekly Review; largest Dynamic Type size before accessibility sizes doesn't clip; AA contrast.
 - App icon from the mark, layered for iOS 26 appearances; launch screen `bgBase`.
 - EAS production build → TestFlight internal testing; installed on Andy's and the second user's iPhones.
 - README: install via TestFlight, back up/restore, what to do every 90 days (TestFlight expiry).
 
-> **Prompt:** "Do M7 and run the full Definition of Done from CLAUDE.md. Then walk me through adding my wife as a TestFlight tester."
+> **Prompt:** "Do M7. Start with the bank connection in Sandbox. Never create a new Plaid connection to fix one, and never leave the Trial plan. Keep the total cost at $0. Never log tokens, balances, or transactions. Then run the full Definition of Done from CLAUDE.md and walk me through adding my wife as a TestFlight tester."
 
 ## M8 — Widgets
 

@@ -112,7 +112,7 @@ Flow tests use [Maestro](https://maestro.mobile.dev): `brew install openjdk@17 m
 | `scripts/check-tokens.js` | The token check `npm run lint` runs |
 | `tests/spec/` | The docs/03 test cases, run against the engine in `src/domain/` with the demo fixtures |
 | `fixtures/` | Fictional demo data and scenarios |
-| `worker/` | Cloudflare Worker for Teller (M6) |
+| `worker/` | Cloudflare Worker that holds the Plaid keys (M7) |
 
 **`ios/` is generated, not stored in git.** `npx expo prebuild --clean` rebuilds it from `app.json`. Never edit it by hand; native settings go in `app.json` and config plugins.
 
@@ -177,7 +177,7 @@ This repository is **public**. The app handles personal finances, so the repo ho
 - Demo data in `fixtures/`. Every name and amount in it is fictional (for example "Northwind Studio", "Woodgrove Bank", "Contoso Card")
 
 **What's never committed**
-- Secrets: `.env` files, API keys, the Worker key, Teller access tokens, the Teller client certificate and private key, Apple signing certificates and profiles
+- Secrets: `.env` files, API keys (including the Plaid client ID and secret), the Worker key, Plaid access tokens, Apple signing certificates and profiles
 - Real financial data: real account names, balances and transactions, bank exports (CSV/OFX/QFX), databases, backups, or screenshots taken with real data
 - The screen PNG exports from the private Figma file (`docs/screens/` is git-ignored)
 
@@ -187,15 +187,16 @@ This repository is **public**. The app handles personal finances, so the repo ho
 | --- | --- |
 | Local development values | `.env` on your Mac (git-ignored); copy `.env.example`, which lists the names only |
 | Worker key | Cloudflare: `wrangler secret put ANNUM_WORKER_KEY` |
-| Teller client certificate + private key | Uploaded to Cloudflare with `wrangler mtls-certificate upload`, run from a folder **outside** this repo. Never stored here |
+| Plaid client ID + secret | Cloudflare secrets only: `wrangler secret put PLAID_CLIENT_ID` and `wrangler secret put PLAID_SECRET`. Never in the app, never in this repo |
 | Values needed by app builds | EAS environment variables (`eas env:create`) |
-| Teller access tokens, database key | The iPhone Keychain, per person, created at runtime |
+| Database key | The iPhone Keychain, per person, created at runtime |
+| Plaid access tokens (one per bank login) | Inside the encrypted database on each phone, so an Annum backup (itself encrypted with your passphrase) can carry them to a new phone without using new bank connections |
 
-Anything bundled into the app can be read by someone who has the installed app. The Worker key only stops casual misuse of the Worker. The real protections are the per-person Teller tokens in the Keychain and the Worker's read-only allowlist and rate limit.
+Anything bundled into the app can be read by someone who has the installed app. The Worker key only stops casual misuse of the Worker. The real protections are that the Plaid secret never leaves Cloudflare, each person's Plaid access tokens stay in their encrypted database, and the Worker allows only a short list of read-only Plaid requests, with a rate limit and a hard stop at the Trial's 10 bank connections.
 
 **Guards (three layers)**
 1. `.gitignore` excludes secret and personal-data file types.
-2. A **pre-commit hook** (`.githooks/pre-commit`) runs gitleaks on staged changes and blocks the commit if anything looks like a secret.
+2. A **pre-commit hook** (`.githooks/pre-commit`) runs gitleaks on staged changes and blocks the commit if anything looks like a secret. Its rules include Plaid client IDs and secrets (checked 2026-09-26 with fake values).
 3. **CI** (`.github/workflows/ci.yml`) runs gitleaks over the full git history on every push and pull request, plus lint and Jest once the app exists. GitHub secret scanning with push protection adds a final check on GitHub itself.
 
 **If a secret is ever committed:** rotate it first (revoke and replace it at the provider), because removing it from git history doesn't un-leak it. Then clean it out of the repo.

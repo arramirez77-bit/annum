@@ -14,7 +14,7 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 | M4 Weekly Review + Deposit split | ✅ Done | Review flow (5–6 steps, Finish later resumes), tagging with rules and live Taxes totals, Move money + pending transfer, Week reviewed; deposit split sheet + O6 first-split setup; Transactions with filters; Taxes with CSV + PDF export (share sheet). 147 tests. Maestro 12/12 flows (review, deposit, first split, taxes export added) on the iOS 27 Simulator |
 | M5 Onboarding, storage, Face ID, Settings | ✅ Done | Onboarding O1–O4c (+ restore, privacy page); SQLCipher database with migrations and change-only saves; Face ID lock (cold start, 5 min away, passcode offer), App Switcher cover (native module); Settings (modules hide everywhere, numbers, accounts, reminders, export/import backup, Delete everything); S4, S9, S10, compact Today (checked on an iPhone SE simulator). 198 tests (was 147). Maestro 16/16 flows + 5/5 Face ID lock flows on the iOS 27 Simulator: restart keeps data, Delete everything removes it, salary end to end, backup round trip incl. new phone and missing key |
 | M6 Real bank data, background refresh, notifications | ✅ Done (files path; bank sync waits for the M7 decision) | S11 import: CSV (columns guessed, confirmed ones remembered per bank) and OFX/QFX, dedupe, balance from the file, result summary; "Open in Annum" for .csv/.ofx/.qfx; rules and keyword guesses applied; expected income recognised (deposit to split); recurring bills proposed → Bills screen; "Add one by hand"; local reminders scheduled from a tested plan, with deep links. 234 tests (was 198). Maestro: main 16 + lock 5 + files 5 flows on the iOS 27 Simulator |
-| M7 Polish, accessibility, TestFlight | ⏸ Stopped for your decision (bank provider, H2) | Per your instruction, M7 starts with the provider choice; no M7 code yet. Options researched 2026-09-26: see H2 |
+| M7 Bank connection (Plaid Trial), polish, accessibility, TestFlight | ⏸ Waiting on the Before M7 steps (H3) | Provider decided (H2); docs updated from Teller to Plaid. No M7 code yet |
 | M8 Widgets | — | |
 
 ## Baseline (M0.5, 2026-09-25)
@@ -29,8 +29,8 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 | # | Needed for | What | Status |
 | --- | --- | --- | --- |
 | H1 | M2+ visual checks | 40 screen PNGs in `docs/screens/` (git-ignored), **or** a link to the Figma file/branch that has the Screens, component, Tab Bar and Widgets pages. The connected Figma account only sees "Cover" and "Brand — Logo" in the Annum file. | Open |
-| H2 | M7 | **Bank sync provider — your decision.** Researched 2026-09-26 (sources in the M7 report): **Teller** appears to have withdrawn its API in July 2026 (a Teller email posted publicly on 2026-07-09; teller.io's sign-up and pricing pages return 404; not confirmed on teller.io). **Plaid Trial**: $0, up to 10 bank logins *for life* (removing one doesn't free a slot), Transactions/Balance/Liabilities, individuals in the US allowed after identity verification, no business needed; needs the free Cloudflare Worker to hold Plaid's secret; not open if you already have an older Plaid account. **SimpleFIN Bridge**: $15/yr (+tax), no approval, no server (the phone calls it directly), up to 24 requests a day, data refreshed about daily, US banks via MX; one account per person may be needed ($30/yr for two). **Files only**: $0, already built (M6) | Pending decision |
-| H3 | M7 | Cloudflare account + `wrangler login` — only if the chosen provider needs a server-side proxy (Plaid does; SimpleFIN doesn't) | Pending H2 |
+| H2 | M7 | **Decided (Andy, 2026-09-26): Plaid Trial, with file import as the backup.** Guardrails: shared "N of 10 left" count + confirmation before every new connection; repairs only via update mode; bank tokens in the encrypted backup; Delete everything warns; Plaid secret and Worker key only in Cloudflare secrets; never leave the Trial or add paid products | Decided |
+| H3 | M7 | Plaid and Cloudflare accounts, keys set as Cloudflare secrets — the step-by-step list is under **Before M7** below | Open |
 | H4 | M7 | Which banks to test (kept private; placeholders only in the repo) + go-ahead to use real accounts | Pending H2 |
 | H5 | M7 | App Store Connect: create app record (Annum, `com.highdesert.annum`), invite the second user as a team user for internal TestFlight; optional API key (.p8 outside the repo) | Open |
 | H6 | M8 | App Group `group.com.highdesert.annum` — likely registered automatically by Xcode; manual clicks only if that fails | Open |
@@ -38,10 +38,32 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 | H9 | M5–M6 | Rebuild Annum on your iPhone once (`npm run ios:device`): M5–M6 add native modules (Face ID, notifications, file picker, date picker, App Switcher cover) and "Open in Annum" file types. The old build can't run the new screens | Open |
 | H8 | M3+ | OK to install Maestro (Homebrew, free, needs Java) for flow tests — assumed yes unless told otherwise | Installed (Maestro 2.10 + OpenJDK 17 via Homebrew, M2) |
 
+## Before M7 (Andy's steps on plaid.com and cloudflare.com)
+
+Never paste a key into a chat, an email, or a file in this repo. During M7 you'll paste each one into a Terminal prompt from `wrangler secret put`, which hides it.
+
+**Cloudflare (about 5 minutes)**
+1. Sign up at dash.cloudflare.com/sign-up on the **Free** plan. Verify your email. Don't add a payment method or choose Workers Paid.
+2. Open **Workers & Pages** and choose your **workers.dev subdomain** (for example `highdesert`). The Worker will live at `https://annum.<subdomain>.workers.dev`. Tell me the subdomain; it isn't secret.
+3. When M7 starts I'll run `npx wrangler login`. A browser tab opens: sign in and click **Allow**.
+
+**Plaid (about 10 minutes, plus approval)**
+1. Sign up at dashboard.plaid.com/signup as yourself and verify your email.
+2. Open dashboard.plaid.com/trial-plan and apply for the **Trial plan**: accept the terms and finish the identity check. Most are approved right away; some take 2–3 business days. If Plaid says your account already has Production or Limited Production access, stop and tell me.
+3. **Never click "Get Production access" or any upgrade.** It's one-way and starts billing.
+4. **Developers → Keys:** check you can see the client ID, the Sandbox secret and the Production secret. Leave them there for now.
+5. **Developers → API → Allowed redirect URIs:** add `https://annum.<subdomain>.workers.dev/plaid/oauth` (your subdomain from Cloudflare step 2). If the page asks for iOS app details, the bundle ID is `com.highdesert.annum` and the Team ID is `YHZESG76UG`.
+6. Nothing to register for the big banks: Trial includes OAuth banks; their access can take 6–24 hours after approval.
+7. Check **Usage** shows 0 of 10 Items. That page is the real count from now on.
+
+**Apple:** nothing to click. The universal link (for OAuth banks) needs the Associated Domains capability, which automatic signing adds during the build.
+
+**During M7, in Terminal (I'll give the exact commands):** `wrangler secret put PLAID_CLIENT_ID`, `wrangler secret put PLAID_SECRET` (the Sandbox secret first; the Production one when you say go), and `wrangler secret put ANNUM_WORKER_KEY` (a random key I generate into your git-ignored `.env`).
+
 ## Decisions log
 
 - Milestone numbering follows `docs/06-BUILD-PLAN.md` (M0–M8). The loop instructions mentioned M0.5, TestFlight in "M6" and the App Group in "M9"; the rest of that message was cut off, so docs/06 wins until clarified.
-- **Bank sync (Andy, 2026-09-25):** Teller has no public sign-up, so the provider is undecided. File import (S11) and manual accounts (S10) are the data path; sync sits behind a provider interface in `src/data/` so Teller, Plaid or SimpleFIN can plug in later without touching screens. The Teller-only Cloudflare Worker is on hold. At M7: stop and present the options.
+- **Bank sync (Andy, 2026-09-25 → decided 2026-09-26: Plaid Trial, file import as backup):** Teller had no public sign-up, so the provider was undecided until M7. File import (S11) and manual accounts (S10) are the data path; sync sits behind a provider interface in `src/data/` so Teller, Plaid or SimpleFIN can plug in later without touching screens. The Teller-only Cloudflare Worker is on hold. At M7: stop and present the options.
 - **M0.5 order:** the SQLCipher and widget spikes ran after M3 (they inform M5 storage and M8 widgets, not M1–M4).
 - **Widgets approach (proposal, decide at M8):** `expo-widgets` (Expo-maintained) instead of `docs/02`'s `@bacons/apple-targets`; see SPIKES.md §2.
 
@@ -126,6 +148,15 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 10. **Tapping a reminder** opens its screen (Weekly Review, Today, Taxes); if Annum is locked, it opens after unlock.
 11. **"Add one by hand"** (E5, and at the bottom of Transactions): a purchase or deposit a file doesn't have. It doesn't change the account balance (the balance is what the bank says).
 12. **Maestro:** the iOS file picker and notification taps are outside the app. `scripts/maestro-files.sh` copies the fictional bank files into the Simulator's Annum folder and opens them the way "Open in Annum" does; a development readout confirms which reminders iOS has scheduled.
+
+**M7 — Bank connection design (please review before M7 starts):**
+1. **Tokens stay on the phones.** Plaid recommends keeping access tokens on a server; Annum has none by design. Tokens live in the encrypted database and in encrypted backups (your guardrail 3), so a lost phone doesn't lose a connection that can never be replaced.
+2. **Shared count:** one number in Workers KV ("7 of 10 left" on both phones). KV can lag by about a minute, so two phones connecting at the same moment could both see the old number; Plaid's Usage page is the real count, and the Worker's number can be corrected with one command. The Worker refuses new connections at 10; repairs (update mode) are always allowed.
+3. **History:** each connection asks for 730 days of transactions (the maximum; it can't be changed later), so last year's taxes and recurring bills are there from day one.
+4. **Backups with bank connections** need a passphrase of at least 12 characters (instead of 8), since the file can reach bank data.
+5. **Delete everything:** "Also end my bank connections at Plaid" is off by default, so a backup can still bring them back; ended connections keep counting against the 10.
+6. **Balances:** Plaid's cached balances on each sync; pull-to-refresh asks for live ones (free on Trial). Card statements come from Liabilities (included in Trial).
+7. **Link:** Plaid's React Native SDK after a short compatibility spike on Expo 57 / iOS 27; Hosted Link is the fallback. WebViews are deprecated by Plaid.
 
 ## Dependabot (Expo-owned transitive packages — not CI failures, don't downgrade Expo)
 

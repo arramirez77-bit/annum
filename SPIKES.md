@@ -58,19 +58,13 @@ Short feasibility checks on the risky parts before building on them. Evidence co
 - On a real iPhone the App Group must be registered to the team (H6). Xcode's automatic signing may register it; otherwise it's a few clicks on developer.apple.com.
 - **Proposal for Andy (M8):** use `expo-widgets` instead of `@bacons/apple-targets`, and update `docs/02` then.
 
-## 3. Bank sync — pending: provider undecided
+## 3. Bank sync — decided: Plaid Trial (Andy, 2026-09-26)
 
-Teller has no public sign-up right now (Andy, 2026-09-25), so no provider is chosen. Until then the data path is **file import (S11)** and **accounts entered by hand (S10)**.
+Researched 2026-09-26: Teller appears to have withdrawn its API in July 2026; SimpleFIN costs about $15 a year per person; Plaid's Trial is free with **10 bank logins for life, shared by both phones**. Andy chose **Plaid Trial, with file import (S11) kept as the backup**. Built in M7.
 
-**Interface (`src/data/sync/provider.ts`):** `SyncProvider` with `listAccounts()`, `listTransactions(accountId, since)`, `disconnect()`, `needsNetwork`. Problems are typed — `needs-reauth`, `offline`, `provider-unavailable`, `unknown` — and map to the calm Reconnect, Offline and E4 states. `manualProvider` exists; `bankProvider` is `null`. Screens and the domain never see a provider.
+**Interface (`src/data/sync/provider.ts`):** `SyncProvider` with `listAccounts()`, `listTransactions(accountId, since)`, `disconnect()`, `needsNetwork`. Problems are typed — `needs-reauth`, `offline`, `provider-unavailable`, `unknown` — and map to the calm Reconnect, Offline and E4 states. Screens and the domain never see a provider.
 
-**A provider must supply:** accounts with type and balance (plus card statement balance and due date), transactions with stable IDs and a pending flag, and a "needs re-auth" signal.
-
-**Decision at M7 (stop condition):**
-- **Teller** — if Andy gains access (needs the Cloudflare Worker for its mTLS certificate).
-- **Plaid** free Trial — verify its current limits and terms first.
-- **SimpleFIN** — about $15 a year; needs Andy's approval (the budget is $0).
-- **File import only** — $0.
+**Andy's guardrails (the 10 logins never come back):** a shared "N of 10 left" count and a confirmation before every new connection; repairs only through Plaid's update mode; bank tokens travel in the encrypted backup; Delete everything warns before connections are lost; the Plaid secret and Worker key only in Cloudflare secrets; never leave the Trial plan or add paid products.
 
 ## Encrypted backup (M5)
 

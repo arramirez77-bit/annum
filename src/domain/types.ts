@@ -47,10 +47,14 @@ export interface Account {
   enteredOn?: ISODate;
   /** Imported accounts: the last 4 digits from the bank file, to match the next file. */
   last4?: string;
-  /** demo: the sample bank in development builds (stands in for a bank connection). */
-  source: 'teller' | 'import' | 'manual' | 'demo';
-  tellerAccountId?: string;
-  enrollmentId?: string;
+  /**
+   * plaid: a bank connection (Plaid Trial, M7) · import: CSV/OFX files · manual: typed in ·
+   * demo: the sample bank in development builds (stands in for a bank connection).
+   */
+  source: 'plaid' | 'import' | 'manual' | 'demo';
+  /** Plaid's id for this account, and for the bank login (Item) it belongs to. */
+  plaidAccountId?: string;
+  itemId?: string;
   status: 'ok' | 'stale' | 'disconnected';
 }
 

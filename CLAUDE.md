@@ -5,7 +5,7 @@ You are building **Annum**, a calm personal-finance **native iPhone app** built 
 Read these before writing code, in order:
 
 1. `docs/01-PRODUCT.md` — who it's for, principles, voice. Non-negotiable rules live here.
-2. `docs/02-ARCHITECTURE.md` — how the app works: stack, storage, security, bank data (Teller via a free Worker), notifications, widgets, costs.
+2. `docs/02-ARCHITECTURE.md` — how the app works: stack, storage, security, bank data (Plaid Trial via a free Worker), notifications, widgets, costs.
 3. `docs/03-DATA-MODEL.md` — types, formulas, rules, and test cases. **The formulas are the product.**
 4. `docs/04-DESIGN-SYSTEM.md` + `src-starter/theme.ts` — every color, size, radius, and motion value.
 5. `docs/05-SCREENS.md` — routes (Expo Router files), screen-by-screen specs, and states.
@@ -21,11 +21,12 @@ Visual reference: PNG exports of every screen go in `docs/screens/` (filenames m
 - **EAS Build + EAS Submit** → TestFlight for installing on Andy's and the second user's iPhones
 - State: **Zustand**. Storage: **expo-sqlite** with **SQLCipher** encryption; key in **expo-secure-store** (Keychain)
 - **expo-local-authentication** (Face ID), **expo-notifications** (local only), **expo-haptics**, **expo-symbols** (SF Symbols), **react-native-reanimated** (motion), **react-native-svg** (mark, rings), **expo-sharing** / **expo-file-system** / **expo-print** (exports)
-- **react-native-webview** (Teller Connect), **expo-document-picker** (CSV/OFX import)
+- **react-native-plaid-link-sdk** (Plaid Link; Hosted Link in `expo-web-browser` as the fallback), **expo-document-picker** (CSV/OFX import)
 - Background refresh: Expo's background task module
 - Widgets (M8): a **WidgetKit** extension (Swift/SwiftUI) added with an Expo config plugin such as `@bacons/apple-targets`, reading a snapshot from a shared **App Group**
 - Tests: **Jest (`jest-expo`)** for the domain engine; **Maestro** for flow tests
-- **No database server.** One tiny, stateless **Cloudflare Worker** (free plan, `worker/`) holds the Teller mTLS certificate and forwards read-only requests. Nothing else runs in the cloud.
+- **No database server.** One tiny **Cloudflare Worker** (free plan, `worker/`) holds the Plaid client ID and secret as Cloudflare secrets and forwards a short allowlist of read-only Plaid requests. It stores no financial data; one Workers KV number counts bank connections used. Nothing else runs in the cloud.
+- **Plaid Trial only (10 bank logins for life, shared by both phones).** Confirm before every new connection and show what's left; repair broken connections with update mode, never a new connection; backups carry the access tokens; never upgrade off the Trial and never add paid products.
 - **$0 budget.** Don't add any paid service, API, or subscription. If something would cost money, stop and tell Andy the free alternative.
 
 Before adding any package, check it against the current Expo SDK docs and prefer the Expo-maintained module. Tell Andy when a version or API differs from what's written here.
@@ -38,7 +39,7 @@ Before adding any package, check it against the current Expo SDK docs and prefer
 4. **Dates are local calendar dates** (`YYYY-MM-DD`). Beware off-by-one on "days until" and timezone changes.
 5. **Every screen handles its states**: empty, syncing, stale, offline, error, success (see `docs/05-SCREENS.md`).
 6. **Copy follows the voice rules.** Never "error," "failed," "warning," or red for money states. Numbers live inside sentences.
-7. **Privacy & security:** no analytics or crash SDKs that send financial data, no network calls except the Annum Worker (Teller) and Teller Connect, secrets only in Keychain, database encrypted, no logging of balances, transactions, or Teller tokens.
+7. **Privacy & security:** no analytics or crash SDKs that send financial data, no network calls except the Annum Worker and Plaid Link, secrets only in the Keychain or the encrypted database (the Plaid secret and Worker key only in Cloudflare secrets and git-ignored local files), database encrypted, no logging of balances, transactions, or Plaid tokens.
 8. **Accessibility:** system font (SF Pro) with **Dynamic Type**, VoiceOver labels on every control, 44×44pt targets, WCAG AA contrast (tokens already pass), Reduce Motion respected.
 9. **Native feel:** system navigation, sheets, and tab bar; safe areas via `react-native-safe-area-context`; haptics only where `docs/04` says.
 10. **This is a public repo.** Never commit secrets, real account names, real balances, real transactions, or screenshots taken with real data. SPIKES.md and all notes use placeholders like 'Bank A'. Demo data only in fixtures/.

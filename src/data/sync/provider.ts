@@ -1,11 +1,11 @@
 /**
- * Bank sync, provider-neutral (Andy, 2026-09-25: provider undecided — Teller, Plaid, SimpleFIN,
- * or file import only). Screens and the domain never see a provider; the data layer maps whatever
- * a provider returns into these shapes, then into domain Accounts and Transactions.
+ * Bank sync. Andy chose Plaid's free Trial (2026-09-26), with file import as the backup; the
+ * Plaid client arrives in M7. Screens and the domain never see a provider: the data layer maps
+ * what a provider returns into these shapes, then into domain Accounts and Transactions.
  */
 import type { Account, Cents, ISODate } from '@/domain';
 
-export type ProviderId = 'manual' | 'import' | 'teller' | 'plaid' | 'simplefin';
+export type ProviderId = 'manual' | 'import' | 'plaid';
 
 export interface ProviderAccount {
   /** The provider's stable id, used to dedupe across syncs. */
@@ -63,5 +63,5 @@ export const manualProvider: SyncProvider = {
   disconnect: async () => undefined,
 };
 
-/** No bank-sync provider is chosen yet; see SPIKES.md "Bank sync". */
+/** Plaid (M7). Until it's built, development builds use the sample bank. */
 export const bankProvider: SyncProvider | null = null;

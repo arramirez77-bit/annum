@@ -1,5 +1,5 @@
-# worker — Teller proxy (M6)
+# worker — Plaid proxy (M7)
 
-A tiny, stateless Cloudflare Worker (free plan) that holds the Teller client certificate via an mTLS binding and forwards read-only requests. Nothing here yet; see `docs/02-ARCHITECTURE.md`.
+A tiny Cloudflare Worker (free plan) that holds the Plaid client ID and secret as Cloudflare secrets and forwards a short allowlist of Plaid requests for the app. It stores no financial data and logs no request bodies or tokens. The one thing it keeps is a single number in Workers KV: how many bank connections have been made, so both phones show the same "7 of 10 left". See `docs/02-ARCHITECTURE.md`.
 
-The certificate and key are uploaded with `wrangler mtls-certificate upload` from a folder outside this repo. They are never stored here.
+Secrets are set with `wrangler secret put` from your Mac. They are never stored in this repo.

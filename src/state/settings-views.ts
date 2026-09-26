@@ -52,7 +52,7 @@ export function buildSettingsView(data: AppData, prefs: Prefs) {
     accounts: data.accounts.map(accountRow),
     connected: data.accounts.some((a) => a.source === 'demo')
       ? 'Sample bank'
-      : data.accounts.some((a) => a.source === 'teller')
+      : data.accounts.some((a) => a.source === 'plaid')
         ? 'Connected'
         : 'None yet',
     weekly: weeklyReminderLabel(prefs.reminders.weekly),

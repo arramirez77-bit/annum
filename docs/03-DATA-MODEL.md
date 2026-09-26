@@ -28,8 +28,8 @@ export interface Account {
   balance: Cents;                         // cards/loans: amount owed, positive
   statementBalance?: Cents; statementDue?: ISODate;   // cards
   lastSynced?: string;                    // ISO datetime
-  source: 'teller' | 'import' | 'manual';
-  tellerAccountId?: string; enrollmentId?: string;
+  source: 'plaid' | 'import' | 'manual';
+  plaidAccountId?: string; itemId?: string;   // Plaid account and bank login (Item)
   status: 'ok' | 'stale' | 'disconnected';
 }
 

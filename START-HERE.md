@@ -1,6 +1,6 @@
 # Start here (for Andy)
 
-**Budget: $0 in new costs.** Apple Developer (already paid), Expo (free), Teller (free tier), Cloudflare Worker (free).
+**Budget: $0 in new costs.** Apple Developer (already paid), Expo (free), Plaid (free Trial plan), Cloudflare Worker (free).
 
 This folder is everything Claude Code needs to build Annum as a native iPhone app with Expo. You won't write code — you'll paste prompts, tap through a few Apple screens, and check results on your phone.
 
@@ -10,7 +10,7 @@ This folder is everything Claude Code needs to build Annum as a native iPhone ap
 2. **Create an Expo account** at expo.dev (free). Builds run in Expo's cloud (EAS), so you don't need Xcode for builds. A Mac with Xcode is still handy for the iPhone Simulator.
 3. Create a GitHub repo called `annum`, unzip this kit into it, and commit. The repo is **public**, so read **Security & privacy** in `README.md` first.
 4. **Export the screen PNGs** from Figma into `docs/screens/`: open the file, press **Shift + Cmd + E**, click **Export**, and move the 40 PNGs into that folder. They stay on your Mac only (git-ignored), because the design is private. Don't commit them.
-5. Before milestone M6: create a free **Teller** developer account (teller.io — download your client certificate) and a free **Cloudflare** account (for the tiny Worker). Both stay at $0.
+5. Before milestone M7: create a free **Plaid** account on the Trial plan and a free **Cloudflare** account (for the tiny Worker). Both stay at $0. The exact steps are in `PROGRESS.md` ("Before M7").
 
 ## 2. Start Claude Code in the repo folder
 
@@ -32,7 +32,7 @@ At M7, Claude Code sets up **TestFlight**. You add your wife as a tester with he
 | --- | --- |
 | `CLAUDE.md` | Rules and stack Claude Code must follow |
 | `docs/01-PRODUCT.md` | Who it's for, principles, voice |
-| `docs/02-ARCHITECTURE.md` | How the app works: Keychain, Face ID, Teller bank data via a free Worker, notifications, widgets, and the $0 cost table |
+| `docs/02-ARCHITECTURE.md` | How the app works: Keychain, Face ID, Plaid bank data (free Trial) via a free Worker, notifications, widgets, and the $0 cost table |
 | `docs/03-DATA-MODEL.md` | Formulas and the 25 tests that prove the math |
 | `docs/04-DESIGN-SYSTEM.md` + `src-starter/theme.ts` | Components and design tokens |
 | `docs/05-SCREENS.md` | Every screen and route, with states |
