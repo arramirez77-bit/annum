@@ -53,8 +53,7 @@
       "name": "Fabrikam Invest",
       "type": "brokerage",
       "balance": 1000000,
-      "lastSynced": "2026-09-23T07:02:00",
-      "source": "teller",
+      "source": "manual",
       "status": "ok"
     },
     {

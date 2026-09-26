@@ -1,6 +1,6 @@
 # 05 — Screens and routes
 
-Screen IDs match the Figma frame names and the PNG filenames in `docs/screens/`. Figma copy is the source for wording; **numbers always come from the domain engine**, never from the mocks (the mocks show illustrative values such as "Oct 11" and "$1,820").
+Screen IDs match the Figma frame names and the PNG filenames in `docs/screens/`. Figma copy is the source for wording; **numbers always come from the domain engine**, never from the mocks. The mocks show the same fictional sample data as `fixtures/seed.json`.
 
 ## Route map (Expo Router files)
 

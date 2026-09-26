@@ -73,7 +73,7 @@ ATS is floored at 0 for display; keep the raw value for rules.
 For a new deposit `D`, propose a split in this order (each step takes `min(remaining, need)`):
 
 1. **Tax** = `round(D × taxRate)` (freelance/both only)
-2. **Bills** = bills due before the *following* income − what Bills already holds (min 0)
+2. **Bills** = `max(0, bills due in the next 30 days − buckets.bills)`
 3. **Runway** = `runwayTarget − buckets.runway` (min 0)
 4. **Invest** = only if Runway is at target after step 3: `remaining × investShare` (default 50%, a setting)
 5. **Free** = everything left
@@ -122,8 +122,8 @@ Using `fixtures/seed.json` (today = 2026-09-23):
 | 6 | What if $200 | ATS **$800**, per day **$40**, Runway unchanged, no guardrail |
 | 7 | What if $2,000 | shortfall 1,000 → Runway 11,600 / 3,000 = **3.9 mo**, guardrail shown |
 | 8 | Weekly transfer | bills by Sep 30 (150 + 50) + Contoso Card 500 + 50×7 (350) = **$1,050** |
-| 9 | Deposit $10,000 split (tax 30%, runway target 15,000) | Tax **3,000**; Bills per rule; Runway **2,400**; Invest only if Runway full; Free = remainder; total **= 10,000** |
-| 10 | Edit split: Tax → 2,500 | Free increases by 500; total still 10,000 |
+| 9 | Deposit $10,000 split (tax 30%, runway target 15,000) | Tax **3,000**; Bills **0** (2,000 due in the next 30 days − 2,000 held); Runway **2,400** (reaches the 15,000 target); Invest **2,300** (Runway now full, so 50% of the remaining 4,600); Free **2,300**; total **= 10,000** |
+| 10 | Edit split: Tax → 2,500 | Free increases by 500 (2,300 → 2,800); total still 10,000 |
 | 11 | Heads-up scenario (checking 1,200) | ATS **$200** → status **heads-up** (200 < Contoso Card 500) |
 | 12 | Salary scenario | ATS 1,700 + 1,000 − 1,600 (rent) = **$1,100**, next paycheck Oct 5 → 12 days → **$91/day** (91.67 rounded down); no tax values exposed |
 | 13 | Late invoice (today Oct 17, not received) | status **heads-up**, income assumed Oct 22, per day recomputed |
