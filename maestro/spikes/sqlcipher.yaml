@@ -1,0 +1,27 @@
+# M0.5 spike: the local database is encrypted (SPIKES.md). Run on demand, not part of `maestro test maestro/`.
+appId: com.highdesert.annum
+name: Spike SQLCipher
+---
+- stopApp
+- openLink: 'exp+annum://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082'
+- extendedWaitUntil:
+    visible:
+      id: 'status-pill'
+    timeout: 30000
+- longPressOn:
+    id: 'status-pill'
+- scrollUntilVisible:
+    element:
+      id: 'open-spikes'
+    direction: DOWN
+- tapOn:
+    id: 'open-spikes'
+- tapOn:
+    id: 'run-sqlcipher'
+- extendedWaitUntil:
+    visible: 'Reopens with the right key, Pass.*'
+    timeout: 20000
+- scrollUntilVisible:
+    element: 'SQLCipher: all checks pass'
+    direction: DOWN
+- takeScreenshot: spike-sqlcipher

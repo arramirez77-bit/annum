@@ -28,6 +28,18 @@
             "enableSceneSupport": true
           }
         }
+      ],
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "Annum uses Face ID to keep your money private."
+        }
       ]
     ],
     "experiments": {

@@ -52,6 +52,14 @@ export default function ScenariosScreen() {
             testID="open-gallery"
           />
         )}
+        {__DEV__ && (
+          <Button
+            variant="quiet"
+            label="Spikes (M0.5)"
+            onPress={() => router.push('/dev/spikes')}
+            testID="open-spikes"
+          />
+        )}
       </ScrollView>
     </>
   );
