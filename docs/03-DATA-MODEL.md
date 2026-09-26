@@ -68,12 +68,20 @@ ATS is floored at 0 for display; keep the raw value for rules.
 
 **Salary mode**: identical math; "next income" is the next paycheck from the pay schedule; Tax bucket is 0 and hidden.
 
+**Date windows** (local calendar dates). "Next N days" windows include their last day; the ATS window does not include the income day.
+
+| Window | Range | Seed (today Sep 23) |
+| --- | --- | --- |
+| Available to Spend: bills and card statements | `[today, nextIncomeDate)`: the income day is **excluded**, because money arriving that day covers bills due that day | Sep 23 – Oct 12 |
+| "Next 7 days" (weekly transfer) | today through today + 7, **inclusive** | Sep 23 – Sep 30 |
+| "Next 30 days" (deposit Bills step) | today through today + 30, **inclusive** | Sep 23 – Oct 23 |
+
 ## Deposit waterfall (`src/domain/waterfall.ts`)
 
 For a new deposit `D`, propose a split in this order (each step takes `min(remaining, need)`):
 
 1. **Tax** = `round(D × taxRate)` (freelance/both only)
-2. **Bills** = `max(0, bills due in the next 30 days − buckets.bills)`
+2. **Bills** = `max(0, bills due in the next 30 days − buckets.bills)` (today through today + 30, inclusive)
 3. **Runway** = `runwayTarget − buckets.runway` (min 0)
 4. **Invest** = only if Runway is at target after step 3: `remaining × investShare` (default 50%, a setting)
 5. **Free** = everything left
@@ -93,7 +101,7 @@ For a purchase `p`:
 suggestion = Σ card statements + bills due in the next 7 days
            + perDay × 7
 ```
-Show it relative to the habit: "You usually move $1,000. This week needs $1,050." If the suggestion is below the habit 3 weeks in a row, offer to lower the habit. The transfer is **pending** until a matching checking deposit appears in a later sync.
+"Next 7 days" is today through today + 7, inclusive. Show it relative to the habit: "You usually move $1,000. This week needs $1,050." If the suggestion is below the habit 3 weeks in a row, offer to lower the habit. The transfer is **pending** until a matching checking deposit appears in a later sync.
 
 ## Status rules (`src/domain/status.ts`)
 
@@ -130,5 +138,7 @@ Using `fixtures/seed.json` (today = 2026-09-23):
 | 14 | Stale sync (Woodgrove checking synced Sep 20, today Sep 23) | `isStale` true; status unchanged |
 | 15 | Money precision | 3 × $0.10 + $0.70 = exactly $1.00 (cents math) |
 | 16 | Timezone | "days until" is identical at 11:59 PM and 12:01 AM local on the same date |
+| 17 | Bill due on day 30 (seed + a confirmed $300 bill due Oct 23 = today + 30); deposit $10,000 | Included in "next 30 days": Bills **300** (2,300 due − 2,000 held); Tax 3,000; Runway 2,400; Invest **2,150** (50% of the remaining 4,300); Free **2,150**; total **= 10,000** |
+| 18 | Bill due on the income date (seed + a confirmed $300 bill due Oct 13) | Excluded from ATS (window is Sep 23 – Oct 12): ATS stays **$1,000**, not $700; per day **$50** |
 
 Scenario overrides live in `fixtures/scenarios.json`.

@@ -33,7 +33,7 @@ At M7, Claude Code sets up **TestFlight**. You add your wife as a tester with he
 | `CLAUDE.md` | Rules and stack Claude Code must follow |
 | `docs/01-PRODUCT.md` | Who it's for, principles, voice |
 | `docs/02-ARCHITECTURE.md` | How the app works: Keychain, Face ID, Teller bank data via a free Worker, notifications, widgets, and the $0 cost table |
-| `docs/03-DATA-MODEL.md` | Formulas and the 16 tests that prove the math |
+| `docs/03-DATA-MODEL.md` | Formulas and the 18 tests that prove the math |
 | `docs/04-DESIGN-SYSTEM.md` + `src-starter/theme.ts` | Components and design tokens |
 | `docs/05-SCREENS.md` | Every screen and route, with states |
 | `docs/06-BUILD-PLAN.md` | Milestones M0–M8 with prompts |
