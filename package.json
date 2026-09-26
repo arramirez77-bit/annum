@@ -16,6 +16,7 @@
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
+    "@expo/ui": "~57.0.20",
     "expo": "~57.0.25",
     "expo-build-properties": "~57.0.22",
     "expo-constants": "~57.0.19",
@@ -31,6 +32,7 @@
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.3",
     "expo-system-ui": "~57.0.4",
+    "expo-widgets": "~57.0.21",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",

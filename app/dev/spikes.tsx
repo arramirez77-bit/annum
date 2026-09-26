@@ -25,6 +25,24 @@ function Spikes() {
     }
   };
 
+  const [widget, setWidget] = useState<string | null>(null);
+  const sendWidget = async () => {
+    try {
+      const { AnnumSpendWidget } = await import('@/widgets/AnnumSpend');
+      AnnumSpendWidget.updateSnapshot({
+        amount: '$1,000',
+        perDay: '$50',
+        until: 'Oct 13',
+        runwayMonths: 4.2,
+        runwayTargetMonths: 5,
+      });
+      AnnumSpendWidget.reload();
+      setWidget('Widget snapshot sent');
+    } catch (e) {
+      setWidget(`That didn't work: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
   const passed = steps?.every((s) => s.pass) ?? false;
   return (
     <ScrollView
@@ -56,6 +74,13 @@ function Spikes() {
           {passed ? 'SQLCipher: all checks pass' : 'SQLCipher: a check failed'}
         </Text>
       ) : null}
+      <Button
+        variant="secondary"
+        label="Send widget snapshot"
+        onPress={sendWidget}
+        testID="send-widget"
+      />
+      {widget ? <Text testID="widget-result">{widget}</Text> : null}
       {path ? (
         <Text variant="footnote" tone="secondary" selectable testID="sqlcipher-path">
           {path}

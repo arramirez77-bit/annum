@@ -40,6 +40,23 @@
         {
           "faceIDPermission": "Annum uses Face ID to keep your money private."
         }
+      ],
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.highdesert.annum.widgets",
+          "groupIdentifier": "group.com.highdesert.annum",
+          "widgets": [
+            {
+              "name": "AnnumSpend",
+              "displayName": "You can spend",
+              "description": "What you can spend until your next income.",
+              "ios": {
+                "supportedFamilies": ["accessoryRectangular", "accessoryCircular", "systemSmall"]
+              }
+            }
+          ]
+        }
       ]
     ],
     "experiments": {
