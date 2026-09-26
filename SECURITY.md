@@ -6,8 +6,7 @@ Annum is a personal-finance iPhone app built in the open. It keeps all financial
 
 Please **don't open a public issue** for security problems.
 
-- Email **security-contact@example.com** <!-- Placeholder: Andy replaces this with a real address before the repo goes public. -->
-- Or use GitHub's private reporting: **Security** tab → **Report a vulnerability**.
+Report privately through GitHub: open this repository's **Security** tab and click **Report a vulnerability**. Only the maintainer can see the report.
 
 Include what you found, how to reproduce it, and what it could affect. You'll get a reply as soon as practical. This is a one-person project, so please allow some time.
 
