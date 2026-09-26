@@ -1,0 +1,98 @@
+{
+  "_note": "Each scenario is a deep-merge override of seed.json. Expected outcomes in docs/03-DATA-MODEL.md tests 11-14.",
+  "on-track": {},
+  "heads-up": {
+    "accounts": {
+      "chk": {
+        "balance": 120000
+      }
+    }
+  },
+  "stale-sync": {
+    "accounts": {
+      "chk": {
+        "lastSynced": "2026-09-20T07:02:00",
+        "status": "stale"
+      }
+    }
+  },
+  "late-invoice": {
+    "today": "2026-10-17",
+    "expectedIncome": {
+      "i1": {
+        "received": false
+      }
+    },
+    "_lateAssumeDays": 5
+  },
+  "first-run": {
+    "settings": {
+      "isEstimate": true
+    },
+    "buckets": {
+      "tax": 0,
+      "bills": 0,
+      "runway": 0,
+      "invest": 0,
+      "free": 0
+    },
+    "_savingsUnsplit": true
+  },
+  "salary": {
+    "settings": {
+      "incomeType": "salary",
+      "taxRate": 0,
+      "runwayTarget": 1500000,
+      "monthlySpend": 250000,
+      "modules": {
+        "tax": false,
+        "debt": false,
+        "invest": true
+      },
+      "paySchedule": {
+        "amount": 250000,
+        "cadence": "biweekly",
+        "next": "2026-10-05"
+      }
+    },
+    "accounts": {
+      "chk": {
+        "balance": 170000
+      },
+      "card": {
+        "statementBalance": 0,
+        "statementDue": null
+      },
+      "sav": {
+        "balance": 760000
+      }
+    },
+    "buckets": {
+      "tax": 0,
+      "bills": 160000,
+      "runway": 500000,
+      "invest": 0,
+      "free": 100000
+    },
+    "bills": {
+      "b1": {
+        "confirmed": false
+      },
+      "b2": {
+        "confirmed": false
+      },
+      "b4": {
+        "confirmed": false
+      },
+      "b5": {
+        "confirmed": false
+      }
+    },
+    "expectedIncome": [],
+    "_expect": {
+      "ATS": 110000,
+      "daysUntilIncome": 12,
+      "perDay": 9100
+    }
+  }
+}

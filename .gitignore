@@ -1,0 +1,49 @@
+# This repo is PUBLIC. See "Security & privacy" in README.md.
+
+# ── Secrets: never commit ─────────────────────────────────────────────
+# Real values live in a local .env, `wrangler secret put`, and EAS environment variables.
+.env*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.crt
+*.cer
+*.mobileprovision
+*.jks
+*.keystore
+certs/
+credentials.json
+GoogleService-Info.plist
+.wrangler/
+
+# ── Personal financial data: bank files, databases, exports ──────────
+*.db
+*.db-*
+*.sqlite*
+exports/
+imports/
+*.csv
+*.ofx
+*.qfx
+!fixtures/**/*.csv
+!fixtures/**/*.ofx
+!fixtures/**/*.qfx
+maestro/screenshots/
+
+# ── Design exports from the private Figma file (stay on Andy's Mac) ──
+docs/screens/*
+!docs/screens/README.md
+
+# ── Tooling (M0 adds the Expo template's entries) ────────────────────
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+/ios
+/android
+*.tsbuildinfo
+npm-debug.*
+.DS_Store

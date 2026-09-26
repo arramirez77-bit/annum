@@ -1,0 +1,217 @@
+{
+  "_note": "Fictional demo data: every name and amount is made up. All money in integer cents. today is a local date. Expected results are in docs/03-DATA-MODEL.md.",
+  "today": "2026-09-23",
+  "settings": {
+    "incomeType": "freelance",
+    "taxRate": 0.3,
+    "runwayTarget": 1500000,
+    "monthlySpend": 300000,
+    "habitTransfer": {
+      "amount": 100000,
+      "cadence": "weekly"
+    },
+    "modules": {
+      "tax": true,
+      "debt": false,
+      "invest": true
+    },
+    "isEstimate": false,
+    "investShare": 0.5
+  },
+  "accounts": [
+    {
+      "id": "chk",
+      "name": "Woodgrove checking",
+      "type": "checking",
+      "balance": 200000,
+      "lastSynced": "2026-09-23T07:02:00",
+      "source": "teller",
+      "status": "ok"
+    },
+    {
+      "id": "sav",
+      "name": "Savings",
+      "type": "savings",
+      "balance": 1910000,
+      "lastSynced": "2026-09-23T07:02:00",
+      "source": "teller",
+      "status": "ok"
+    },
+    {
+      "id": "card",
+      "name": "Contoso Card",
+      "type": "card",
+      "balance": 50000,
+      "statementBalance": 50000,
+      "statementDue": "2026-09-28",
+      "lastSynced": "2026-09-23T07:02:00",
+      "source": "teller",
+      "status": "ok"
+    },
+    {
+      "id": "brokerage",
+      "name": "Fabrikam Invest",
+      "type": "brokerage",
+      "balance": 1000000,
+      "lastSynced": "2026-09-23T07:02:00",
+      "source": "teller",
+      "status": "ok"
+    },
+    {
+      "id": "loan",
+      "name": "Student loan",
+      "type": "loan",
+      "balance": 800000,
+      "source": "manual",
+      "status": "ok"
+    }
+  ],
+  "buckets": {
+    "tax": 300000,
+    "bills": 200000,
+    "runway": 1260000,
+    "invest": 0,
+    "free": 150000
+  },
+  "bills": [
+    {
+      "id": "b1",
+      "name": "Car insurance",
+      "amount": 15000,
+      "due": "2026-09-29",
+      "cadence": "monthly",
+      "confirmed": true,
+      "payFrom": "checking"
+    },
+    {
+      "id": "b2",
+      "name": "Phone",
+      "amount": 5000,
+      "due": "2026-09-30",
+      "cadence": "monthly",
+      "confirmed": true,
+      "payFrom": "checking"
+    },
+    {
+      "id": "b3",
+      "name": "Rent",
+      "amount": 160000,
+      "due": "2026-10-01",
+      "cadence": "monthly",
+      "confirmed": true,
+      "payFrom": "checking"
+    },
+    {
+      "id": "b4",
+      "name": "Utilities",
+      "amount": 12000,
+      "due": "2026-10-05",
+      "cadence": "monthly",
+      "confirmed": true,
+      "payFrom": "checking"
+    },
+    {
+      "id": "b5",
+      "name": "Internet",
+      "amount": 8000,
+      "due": "2026-10-08",
+      "cadence": "monthly",
+      "confirmed": true,
+      "payFrom": "checking"
+    }
+  ],
+  "expectedIncome": [
+    {
+      "id": "i1",
+      "source": "Northwind Studio",
+      "amount": 500000,
+      "date": "2026-10-13",
+      "received": false
+    }
+  ],
+  "transactions": [
+    {
+      "id": "t1",
+      "accountId": "card",
+      "date": "2026-09-21",
+      "merchant": "Litware",
+      "amount": -2000,
+      "suggestedCategory": "Software",
+      "tax": true,
+      "taxCategory": "Software",
+      "reviewed": false
+    },
+    {
+      "id": "t2",
+      "accountId": "chk",
+      "date": "2026-09-22",
+      "merchant": "Corner Market",
+      "amount": -8000,
+      "suggestedCategory": "Groceries",
+      "tax": false,
+      "reviewed": false
+    },
+    {
+      "id": "t3",
+      "accountId": "card",
+      "date": "2026-09-22",
+      "merchant": "Fuel Stop",
+      "amount": -5000,
+      "suggestedCategory": "Gas",
+      "tax": false,
+      "reviewed": false
+    },
+    {
+      "id": "t4",
+      "accountId": "card",
+      "date": "2026-09-21",
+      "merchant": "Green Bowl",
+      "amount": -1500,
+      "suggestedCategory": "Dining",
+      "tax": false,
+      "reviewed": true,
+      "category": "Dining"
+    },
+    {
+      "id": "t5",
+      "accountId": "sav",
+      "date": "2026-09-21",
+      "merchant": "Northwind Studio",
+      "amount": 500000,
+      "category": "Income",
+      "tax": false,
+      "reviewed": true
+    }
+  ],
+  "thisWeek": {
+    "start": "2026-09-17",
+    "spent": 40000,
+    "byCategory": {
+      "Dining": 15000,
+      "Groceries": 12000,
+      "Gas": 4000
+    },
+    "fourWeekAvg": {
+      "Dining": 10000,
+      "Groceries": 12000,
+      "Gas": 6000
+    }
+  },
+  "taxYear": {
+    "year": 2026,
+    "byCategory": {
+      "Equipment": 200000,
+      "Software": 100000,
+      "Home office": 50000,
+      "Travel": 30000
+    },
+    "nextQuarterlyDue": "2027-01-15"
+  },
+  "pendingDeposit": {
+    "id": "d1",
+    "date": "2026-09-23",
+    "amount": 1000000,
+    "source": "Northwind Studio",
+    "confirmed": false
+  }
+}

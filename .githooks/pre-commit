@@ -1,0 +1,17 @@
+#!/bin/sh
+# Blocks any commit that contains a secret. This repo is public.
+# Turn on once per clone:  git config core.hooksPath .githooks
+# Needs gitleaks (free):   brew install gitleaks
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "Commit stopped: gitleaks isn't installed, so this commit can't be checked for secrets." >&2
+  echo "Install it with:  brew install gitleaks   and then commit again." >&2
+  exit 1
+fi
+
+if ! gitleaks git --pre-commit --staged --redact --no-banner --verbose; then
+  echo "" >&2
+  echo "Commit stopped: gitleaks found something that looks like a secret (shown above, redacted)." >&2
+  echo "Remove it from the staged files. If it was ever real, rotate it too." >&2
+  exit 1
+fi

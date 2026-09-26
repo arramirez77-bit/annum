@@ -1,0 +1,62 @@
+# Annum — instructions for Claude Code
+
+You are building **Annum**, a calm personal-finance **native iPhone app** built with **Expo (React Native + TypeScript)**, for one freelancer and, separately, his wife. Design is finished; your job is to build it faithfully and make every number real.
+
+Read these before writing code, in order:
+
+1. `docs/01-PRODUCT.md` — who it's for, principles, voice. Non-negotiable rules live here.
+2. `docs/02-ARCHITECTURE.md` — how the app works: stack, storage, security, bank data (Teller via a free Worker), notifications, widgets, costs.
+3. `docs/03-DATA-MODEL.md` — types, formulas, rules, and test cases. **The formulas are the product.**
+4. `docs/04-DESIGN-SYSTEM.md` + `src-starter/theme.ts` — every color, size, radius, and motion value.
+5. `docs/05-SCREENS.md` — routes (Expo Router files), screen-by-screen specs, and states.
+6. `docs/06-BUILD-PLAN.md` — milestones. **Build one milestone at a time, in order.**
+
+Visual reference: PNG exports of every screen go in `docs/screens/` (filenames match screen IDs like `01`, `O1`, `E1`). They are git-ignored and stay on Andy's Mac, because the design is private. Figma source: Figma file (private, ask Andy) — screens on the **Screens** page, components on the component pages.
+
+## Stack (decided — don't change without asking)
+
+- **Expo** (latest stable SDK), TypeScript strict, **iOS only**, dark mode only
+- **Expo Router** with native tabs (Today · Review · Money) and native modal / form-sheet presentations
+- **Development builds** (not Expo Go) from day one — we need native modules and, later, a widget extension
+- **EAS Build + EAS Submit** → TestFlight for installing on Andy's and the second user's iPhones
+- State: **Zustand**. Storage: **expo-sqlite** with **SQLCipher** encryption; key in **expo-secure-store** (Keychain)
+- **expo-local-authentication** (Face ID), **expo-notifications** (local only), **expo-haptics**, **expo-symbols** (SF Symbols), **react-native-reanimated** (motion), **react-native-svg** (mark, rings), **expo-sharing** / **expo-file-system** / **expo-print** (exports)
+- **react-native-webview** (Teller Connect), **expo-document-picker** (CSV/OFX import)
+- Background refresh: Expo's background task module
+- Widgets (M8): a **WidgetKit** extension (Swift/SwiftUI) added with an Expo config plugin such as `@bacons/apple-targets`, reading a snapshot from a shared **App Group**
+- Tests: **Jest (`jest-expo`)** for the domain engine; **Maestro** for flow tests
+- **No database server.** One tiny, stateless **Cloudflare Worker** (free plan, `worker/`) holds the Teller mTLS certificate and forwards read-only requests. Nothing else runs in the cloud.
+- **$0 budget.** Don't add any paid service, API, or subscription. If something would cost money, stop and tell Andy the free alternative.
+
+Before adding any package, check it against the current Expo SDK docs and prefer the Expo-maintained module. Tell Andy when a version or API differs from what's written here.
+
+## Rules
+
+1. **Domain logic is pure TypeScript in `src/domain/`**, no React Native imports, fully unit-tested against `docs/03-DATA-MODEL.md`. UI never computes money itself.
+2. **No hardcoded colors, sizes, radii, or durations.** Import from `src/theme`. If a value is missing, propose a token; don't invent one.
+3. **Money is integer cents.** Never floats. Format at the edge with `Intl.NumberFormat`.
+4. **Dates are local calendar dates** (`YYYY-MM-DD`). Beware off-by-one on "days until" and timezone changes.
+5. **Every screen handles its states**: empty, syncing, stale, offline, error, success (see `docs/05-SCREENS.md`).
+6. **Copy follows the voice rules.** Never "error," "failed," "warning," or red for money states. Numbers live inside sentences.
+7. **Privacy & security:** no analytics or crash SDKs that send financial data, no network calls except the Annum Worker (Teller) and Teller Connect, secrets only in Keychain, database encrypted, no logging of balances, transactions, or Teller tokens.
+8. **Accessibility:** system font (SF Pro) with **Dynamic Type**, VoiceOver labels on every control, 44×44pt targets, WCAG AA contrast (tokens already pass), Reduce Motion respected.
+9. **Native feel:** system navigation, sheets, and tab bar; safe areas via `react-native-safe-area-context`; haptics only where `docs/04` says.
+10. **This is a public repo.** Never commit secrets, real account names, real balances, real transactions, or screenshots taken with real data. SPIKES.md and all notes use placeholders like 'Bank A'. Demo data only in fixtures/.
+
+## Workflow
+
+- Start each milestone by restating its goal and acceptance criteria from `docs/06-BUILD-PLAN.md`, then list the files you'll touch.
+- Build in small verified steps. Run tests and check the result on Andy's iPhone (dev build) or the iOS Simulator before moving on.
+- Never mark a milestone done without running it and giving evidence (test output, Maestro result, or what you verified on device).
+- If the docs conflict or a decision is missing, stop and ask Andy one clear question with your recommended default.
+- Andy designs; he doesn't write code. Explain decisions in plain language and make setup steps copy-pasteable. Tell him exactly when he needs to tap something on his phone or in the Apple Developer site.
+
+## Definition of done (every milestone)
+
+- [ ] Runs on device or simulator; tests pass; output verified, not assumed
+- [ ] Unhappy paths handled (empty, error, slow, offline, stale)
+- [ ] No hardcoded secrets or values where tokens exist
+- [ ] AA contrast, VoiceOver labels, Dynamic Type, ≥44pt targets, Reduce Motion
+- [ ] Builds with EAS (from M0 on); TestFlight build verified from M7 on
+- [ ] README updated if setup or behavior changed
+- [ ] Self-review pass done before handing back
