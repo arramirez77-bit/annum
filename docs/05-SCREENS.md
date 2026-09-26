@@ -33,6 +33,7 @@ app/
   income/new.tsx               S4 Add expected income            presentation: 'modal'
   account/[id]/balance.tsx     S10 Edit balance (manual accounts) presentation: 'formSheet'
   import.tsx                   S11 Import a file (CSV/OFX)
+  pair.tsx                     Pair this phone (opened by the QR code from `npm run worker:rotate-key`)
   invest.tsx                   S6 Invest handoff
   deferred/[id].tsx            S7 Waited-on purchase             presentation: 'formSheet'
   settings/index.tsx           S3 Settings (pushed from Today header)
@@ -103,6 +104,7 @@ Annum runs on Plaid's free Trial: **10 bank logins in total, for life, shared by
 - A broken connection (the bank asks you to sign in again) is always repaired in place (**Reconnect**, Plaid's update mode), never by connecting again.
 - The count comes from the Worker, so both phones see the same number.
 - Backups carry the connections, so restoring on a new phone uses none.
+- **Access key:** a phone talks to the Worker only with the key it scanned from Andy's laptop. When the key is replaced (a lost phone), connected accounts show "Scan the new code from your laptop" (heads-up, not an error), and Settings → Accounts has "Scan a new access code". Scanning opens **Pair this phone**: "This phone can reach your banks again." Nothing about the bank connections changes.
 
 ## States checklist (every screen)
 

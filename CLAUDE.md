@@ -25,7 +25,7 @@ Visual reference: PNG exports of every screen go in `docs/screens/` (filenames m
 - Background refresh: Expo's background task module
 - Widgets (M8): a **WidgetKit** extension (Swift/SwiftUI) added with an Expo config plugin such as `@bacons/apple-targets`, reading a snapshot from a shared **App Group**
 - Tests: **Jest (`jest-expo`)** for the domain engine; **Maestro** for flow tests
-- **No database server.** One tiny **Cloudflare Worker** (free plan, `worker/`) holds the Plaid client ID and secret as Cloudflare secrets and forwards a short allowlist of read-only Plaid requests. It stores no financial data; one Workers KV number counts bank connections used. Nothing else runs in the cloud.
+- **No database server.** One tiny **Cloudflare Worker** (free plan, `worker/`) holds the Plaid client ID and secret as Cloudflare secrets and forwards a short allowlist of read-only Plaid requests. It stores only the connection count (one Workers KV number): no bank names, tokens or account data, and no logs. Each phone gets the Worker access key by scanning a QR code (Keychain, this device only; never bundled, never in backups); `npm run worker:rotate-key` replaces it. Nothing else runs in the cloud.
 - **Plaid Trial only (10 bank logins for life, shared by both phones).** Confirm before every new connection and show what's left; repair broken connections with update mode, never a new connection; backups carry the access tokens; never upgrade off the Trial and never add paid products.
 - **$0 budget.** Don't add any paid service, API, or subscription. If something would cost money, stop and tell Andy the free alternative.
 
@@ -39,7 +39,7 @@ Before adding any package, check it against the current Expo SDK docs and prefer
 4. **Dates are local calendar dates** (`YYYY-MM-DD`). Beware off-by-one on "days until" and timezone changes.
 5. **Every screen handles its states**: empty, syncing, stale, offline, error, success (see `docs/05-SCREENS.md`).
 6. **Copy follows the voice rules.** Never "error," "failed," "warning," or red for money states. Numbers live inside sentences.
-7. **Privacy & security:** no analytics or crash SDKs that send financial data, no network calls except the Annum Worker and Plaid Link, secrets only in the Keychain or the encrypted database (the Plaid secret and Worker key only in Cloudflare secrets and git-ignored local files), database encrypted, no logging of balances, transactions, or Plaid tokens.
+7. **Privacy & security:** no analytics or crash SDKs that send financial data, no network calls except the Annum Worker and Plaid Link, secrets only in the Keychain or the encrypted database (the Plaid secret only in Cloudflare secrets; the Worker access key only in Cloudflare secrets and each phone's Keychain), database encrypted, no logging of balances, transactions, or Plaid tokens.
 8. **Accessibility:** system font (SF Pro) with **Dynamic Type**, VoiceOver labels on every control, 44×44pt targets, WCAG AA contrast (tokens already pass), Reduce Motion respected.
 9. **Native feel:** system navigation, sheets, and tab bar; safe areas via `react-native-safe-area-context`; haptics only where `docs/04` says.
 10. **This is a public repo.** Never commit secrets, real account names, real balances, real transactions, or screenshots taken with real data. SPIKES.md and all notes use placeholders like 'Bank A'. Demo data only in fixtures/.

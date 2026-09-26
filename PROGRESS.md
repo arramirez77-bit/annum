@@ -58,7 +58,27 @@ Never paste a key into a chat, an email, or a file in this repo. During M7 you'l
 
 **Apple:** nothing to click. The universal link (for OAuth banks) needs the Associated Domains capability, which automatic signing adds during the build.
 
-**During M7, in Terminal (I'll give the exact commands):** `wrangler secret put PLAID_CLIENT_ID`, `wrangler secret put PLAID_SECRET` (the Sandbox secret first; the Production one when you say go), and `wrangler secret put ANNUM_WORKER_KEY` (a random key I generate into your git-ignored `.env`).
+**During M7, in Terminal (I'll give the exact commands):** `wrangler secret put PLAID_CLIENT_ID` and `wrangler secret put PLAID_SECRET` (the Sandbox secret first; the Production one when you say go), then `npm run worker:rotate-key` once to make the first access key and pair both phones by scanning its QR code.
+
+## If a phone is lost (or a backup file leaks)
+
+Available from M7, when the Worker exists. On your laptop, in the `annum` folder:
+
+```sh
+npm run worker:rotate-key
+```
+
+What it does: makes a new random access key, gives it to the Worker as a Cloudflare secret (the old key is refused within seconds), and shows a QR code. The key is never written to a file or shown in this chat.
+
+Then:
+1. **On each phone you still have** (including a new phone after **Restore from a backup**): Annum shows "Scan the new code from your laptop". Point the iPhone Camera at the QR code and tap **Open in Annum**. That's it: no bank sign-in, **no new connections**, the Plaid count doesn't change.
+2. **The lost phone can't scan the code**, so it can't reach your banks through Annum anymore. Its app is also behind Face ID or your passcode.
+3. **Old backups stay safe and still useful to you:** they hold bank tokens, but those only work together with the Plaid secret (only in Cloudflare) and a current access key (never in a backup). Restoring one later on a paired phone works without new connections.
+4. Also: use **Find My** to erase the lost iPhone.
+
+Why not a fully automatic fix: the Worker can only tell your phones from the lost one by something the lost phone doesn't have, and that's the new code. Ending the bank connections at Plaid would lock out the thief too, but it would also make every backup's connections useless and reconnecting would use new slots, so the command doesn't do that.
+
+
 
 ## Decisions log
 
@@ -149,7 +169,7 @@ Never paste a key into a chat, an email, or a file in this repo. During M7 you'l
 11. **"Add one by hand"** (E5, and at the bottom of Transactions): a purchase or deposit a file doesn't have. It doesn't change the account balance (the balance is what the bank says).
 12. **Maestro:** the iOS file picker and notification taps are outside the app. `scripts/maestro-files.sh` copies the fictional bank files into the Simulator's Annum folder and opens them the way "Open in Annum" does; a development readout confirms which reminders iOS has scheduled.
 
-**M7 — Bank connection design (please review before M7 starts):**
+**M7 — Bank connection design (approved by Andy, 2026-09-26, including 730 days of history and the 12-character backup passphrase):**
 1. **Tokens stay on the phones.** Plaid recommends keeping access tokens on a server; Annum has none by design. Tokens live in the encrypted database and in encrypted backups (your guardrail 3), so a lost phone doesn't lose a connection that can never be replaced.
 2. **Shared count:** one number in Workers KV ("7 of 10 left" on both phones). KV can lag by about a minute, so two phones connecting at the same moment could both see the old number; Plaid's Usage page is the real count, and the Worker's number can be corrected with one command. The Worker refuses new connections at 10; repairs (update mode) are always allowed.
 3. **History:** each connection asks for 730 days of transactions (the maximum; it can't be changed later), so last year's taxes and recurring bills are there from day one.
@@ -157,6 +177,8 @@ Never paste a key into a chat, an email, or a file in this repo. During M7 you'l
 5. **Delete everything:** "Also end my bank connections at Plaid" is off by default, so a backup can still bring them back; ended connections keep counting against the 10.
 6. **Balances:** Plaid's cached balances on each sync; pull-to-refresh asks for live ones (free on Trial). Card statements come from Liabilities (included in Trial).
 7. **Link:** Plaid's React Native SDK after a short compatibility spike on Expo 57 / iOS 27; Hosted Link is the fallback. WebViews are deprecated by Plaid.
+8. **Access key per phone, by QR code** (Andy's lost-phone request): the Worker access key isn't built into the app; each phone scans it from `npm run worker:rotate-key` and keeps it in its Keychain (never in backups). Rotating it cuts off a lost phone at once; each remaining phone scans the new code, with no new connections. This replaces the earlier plan of putting the key in the app build.
+9. **What the Worker stores: only the connection count** (one KV number). No bank names, tokens, account numbers, balances or transactions; no request or response bodies logged; Workers Logs off.
 
 ## Dependabot (Expo-owned transitive packages — not CI failures, don't downgrade Expo)
 

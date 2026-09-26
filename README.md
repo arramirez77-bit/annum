@@ -186,13 +186,13 @@ This repository is **public**. The app handles personal finances, so the repo ho
 | Secret | Lives in |
 | --- | --- |
 | Local development values | `.env` on your Mac (git-ignored); copy `.env.example`, which lists the names only |
-| Worker key | Cloudflare: `wrangler secret put ANNUM_WORKER_KEY` |
+| Worker access key | Made by `npm run worker:rotate-key`: stored as a Cloudflare secret and, on each phone, in the Keychain (scanned from a QR code). Never in the app bundle, backups, files, or this repo |
 | Plaid client ID + secret | Cloudflare secrets only: `wrangler secret put PLAID_CLIENT_ID` and `wrangler secret put PLAID_SECRET`. Never in the app, never in this repo |
 | Values needed by app builds | EAS environment variables (`eas env:create`) |
 | Database key | The iPhone Keychain, per person, created at runtime |
 | Plaid access tokens (one per bank login) | Inside the encrypted database on each phone, so an Annum backup (itself encrypted with your passphrase) can carry them to a new phone without using new bank connections |
 
-Anything bundled into the app can be read by someone who has the installed app. The Worker key only stops casual misuse of the Worker. The real protections are that the Plaid secret never leaves Cloudflare, each person's Plaid access tokens stay in their encrypted database, and the Worker allows only a short list of read-only Plaid requests, with a rate limit and a hard stop at the Trial's 10 bank connections.
+Anything bundled into the app can be read by someone who has the installed app, so the app carries only the Worker's address. The access key is per phone and can be replaced from the laptop in one command (see `PROGRESS.md`, "If a phone is lost"). The real protections are that the Plaid secret never leaves Cloudflare, each person's Plaid access tokens stay in their encrypted database, and the Worker allows only a short list of read-only Plaid requests, with a rate limit and a hard stop at the Trial's 10 bank connections.
 
 **Guards (three layers)**
 1. `.gitignore` excludes secret and personal-data file types.
