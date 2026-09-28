@@ -182,7 +182,14 @@ export type RestoreResult =
 export function restoreBackup(pickedUri: string, passphrase: string): Promise<RestoreResult> {
   return exclusive(async () => {
     const copy = new File(Paths.cache, RESTORE_NAME);
-    if (copy.exists) copy.delete();
+    // The copy and any side files an earlier restore left (a stale -wal would be read along).
+    for (const name of [
+      RESTORE_NAME,
+      ...['-wal', '-shm', '-journal'].map((s) => RESTORE_NAME + s),
+    ]) {
+      const old = new File(Paths.cache, name);
+      if (old.exists) old.delete();
+    }
     new File(pickedUri).copy(copy);
     try {
       const check = await checkBackup(copy, passphrase);
@@ -228,7 +235,11 @@ async function checkBackup(
   try {
     await db.execAsync(`PRAGMA key = ${literal(passphrase)}`);
     try {
-      await db.getFirstAsync('SELECT count(*) FROM sqlite_master');
+      // An Annum backup always has tables: opening to none means this key didn't open the file.
+      const tables = await db.getFirstAsync<{ n: number }>(
+        'SELECT count(*) AS n FROM sqlite_master',
+      );
+      if (!tables?.n) return 'wrong-passphrase';
     } catch {
       return 'wrong-passphrase';
     }
