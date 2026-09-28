@@ -175,17 +175,38 @@ export async function connectNewBank(
   return finishExchange(pending);
 }
 
+/** Pending connections being exchanged right now: one exchange at a time for each. */
+const exchanging = new Set<string>();
+
 async function finishExchange(pending: BankConnection): Promise<ConnectOutcome> {
+  if (exchanging.has(pending.itemId)) {
+    return { kind: 'finish-later', institution: pending.institution };
+  }
+  exchanging.add(pending.itemId);
+  try {
+    return await exchangeOnce(pending);
+  } finally {
+    exchanging.delete(pending.itemId);
+  }
+}
+
+async function exchangeOnce(pending: BankConnection): Promise<ConnectOutcome> {
   let out: { access_token: string; item_id: string; used: number } | null = null;
   for (let attempt = 0; !out; attempt++) {
     try {
       out = await client.exchange(pending.publicToken ?? '');
       reached();
     } catch (e) {
-      if (noted(e) === 'plaid') {
-        // Plaid refused the public token (expired or already used): nothing left to finish.
+      // The bank login already exists at Plaid and counts against the 10, so the public token
+      // is let go only when Plaid says it's unusable (expired, unknown). Anything else (Plaid
+      // busy, down for maintenance, offline) is tried again, then finished later.
+      if (
+        noted(e) === 'plaid' &&
+        e instanceof WorkerError &&
+        e.plaid?.error_code === 'INVALID_PUBLIC_TOKEN'
+      ) {
         await forget(pending);
-        return { kind: 'problem', problem: 'plaid' };
+        return { kind: 'problem', problem: 'plaid', ...plaidCode(e) };
       }
       if (attempt >= 2) return { kind: 'finish-later', institution: pending.institution };
       await wait(1500 * (attempt + 1));

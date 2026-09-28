@@ -65,6 +65,10 @@ interface FakePlaid {
   history: ReturnType<typeof txn>[];
   /** The first batch is recent only (INITIAL_UPDATE_COMPLETE); history follows next sync. */
   twoStage: boolean;
+  /** Plaid errors the next exchanges answer with, in order (then they succeed). */
+  exchangeErrors: { status: number; error_type: string; error_code: string }[];
+  /** While set, exchanges wait for it (to test two at once). */
+  exchangeGate: Promise<void> | null;
 }
 const plaid: FakePlaid = {
   calls: [],
@@ -74,6 +78,8 @@ const plaid: FakePlaid = {
   pending: 0,
   history: [],
   twoStage: false,
+  exchangeErrors: [],
+  exchangeGate: null,
 };
 const kv = new Map<string, string>();
 const workerEnv: Env = {
@@ -110,8 +116,16 @@ function fakePlaid(url: string, init: RequestInit): Promise<Response> {
       return ok({ link_token: 'link-sandbox-1' });
     case 'sandbox/public_token/create':
       return ok({ public_token: 'public-sandbox-1' });
-    case 'item/public_token/exchange':
-      return ok({ access_token: 'access-sandbox-1', item_id: 'item-1' });
+    case 'item/public_token/exchange': {
+      const failure = plaid.exchangeErrors.shift();
+      if (failure) {
+        const { status, ...error } = failure;
+        return Promise.resolve(new Response(JSON.stringify(error), { status }));
+      }
+      const gate = plaid.exchangeGate;
+      const answer = () => ok({ access_token: 'access-sandbox-1', item_id: 'item-1' });
+      return gate ? gate.then(answer) : answer();
+    }
     case 'accounts/get':
     case 'accounts/balance/get':
       return ok({
@@ -238,6 +252,8 @@ beforeEach(() => {
   plaid.pending = 0;
   plaid.history = [];
   plaid.twoStage = false;
+  plaid.exchangeErrors = [];
+  plaid.exchangeGate = null;
   mockPhoneKey = 'k'.repeat(43);
   link.mockReset();
   link.mockResolvedValue({
@@ -363,6 +379,48 @@ describe('connecting during setup', () => {
     await finishPendingExchanges();
     expect(s().connections).toMatchObject([{ itemId: 'item-1', status: 'ok' }]);
     expect([...mockDisk.keys()]).toEqual(['item-1']);
+  });
+
+  it('keeps a connection through a Plaid hiccup at exchange (it already counts)', async () => {
+    plaid.exchangeErrors = [
+      { status: 500, error_type: 'API_ERROR', error_code: 'INTERNAL_SERVER_ERROR' },
+    ];
+    expect(await connectNewBank()).toMatchObject({ kind: 'connected' });
+    expect(s().connections).toMatchObject([{ itemId: 'item-1', status: 'ok' }]);
+    expect(plaid.calls.filter((c) => c === 'item/public_token/exchange')).toHaveLength(2);
+  });
+
+  it('finishes later when Plaid stays busy, instead of letting the connection go', async () => {
+    const busy = { status: 429, error_type: 'RATE_LIMIT_EXCEEDED', error_code: 'RATE_LIMIT' };
+    plaid.exchangeErrors = [busy, busy, busy];
+    expect(await connectNewBank()).toEqual({ kind: 'finish-later', institution: 'Bank A' });
+    expect(s().connections).toMatchObject([{ status: 'exchanging' }]);
+    await finishPendingExchanges();
+    expect(s().connections).toMatchObject([{ itemId: 'item-1', status: 'ok' }]);
+  });
+
+  it('lets a connection go only when Plaid says its public token is unusable', async () => {
+    plaid.exchangeErrors = [
+      { status: 400, error_type: 'INVALID_INPUT', error_code: 'INVALID_PUBLIC_TOKEN' },
+    ];
+    expect(await connectNewBank()).toMatchObject({ kind: 'problem', problem: 'plaid' });
+    expect(s().connections).toEqual([]);
+    expect([...mockDisk.keys()]).toEqual([]);
+  });
+
+  it('never exchanges the same connection twice at once', async () => {
+    let open: () => void = () => undefined;
+    plaid.exchangeGate = new Promise<void>((resolve) => (open = resolve));
+    const first = connectNewBank();
+    // Coming back to the app mid-exchange also looks for unfinished connections.
+    for (let i = 0; i < 20 && !s().connections.length; i++) {
+      await new Promise<void>((resolve) => setImmediate(() => resolve()));
+    }
+    const second = finishPendingExchanges();
+    open();
+    await Promise.all([first, second]);
+    expect(plaid.calls.filter((c) => c === 'item/public_token/exchange')).toHaveLength(1);
+    expect(s().connections).toMatchObject([{ itemId: 'item-1', status: 'ok' }]);
   });
 
   it('lets go of an unfinished connection after the 30 minutes Plaid allows', async () => {
