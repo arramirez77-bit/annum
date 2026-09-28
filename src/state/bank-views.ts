@@ -76,7 +76,7 @@ export const notFinishedMessage = (institution: string): Message => ({
 
 export const finishLaterMessage = (institution: string): Message => ({
   title: `${institution} is almost connected`,
-  body: 'Annum will finish bringing it in as soon as this phone is back online. It won’t use another connection.',
+  body: 'Annum will finish bringing it in shortly, or as soon as this phone is back online. It won’t use another connection.',
   action: 'done',
 });
 

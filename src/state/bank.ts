@@ -390,15 +390,21 @@ async function syncConnection(
   }
 }
 
-let running: Promise<void> | null = null;
+/** The sync under way, and what it was asked for. */
+let running: { done: Promise<void>; force: boolean; live: boolean } | null = null;
 
 /**
  * Sync every connection that's due: on open when the last sync is over 6 hours old; `force`
  * for pull-to-refresh (with live balances) and after pairing. One sync at a time.
  */
 export function syncAll(options: { live?: boolean; force?: boolean } = {}): Promise<void> {
-  if (running) return running;
-  running = (async () => {
+  if (running) {
+    // A pull-to-refresh while a routine sync runs: wait for it, then do what was asked (live
+    // balances, every connection) unless the running one already does.
+    const covered = (!options.force || running.force) && (!options.live || running.live);
+    return covered ? running.done : running.done.then(() => syncAll(options));
+  }
+  const done = (async () => {
     const s = app();
     if (s.mode !== 'real' || !s.loaded) return;
     await finishPendingExchanges();
@@ -419,7 +425,8 @@ export function syncAll(options: { live?: boolean; force?: boolean } = {}): Prom
   })().finally(() => {
     running = null;
   });
-  return running;
+  running = { done, force: !!options.force, live: !!options.live };
+  return done;
 }
 
 /**
@@ -470,11 +477,22 @@ export async function endConnectionsAtPlaid(): Promise<{ ended: number; notEnded
         continue;
       }
     }
-    // Ended for good: forget it now, so trying again only asks about the rest.
+    // Ended for good: forget it now, so trying again only asks about the rest. Its accounts
+    // keep their last balances, kept by hand from now on (if Delete everything doesn't go
+    // ahead, they'd otherwise look like a bank that stopped updating).
     await forget(c);
+    keepByHand(c.itemId);
     ended++;
   }
   return { ended, notEnded };
+}
+
+function keepByHand(itemId: string): void {
+  const s = app();
+  for (const a of s.data.accounts.filter((x) => x.itemId === itemId)) {
+    const { itemId: _item, plaidAccountId: _plaid, lastSynced: _synced, ...rest } = a;
+    s.saveAccount({ ...rest, source: 'manual', enteredOn: s.data.today, status: 'ok' });
+  }
 }
 
 /** Plaid says the connection is already gone (or can never be reached): nothing to end. */

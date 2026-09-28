@@ -76,8 +76,9 @@ interface FakePlaid {
   exchangeGate: Promise<void> | null;
   /** While set, transactions/sync waits for it (to change things while a sync is out). */
   syncGate: Promise<void> | null;
-  /** What item/remove answers instead of success. */
+  /** What item/remove answers instead of success (for every token, or just `removeErrorFor`). */
   removeError: { status: number; error_type: string; error_code: string } | null;
+  removeErrorFor: string | null;
 }
 const plaid: FakePlaid = {
   calls: [],
@@ -91,6 +92,7 @@ const plaid: FakePlaid = {
   exchangeGate: null,
   syncGate: null,
   removeError: null,
+  removeErrorFor: null,
 };
 const kv = new Map<string, string>();
 const workerEnv: Env = {
@@ -233,7 +235,10 @@ function fakePlaid(url: string, init: RequestInit): Promise<Response> {
             },
       );
     case 'item/remove':
-      if (plaid.removeError) {
+      if (
+        plaid.removeError &&
+        (!plaid.removeErrorFor || body.access_token === plaid.removeErrorFor)
+      ) {
         const { status, ...error } = plaid.removeError;
         return Promise.resolve(new Response(JSON.stringify(error), { status }));
       }
@@ -278,6 +283,7 @@ beforeEach(() => {
   plaid.exchangeGate = null;
   plaid.syncGate = null;
   plaid.removeError = null;
+  plaid.removeErrorFor = null;
   mockOnPut = null;
   setBankTestDoubles({ later: never });
   mockPhoneKey = 'k'.repeat(43);
@@ -578,6 +584,20 @@ describe('syncing', () => {
     expect(plaid.calls).toContain('accounts/balance/get');
   });
 
+  it('a pull-to-refresh during a routine sync still asks for live balances', async () => {
+    realWith([connected]);
+    let open: () => void = () => undefined;
+    plaid.syncGate = new Promise<void>((resolve) => (open = resolve));
+    const routine = syncAll(); // due: last synced a week ago
+    for (let i = 0; i < 20 && !plaid.calls.includes('transactions/sync'); i++) {
+      await new Promise<void>((resolve) => setImmediate(() => resolve()));
+    }
+    const pulled = syncAll({ live: true, force: true });
+    open();
+    await Promise.all([routine, pulled]);
+    expect(plaid.calls).toContain('accounts/balance/get');
+  });
+
   it('drops a sync that comes back after Delete everything', async () => {
     realWith([connected]);
     let open: () => void = () => undefined;
@@ -695,6 +715,38 @@ describe('pairing and ending', () => {
     expect(plaid.calls).toEqual(
       expect.arrayContaining(['item/public_token/exchange', 'item/remove']),
     );
+  });
+
+  it('an ended bank’s accounts are kept by hand if the rest can’t be ended', async () => {
+    realWith([connected, { ...connected, itemId: 'item-2', accessToken: 'access-sandbox-2' }]);
+    s().saveAccount({
+      id: 'a1',
+      name: 'Bank A checking',
+      type: 'checking',
+      balance: 12000,
+      source: 'plaid',
+      plaidAccountId: 'pa-chk',
+      itemId: 'item-1',
+      lastSynced: '2026-09-27T07:02:00',
+      status: 'ok',
+    });
+    plaid.removeError = {
+      status: 500,
+      error_type: 'API_ERROR',
+      error_code: 'INTERNAL_SERVER_ERROR',
+    };
+    plaid.removeErrorFor = 'access-sandbox-2';
+    expect(await endConnectionsAtPlaid()).toEqual({ ended: 1, notEnded: 1 });
+    expect(s().connections.map((c) => c.itemId)).toEqual(['item-2']);
+    const [a] = s().data.accounts;
+    expect(a).toMatchObject({
+      id: 'a1',
+      source: 'manual',
+      balance: 12000,
+      enteredOn: '2026-09-27',
+    });
+    expect(a.itemId).toBeUndefined();
+    expect(a.plaidAccountId).toBeUndefined();
   });
 
   it('ends none when the Worker can’t be reached, so nothing is left half ended', async () => {
