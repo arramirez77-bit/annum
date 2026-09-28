@@ -28,9 +28,10 @@ name: Component gallery
     id: 'split-tax-amount'
 - eraseText: 10
 - inputText: '2500'
-# Number pad has no Return key: dragging the page dismisses it (keyboardDismissMode on-drag).
-- swipe:
-    direction: UP
+# Number pad has no Return key: the Done bar above it closes it (a swipe only works when the
+# on-screen keyboard shows, which a headless Simulator may not).
+- tapOn:
+    id: 'keyboard-done'
 - scrollUntilVisible:
     element: 'Free, .2,800. Absorbs changes'
     direction: DOWN
