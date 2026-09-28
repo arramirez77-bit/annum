@@ -28,6 +28,7 @@ import {
   SegmentedControl,
   SettingsGroup,
   SettingsRow,
+  ProfileButton,
   StatusPill,
   StepIndicator,
   Text,
@@ -196,7 +197,7 @@ function Gallery() {
         </View>
       </Section>
 
-      <Section title="Toggle · StatusPill · StepIndicator">
+      <Section title="Toggle · StatusPill · ProfileButton · StepIndicator">
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[16] }}>
           <Toggle value={toggle} onValueChange={setToggle} accessibilityLabel="Example toggle" />
           <Toggle
@@ -209,6 +210,7 @@ function Gallery() {
           <StatusPill status="on-track" />
           <StatusPill status="heads-up" />
           <StatusPill status="estimate" onLongPress={noop} />
+          <ProfileButton onPress={noop} testID="gallery-profile" />
         </View>
         <StepIndicator step={1} total={5} />
         <StepIndicator step={3} total={5} />

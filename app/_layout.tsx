@@ -73,7 +73,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="what-if" options={modalScreen} />
           <Stack.Screen name="deposit/[id]/index" options={formSheet([1])} />
-          <Stack.Screen name="deposit/[id]/setup" options={formSheet([1])} />
+          <Stack.Screen name="deposit/[id]/setup" options={formSheet('fitToContents')} />
           <Stack.Screen name="income/new" options={modalScreen} />
           <Stack.Screen name="settings/index" options={pushedHeader('Settings', 'Today')} />
           <Stack.Screen name="settings/number/[key]" options={formSheet([0.6, 1])} />
@@ -91,7 +91,7 @@ export default function RootLayout() {
         <Stack.Protected guard={phase === 'onboarding'}>
           <Stack.Screen name="(onboarding)" />
         </Stack.Protected>
-        <Stack.Screen name="account/[id]/balance" options={formSheet([0.7, 1])} />
+        <Stack.Screen name="account/[id]/balance" options={formSheet('fitToContents')} />
         <Stack.Screen name="import" options={pushedHeader('Import a file', 'Back')} />
         <Stack.Screen name="bank/connect" options={formSheet([0.7, 1])} />
         <Stack.Screen name="pair" options={modalScreen} />

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
-import { Pressable, RefreshControl, ScrollView, useWindowDimensions, View } from 'react-native';
+import { RefreshControl, ScrollView, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -14,8 +15,8 @@ import { syncAll, useBank } from '@/state/bank';
 import { todayBankFootnote, todayBankNote } from '@/state/bank-views';
 import { useTodayView } from '@/state/hooks';
 import { useAppStore } from '@/state/store';
-import { color, layout, motion, opacity, radius, space, symbols } from '@/theme';
-import { Button, GuardrailNote, Icon, LedgerRow, StatusPill, Text } from '@/ui/components';
+import { color, layout, motion, radius, space } from '@/theme';
+import { Button, GuardrailNote, LedgerRow, ProfileButton, StatusPill, Text } from '@/ui/components';
 import { useCountUp } from '@/ui/motion';
 
 // 01 Today (+02 heads-up, O5 estimate, E1 stale, E2 late, P2 salary, 01c compact). docs/05.
@@ -53,9 +54,13 @@ export default function TodayScreen() {
   }));
 
   const secondary = v.caution ? 'onCautionSecondary' : 'secondary';
+  const insets = useSafeAreaInsets();
 
   return (
-    <Animated.View style={[{ flex: 1 }, fieldStyle]} testID="today">
+    // The scroll view starts below the status bar (the field color fills behind it), so its
+    // height is exactly what's visible: the sheet's bottom padding then clears the floating tab
+    // bar as in Figma, and the pull-to-refresh spinner shows below the status bar.
+    <Animated.View style={[{ flex: 1, paddingTop: insets.top }, fieldStyle]} testID="today">
       {/* Behind the scroll view: the sheet color fills the lower half, so the area under the
           floating tab bar stays light when the sheet is scrolled to its end. */}
       <View
@@ -70,24 +75,27 @@ export default function TodayScreen() {
       />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
-        contentInsetAdjustmentBehavior="automatic"
+        contentInsetAdjustmentBehavior="never"
         showsVerticalScrollIndicator={false}
         refreshControl={refresh}
       >
+        {/* The field takes the spare height, so the sheet sits at the bottom (Figma 01, 01c). */}
         <Animated.View
           style={[
             {
-              paddingTop: space[8],
-              paddingBottom: space[40],
+              flexGrow: 1,
+              paddingTop: compact ? space[24] : space[12],
+              paddingBottom: space[12],
               paddingHorizontal: layout.todayMargin,
             },
             fieldStyle,
           ]}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[8] }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[12] }}>
             <View style={{ flex: 1 }}>
-              <Text variant="footnote" tone={secondary} testID="today-updated">
-                {`${v.dateLabel} · ${syncing && !demo ? 'Updating…' : v.updatedLabel}`}
+              <Text variant="callout" tone={secondary} testID="today-updated">
+                {/* 01c: the small screen shows only when it was updated. */}
+                {`${compact ? '' : `${v.dateLabel} · `}${syncing && !demo ? 'Updating…' : v.updatedLabel}`}
               </Text>
             </View>
             <StatusPill
@@ -95,23 +103,7 @@ export default function TodayScreen() {
               testID="status-pill"
               onLongPress={demo || __DEV__ ? () => router.push('/dev/scenarios') : undefined}
             />
-            <Pressable
-              onPress={() => router.push('/settings')}
-              accessibilityRole="button"
-              accessibilityLabel="Settings"
-              testID="open-settings"
-              style={({ pressed }) => [
-                {
-                  width: layout.touchTarget,
-                  height: layout.touchTarget,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                },
-                pressed && { opacity: opacity.pressed },
-              ]}
-            >
-              <Icon name={symbols.settings} />
-            </Pressable>
+            <ProfileButton onPress={() => router.push('/settings')} testID="open-settings" />
           </View>
 
           <View
@@ -119,14 +111,18 @@ export default function TodayScreen() {
             accessibilityRole="header"
             accessibilityLabel={v.heroLabel}
             testID="today-hero"
-            style={{ marginTop: compact ? layout.todayTopCompact : space[48], gap: space[4] }}
+            style={{
+              // Figma: 12pt gaps, with a 40pt spacer under the header (8pt on the small screen).
+              marginTop: space[12] * 2 + (compact ? space[8] : space[40]),
+              gap: space[12],
+            }}
           >
-            <Text variant="sentence">{v.lead}</Text>
+            <Text variant={compact ? 'sentenceCompact' : 'sentence'}>{v.lead}</Text>
             <Text variant={compact ? 'display' : 'hero'} money testID="today-amount">
               {formatDollars(shown)}
             </Text>
             <Text
-              variant="sentence"
+              variant={compact ? 'sentenceCompact' : 'sentence'}
               numberOfLines={compact ? 1 : undefined}
               adjustsFontSizeToFit={compact}
             >
@@ -143,13 +139,12 @@ export default function TodayScreen() {
         </Animated.View>
 
         {/* Field color behind the sheet's rounded corners. */}
-        <Animated.View style={[{ flexGrow: 1 }, fieldStyle]}>
+        <Animated.View style={fieldStyle}>
           <View
             style={{
-              flexGrow: 1,
               paddingHorizontal: layout.screenMargin,
-              paddingTop: space[16],
-              paddingBottom: space[24],
+              paddingTop: space[12],
+              paddingBottom: compact ? layout.todaySheetBottomCompact : layout.todaySheetBottom,
               gap: space[16],
               borderTopLeftRadius: radius.sheet,
               borderTopRightRadius: radius.sheet,

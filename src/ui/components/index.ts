@@ -14,6 +14,7 @@ export { KeyboardDoneBar } from './KeyboardDoneBar';
 export { LedgerRow } from './LedgerRow';
 export { Mark, Wordmark } from './Mark';
 export { OptionCard } from './OptionCard';
+export { ProfileButton } from './ProfileButton';
 export { ScreenPlaceholder } from './ScreenPlaceholder';
 export { ScreenScroll } from './ScreenScroll';
 export { SegmentedControl } from './SegmentedControl';

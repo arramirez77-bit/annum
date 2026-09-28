@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { Linking, Pressable, ScrollView, View } from 'react-native';
+import { Linking, ScrollView, View } from 'react-native';
 
 import { formatDollars, type Cadence, type Cents } from '@/domain';
 import {
@@ -13,12 +13,13 @@ import {
   reviewSteps,
 } from '@/state/review-views';
 import { clockFor, useAppStore } from '@/state/store';
-import { layout, opacity, space, color } from '@/theme';
+import { layout, space, color } from '@/theme';
 import {
   AmountInput,
   Button,
   DeltaCard,
   GuardrailNote,
+  HeaderButton,
   LedgerRow,
   SegmentedControl,
   SpendBar,
@@ -26,29 +27,6 @@ import {
   Text,
   TransactionCard,
 } from '@/ui/components';
-
-function HeaderButton({
-  label,
-  onPress,
-  testID,
-}: {
-  label: string;
-  onPress: () => void;
-  testID: string;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      hitSlop={space[8]}
-      testID={testID}
-      style={({ pressed }) => pressed && { opacity: opacity.pressed }}
-    >
-      <Text>{label}</Text>
-    </Pressable>
-  );
-}
 
 function StepScroll({ children, testID }: { children: ReactNode; testID: string }) {
   return (

@@ -70,8 +70,9 @@ export const layout = {
   chipHeight: 36,
   touchTarget: 44,
   tabBarBottomOffset: 28,
+  todaySheetBottom: 112,        // Today sheet bottom padding: clears the floating tab bar (Figma 01)
+  todaySheetBottomCompact: 100, // the same on the small screen (Figma 01c)
   compactHeight: 700,     // screens shorter than this use the compact Today (01c)
-  todayTopCompact: 44,    // compact Today: field top padding (docs/04)
 } as const;
 
 export const radius = { sm: 8, md: 14, lg: 16, sheet: 28, full: 999 } as const;
@@ -92,6 +93,8 @@ export const size = {
   iconSmall: 13,     // SF Symbol beside Caption text
   hairline: 1,       // input and outline borders (hairlines use StyleSheet.hairlineWidth)
   fieldHeight: 50,   // text inputs: same height as a button (proposed, M5)
+  profileButton: 40, // Profile Button circle (Figma 117:1581); tap area stays layout.touchTarget
+  profileGlyph: 18,  // person.fill inside the Profile Button (Medium weight)
 } as const;
 
 /** Dynamic Type caps (maxFontSizeMultiplier): Hero/Display 1.3, everything else 2.0. */
@@ -112,6 +115,7 @@ export const type = {
   title1:     { fontSize: 34, lineHeight: 40, fontWeight: '600', letterSpacing: -0.4 },
   title2:     { fontSize: 28, lineHeight: 34, fontWeight: '600', letterSpacing: -0.3 },
   sentence:   { fontSize: 24, lineHeight: 32, fontWeight: '400' },
+  sentenceCompact: { fontSize: 20, lineHeight: 26, fontWeight: '400' }, // Annum/Sentence Compact: hero sentence on small screens (01c)
   headline:   { fontSize: 17, lineHeight: 22, fontWeight: '600' },
   body:       { fontSize: 17, lineHeight: 24, fontWeight: '400' },
   bodyMedium: { fontSize: 17, lineHeight: 24, fontWeight: '500' },
@@ -144,6 +148,7 @@ export const symbols = {
   lock: 'lock.fill',
   faceId: 'faceid',
   settings: 'person.crop.circle',
+  profile: 'person.fill',          // Profile Button (opens Settings)
   share: 'square.and.arrow.up',
   headsUp: 'exclamationmark.triangle',
   tabToday: 'sun.max',

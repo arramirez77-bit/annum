@@ -4,7 +4,7 @@ Tokens: `src-starter/theme.ts` → copy to `src/theme/index.ts`. Components impo
 
 ## Foundations
 
-- **Type:** iOS system font (SF Pro) — no font files. Eight sizes (Hero 72, Display 56, Title 1 34, Title 2 28, Sentence 24, Body/Headline 17, Callout/Subhead 15, Footnote/Caption 13). Support **Dynamic Type** with the caps in `theme.ts`; money uses `tabular-nums`.
+- **Type:** iOS system font (SF Pro) — no font files. Eight sizes (Hero 72, Display 56, Title 1 34, Title 2 28, Sentence 24, Body/Headline 17, Callout/Subhead 15, Footnote/Caption 13), plus **Sentence Compact 20/26** for the hero sentences on small screens (01c, Figma `Annum/Sentence Compact`). Support **Dynamic Type** with the caps in `theme.ts`; money uses `tabular-nums`.
 - **Hero numbers** always sit inside a sentence ("You can spend … $1,000 … until your next invoice…").
 - **Space:** 4pt scale. Screen margin 24, Today field margin 28, 20 between a title and its content. Respect safe areas.
 - **Radius:** cards 16, inputs 14, sheets 28, buttons/pills/chips full.
@@ -24,6 +24,7 @@ Tokens: `src-starter/theme.ts` → copy to `src/theme/index.ts`. Components impo
 | **Chip** | category · tax; selected | 36pt visual with `hitSlop` to 44pt. Tax: outline `bucket.tax`; selected = filled + `checkmark` symbol. Selection haptic. |
 | **Toggle** | on | Native `Switch` with `trackColor` on = `statusOk` |
 | **StatusPill** | on-track · heads-up · estimate | overlaySubtle fill, 7pt dot, Caption. Long-press opens the scenario switcher (demo mode) |
+| **ProfileButton** | — | Figma 117:1581. 40pt circle (`size.profileButton`), overlaySubtle fill, SF Symbol `person.fill` 18pt Medium (`size.profileGlyph`), textPrimary; 44pt tap area (hitSlop 2); VoiceOver "Settings". In every Today header; opens Settings |
 | **StepIndicator** | step, total | 22×4 segments; filled textPrimary, rest overlayMuted; `accessibilityLabel="Step N of M"` |
 | **GuardrailNote** | tone: info · heads-up; surface: dark · light | radius md, 12/16 padding, 8pt dot; dark text on light surfaces |
 | **BucketRow** | card · split | dot + name + one-line note + amount; split puts the amount in an editable chip (numeric keypad) |
@@ -38,7 +39,7 @@ Tokens: `src-starter/theme.ts` → copy to `src/theme/index.ts`. Components impo
 
 ## Screen shells
 
-- **TodayShell:** full-bleed field color that cross-fades (600ms) between `bgField` and `bgFieldCaution`; header (date · StatusPill · settings symbol); sentence hero with count-up; light sheet with LedgerRows + one Button; native tab bar.
+- **TodayShell:** full-bleed field color that cross-fades (600ms) between `bgField` and `bgFieldCaution`; header (date · Updated time in Callout, or only the time on small screens · StatusPill · ProfileButton, 12pt apart); the field takes the spare height so the sheet sits at the bottom, its bottom padding clearing the floating tab bar (`layout.todaySheetBottom` 112, compact 100); sentence hero with count-up; light sheet with LedgerRows + one Button; native tab bar.
 - **DarkShell:** `bgBase`, safe areas, header, scroll content, bottom-pinned action area above the home indicator.
 - **FormSheet:** native sheet over `bgDeep` dimming.
 

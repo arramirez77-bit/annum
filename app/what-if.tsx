@@ -1,28 +1,13 @@
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { formatDollars, type Cents } from '@/domain';
 import { useWhatIfView } from '@/state/hooks';
 import { useAppStore } from '@/state/store';
-import { color, layout, opacity, space } from '@/theme';
-import { AmountInput, Button, GuardrailNote, LedgerRow, Text } from '@/ui/components';
+import { color, layout, space } from '@/theme';
+import { AmountInput, Button, GuardrailNote, HeaderButton, LedgerRow } from '@/ui/components';
 import { useCountUp } from '@/ui/motion';
-
-function Cancel() {
-  return (
-    <Pressable
-      onPress={() => router.back()}
-      accessibilityRole="button"
-      accessibilityLabel="Cancel"
-      testID="what-if-cancel"
-      hitSlop={space[8]}
-      style={({ pressed }) => pressed && { opacity: opacity.pressed }}
-    >
-      <Text>Cancel</Text>
-    </Pressable>
-  );
-}
 
 // 10 fits · 11 guardrail. docs/05.
 export default function WhatIfScreen() {
@@ -53,7 +38,14 @@ export default function WhatIfScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'What would this do?', headerLeft: () => <Cancel /> }} />
+      <Stack.Screen
+        options={{
+          title: 'What would this do?',
+          headerLeft: () => (
+            <HeaderButton label="Cancel" onPress={() => router.back()} testID="what-if-cancel" />
+          ),
+        }}
+      />
       <ScrollView
         style={{ backgroundColor: color.bgBase }}
         contentContainerStyle={{ padding: layout.screenMargin, gap: space[24] }}
