@@ -1,0 +1,35 @@
+# M7: a backup carries bank connections. With only a Sandbox bank on the phone, the backup check
+# (Spikes screen, real storage code) exports, restores, restores on a "new phone" (erased), and
+# scans the access code again (a backup never holds it), and syncs the restored connection: it
+# works without Link or a new connection. The Simulator stays paired afterwards.
+appId: com.highdesert.annum
+name: Bank 6 · backup with a bank
+---
+- runFlow: 1-connect-during-setup.yaml
+- longPressOn:
+    id: 'status-pill'
+- scrollUntilVisible:
+    element:
+      id: 'open-spikes'
+    direction: DOWN
+- tapOn:
+    id: 'open-spikes'
+- scrollUntilVisible:
+    element:
+      id: 'run-backup'
+    direction: DOWN
+- tapOn:
+    id: 'run-backup'
+- scrollUntilVisible:
+    element:
+      id: 'backup-result'
+    direction: DOWN
+    timeout: 90000
+- assertVisible: 'Backup: all checks pass'
+- assertVisible: 'Bank connections come back.*Pass.*'
+- assertVisible: 'New phone: restore from Welcome.*Pass.*'
+- assertVisible: 'New phone: bank connections back.*Pass.*'
+- assertVisible: 'New phone: scan the code again.*Pass.*'
+- assertVisible: 'Restored bank syncs, no new connection.*Pass.*'
+- assertVisible: 'Key missing: calm screen, then restore.*Pass.*'
+- takeScreenshot: m7-backup-with-bank
