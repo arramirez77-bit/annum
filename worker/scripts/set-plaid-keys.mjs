@@ -64,7 +64,7 @@ async function readPiped() {
   return text.split('\n');
 }
 
-/** "24 · hex": a key's shape, never its value (same idea as shapeOf in src/handler.ts). */
+/** "24 characters · hex": a key's shape, never its value. */
 function shapeOf(value) {
   if (!value) return 'empty';
   const kinds = [

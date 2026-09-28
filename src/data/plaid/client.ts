@@ -122,10 +122,6 @@ export function workerClient(options: WorkerClientOptions) {
   return {
     status: () => call<WorkerStatus>('status', {}),
 
-    /** Development: each Plaid key's length and kind of characters (never the value). */
-    keyShapes: () =>
-      call<{ shapes: Record<string, string> }>('status', { diagnose: true }).then((r) => r.shapes),
-
     /** A link token for a new connection. */
     linkToken: (env: PlaidEnv, clientUserId: string) =>
       call<{ link_token: string }>('link-token', { env, client_user_id: clientUserId }).then(

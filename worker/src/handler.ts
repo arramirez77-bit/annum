@@ -85,18 +85,6 @@ const json = (status: number, body: unknown): Response =>
 const refuse = (status: number, problem: string, extra: Record<string, unknown> = {}) =>
   json(status, { problem, ...extra });
 
-/** "24 · letters and digits", or what else is in it: a key's shape, never its value. */
-export function shapeOf(value: string | undefined): string {
-  if (!value) return 'not set';
-  const kinds = [
-    /^[0-9a-f]+$/.test(value) ? 'hex' : /^[A-Za-z0-9]+$/.test(value) ? 'letters and digits' : null,
-    /[^\x21-\x7e]/.test(value) ? 'hidden or non-ASCII characters' : null,
-    /["'`]/.test(value) ? 'quotes' : null,
-    /[•*]/.test(value) ? 'mask dots' : null,
-  ].filter(Boolean);
-  return `${value.length} · ${kinds.join(', ') || 'mixed characters'}`;
-}
-
 /** Compare without leaking how much matched through timing. */
 export function sameKey(a: string, b: string): boolean {
   const x = new TextEncoder().encode(a);
@@ -198,17 +186,6 @@ export async function handle(request: Request, env: Env, fetchPlaid: Fetch): Pro
       left: Math.max(0, CONNECTION_LIMIT - used),
       sandbox: !!env.PLAID_SECRET_SANDBOX,
       production: !!env.PLAID_SECRET_PRODUCTION,
-      // Development check of pasted keys: each one's length and kind of characters, never
-      // the value (so a key pasted with a stray character or from a masked field shows up).
-      ...(body.diagnose === true
-        ? {
-            shapes: {
-              clientId: shapeOf(clientId),
-              sandbox: shapeOf(clean(env.PLAID_SECRET_SANDBOX)),
-              production: shapeOf(clean(env.PLAID_SECRET_PRODUCTION)),
-            },
-          }
-        : {}),
     });
   }
 

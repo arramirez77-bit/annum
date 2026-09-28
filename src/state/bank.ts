@@ -398,18 +398,6 @@ export async function endConnectionsAtPlaid(): Promise<number> {
   return ended;
 }
 
-/** Development builds: the shape of the Worker's Plaid keys, to spot a bad paste. */
-export async function workerKeyShapes(): Promise<string> {
-  try {
-    const shapes = await client.keyShapes();
-    return Object.entries(shapes)
-      .map(([name, shape]) => `${name}: ${shape}`)
-      .join('\n');
-  } catch (e) {
-    return `Couldn’t ask: ${noted(e)}`;
-  }
-}
-
 /** Development builds: make a Sandbox connection ask to sign in again, to try Reconnect. */
 export async function breakSandboxConnection(): Promise<boolean> {
   const c = app().connections.find((x) => x.env === 'sandbox' && x.accessToken);
