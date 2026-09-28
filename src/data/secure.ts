@@ -72,14 +72,21 @@ export const setLockEnabled = (on: boolean): Promise<void> =>
  * when the Keychain item ("when unlocked") can't be read. Never logged, never written elsewhere.
  */
 let workerKey: string | null | undefined;
+/** Bumped by every save or delete, so a Keychain read that was already under way can't put an
+ * older key back. */
+let keyVersion = 0;
 
 export async function readWorkerKey(): Promise<string | null> {
   if (workerKey !== undefined) return workerKey;
-  workerKey = await SecureStore.getItemAsync(WORKER_KEY, storeOptions({}));
-  return workerKey;
+  const version = keyVersion;
+  const read = await SecureStore.getItemAsync(WORKER_KEY, storeOptions({}));
+  if (version !== keyVersion) return workerKey ?? null;
+  workerKey = read;
+  return read;
 }
 
 export async function saveWorkerKey(key: string): Promise<void> {
+  keyVersion++;
   await SecureStore.setItemAsync(WORKER_KEY, key, storeOptions({}));
   workerKey = key;
 }
@@ -101,6 +108,7 @@ export async function deleteAllSecrets(options: { keepPairing?: boolean } = {}):
   await SecureStore.deleteItemAsync(LOCK_KEY);
   // Development "start over" keeps the pairing so test runs don't need a new code each time.
   if (!options.keepPairing) {
+    keyVersion++;
     workerKey = undefined;
     await SecureStore.deleteItemAsync(WORKER_KEY);
   }

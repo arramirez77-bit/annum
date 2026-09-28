@@ -7,7 +7,6 @@ import type { BankChanges } from '@/domain';
 
 import {
   mapTransaction,
-  problemOf,
   type PlaidAccount,
   type PlaidCreditLiability,
   type PlaidError,
@@ -154,7 +153,7 @@ export function workerClient(options: WorkerClientOptions) {
       }).then((r) => r.link_token),
 
     exchange: (publicToken: string) =>
-      call<{ access_token: string; item_id: string; used: number }>(
+      call<{ access_token: string; item_id: string; used?: number }>(
         'exchange',
         { public_token: publicToken },
         // Plaid only exchanges a public token once: wait longer rather than lose the answer.
@@ -184,11 +183,9 @@ export function workerClient(options: WorkerClientOptions) {
         return r.liabilities.credit ?? [];
       } catch (e) {
         // Card statements are extra: whatever Plaid says about them (not supported, not ready,
-        // more consent needed, busy) skips them this time instead of stopping the sync. Signing
-        // in again still goes through, so Reconnect shows.
-        if (e instanceof WorkerError && e.plaid && problemOf(e.plaid) !== 'needs-reauth') {
-          return [];
-        }
+        // access not granted, busy) skips them this time instead of stopping the sync. If the
+        // whole connection needs signing in again, transactions/sync says so right after.
+        if (e instanceof WorkerError && e.problem === 'plaid') return [];
         throw e;
       }
     },

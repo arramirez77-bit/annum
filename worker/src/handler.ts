@@ -256,17 +256,20 @@ export async function handle(request: Request, env: Env, fetchPlaid: Fetch): Pro
       const out = (await r.res.json()) as { access_token: string; item_id: string };
       // The access token must reach the phone whatever happens to the count (it's a courtesy
       // number; Plaid's Dashboard is the real one): a KV hiccup here would lose the connection.
-      let used = 0;
+      // Then the answer carries no count, and the phone keeps the one it shows.
+      let used: number | undefined;
       try {
-        used = await readCount(env);
-        if (plaidEnv === 'production') {
-          used += 1;
-          await env.COUNT.put(COUNT_KEY, String(used));
-        }
+        const before = await readCount(env);
+        if (plaidEnv === 'production') await env.COUNT.put(COUNT_KEY, String(before + 1));
+        used = plaidEnv === 'production' ? before + 1 : before;
       } catch {
-        // Keep going: the phone gets its token; the count can be corrected from the Dashboard.
+        used = undefined;
       }
-      return json(200, { access_token: out.access_token, item_id: out.item_id, used });
+      return json(200, {
+        access_token: out.access_token,
+        item_id: out.item_id,
+        ...(used === undefined ? {} : { used }),
+      });
     }
 
     if (route === 'sandbox/connect') {

@@ -26,10 +26,15 @@ import { useAppStore } from '../store';
 
 const mockDisk = new Map<string, BankConnection>();
 const mockSaves: string[] = [];
+/** Runs once inside the next save (to start something while a connection is being saved). */
+let mockOnPut: (() => void) | null = null;
 jest.mock('@/data/storage', () => ({
   putConnection: jest.fn(async (c: BankConnection) => {
     mockSaves.push(`${c.itemId}:${c.status}`);
     mockDisk.set(c.itemId, c);
+    const hook = mockOnPut;
+    mockOnPut = null;
+    hook?.();
   }),
   deleteConnection: jest.fn(async (id: string) => void mockDisk.delete(id)),
   loadConnections: jest.fn(async () => [...mockDisk.values()]),
@@ -71,6 +76,8 @@ interface FakePlaid {
   exchangeGate: Promise<void> | null;
   /** While set, transactions/sync waits for it (to change things while a sync is out). */
   syncGate: Promise<void> | null;
+  /** What item/remove answers instead of success. */
+  removeError: { status: number; error_type: string; error_code: string } | null;
 }
 const plaid: FakePlaid = {
   calls: [],
@@ -83,6 +90,7 @@ const plaid: FakePlaid = {
   exchangeErrors: [],
   exchangeGate: null,
   syncGate: null,
+  removeError: null,
 };
 const kv = new Map<string, string>();
 const workerEnv: Env = {
@@ -225,6 +233,10 @@ function fakePlaid(url: string, init: RequestInit): Promise<Response> {
             },
       );
     case 'item/remove':
+      if (plaid.removeError) {
+        const { status, ...error } = plaid.removeError;
+        return Promise.resolve(new Response(JSON.stringify(error), { status }));
+      }
       return ok({ request_id: 'r' });
     default:
       return Promise.resolve(new Response('{}', { status: 404 }));
@@ -265,6 +277,8 @@ beforeEach(() => {
   plaid.exchangeErrors = [];
   plaid.exchangeGate = null;
   plaid.syncGate = null;
+  plaid.removeError = null;
+  mockOnPut = null;
   setBankTestDoubles({ later: never });
   mockPhoneKey = 'k'.repeat(43);
   link.mockReset();
@@ -418,6 +432,13 @@ describe('connecting during setup', () => {
     expect(await connectNewBank()).toMatchObject({ kind: 'not-finished', institution: 'Bank A' });
     expect(s().connections).toEqual([]);
     expect([...mockDisk.keys()]).toEqual([]);
+  });
+
+  it('coming back to the app mid-exchange shares the answer, not "finish later"', async () => {
+    // e.g. an OAuth bank hands back to Annum: the app turns active while Link's result is saved.
+    mockOnPut = () => void finishPendingExchanges();
+    expect(await connectNewBank()).toMatchObject({ kind: 'connected', institution: 'Bank A' });
+    expect(plaid.calls.filter((c) => c === 'item/public_token/exchange')).toHaveLength(1);
   });
 
   it('never exchanges the same connection twice at once', async () => {
@@ -649,6 +670,39 @@ describe('pairing and ending', () => {
     expect(await endConnectionsAtPlaid()).toEqual({ ended: 2, notEnded: 0 });
     expect(plaid.calls.filter((c) => c === 'item/remove')).toHaveLength(2);
     expect(s().connections).toEqual([]);
+  });
+
+  it('counts a connection Plaid already ended as ended, instead of blocking forever', async () => {
+    realWith([connected]);
+    plaid.removeError = { status: 400, error_type: 'ITEM_ERROR', error_code: 'ITEM_NOT_FOUND' };
+    expect(await endConnectionsAtPlaid()).toEqual({ ended: 1, notEnded: 0 });
+    expect(s().connections).toEqual([]);
+  });
+
+  it('ends a connection Link finished but Annum hadn’t saved yet (it’s a login at Plaid)', async () => {
+    realWith([
+      {
+        itemId: 'pending-x',
+        institution: 'Bank A',
+        env: 'sandbox',
+        status: 'exchanging',
+        publicToken: 'public-sandbox-1',
+        cursor: null,
+        createdAt: '2026-09-27T08:00:00',
+      },
+    ]);
+    expect(await endConnectionsAtPlaid()).toEqual({ ended: 1, notEnded: 0 });
+    expect(plaid.calls).toEqual(
+      expect.arrayContaining(['item/public_token/exchange', 'item/remove']),
+    );
+  });
+
+  it('ends none when the Worker can’t be reached, so nothing is left half ended', async () => {
+    realWith([connected, { ...connected, itemId: 'item-2' }]);
+    plaid.down = true;
+    expect(await endConnectionsAtPlaid()).toEqual({ ended: 0, notEnded: 2 });
+    expect(s().connections).toHaveLength(2);
+    expect(plaid.calls).not.toContain('item/remove');
   });
 
   it('keeps the connections it couldn’t end, and a retry asks only about those', async () => {

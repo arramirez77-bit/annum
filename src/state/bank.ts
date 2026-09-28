@@ -203,23 +203,22 @@ async function finishLater(itemId: string): Promise<void> {
   }
 }
 
-/** Pending connections being exchanged right now: one exchange at a time for each. */
-const exchanging = new Set<string>();
+/**
+ * Pending connections being exchanged right now: one exchange at a time for each, and a second
+ * caller (the app coming back to the front mid-exchange) waits for the same answer.
+ */
+const exchanging = new Map<string, Promise<ConnectOutcome>>();
 
-async function finishExchange(pending: BankConnection): Promise<ConnectOutcome> {
-  if (exchanging.has(pending.itemId)) {
-    return { kind: 'finish-later', institution: pending.institution };
-  }
-  exchanging.add(pending.itemId);
-  try {
-    return await exchangeOnce(pending);
-  } finally {
-    exchanging.delete(pending.itemId);
-  }
+function finishExchange(pending: BankConnection): Promise<ConnectOutcome> {
+  const running = exchanging.get(pending.itemId);
+  if (running) return running;
+  const outcome = exchangeOnce(pending).finally(() => exchanging.delete(pending.itemId));
+  exchanging.set(pending.itemId, outcome);
+  return outcome;
 }
 
 async function exchangeOnce(pending: BankConnection): Promise<ConnectOutcome> {
-  let out: { access_token: string; item_id: string; used: number } | null = null;
+  let out: { access_token: string; item_id: string; used?: number } | null = null;
   for (let attempt = 0; !out; attempt++) {
     try {
       out = await client.exchange(pending.publicToken ?? '');
@@ -253,8 +252,9 @@ async function exchangeOnce(pending: BankConnection): Promise<ConnectOutcome> {
   await forget(pending);
   const used = out.used;
   useBank.setState((s) => ({
+    // No count in the answer (the Worker couldn't read it): keep the one shown until the next check.
     count:
-      s.count && pending.env === 'production'
+      s.count && pending.env === 'production' && typeof used === 'number'
         ? { ...s.count, used, left: Math.max(0, s.count.limit - used) }
         : s.count,
   }));
@@ -444,22 +444,45 @@ export async function resumeSetupConnections(): Promise<void> {
  * against the 10, and a backup can't bring them back. Returns how many were ended.
  */
 export async function endConnectionsAtPlaid(): Promise<{ ended: number; notEnded: number }> {
+  const toEnd = app().connections.filter(
+    (c) => c.accessToken || (c.status === 'exchanging' && c.publicToken),
+  );
+  if (!toEnd.length) return { ended: 0, notEnded: 0 };
+  // Offline or unpaired: end none rather than some (Delete everything then stops, and nothing
+  // is left half ended).
+  try {
+    await client.status();
+  } catch (e) {
+    noted(e);
+    return { ended: 0, notEnded: toEnd.length };
+  }
   let ended = 0;
   let notEnded = 0;
-  for (const c of app().connections) {
-    if (!c.accessToken) continue;
+  for (const c of toEnd) {
     try {
-      await client.removeItem(c.accessToken);
-      // Ended for good: forget it now, so trying again only asks about the rest.
-      await forget(c);
-      ended++;
+      // Link finished but Annum hadn't saved it yet: it's a real login at Plaid too.
+      const token = c.accessToken ?? (await client.exchange(c.publicToken ?? '')).access_token;
+      await client.removeItem(token);
     } catch (e) {
-      noted(e);
-      notEnded++;
+      if (!nothingLeftToEnd(e)) {
+        noted(e);
+        notEnded++;
+        continue;
+      }
     }
+    // Ended for good: forget it now, so trying again only asks about the rest.
+    await forget(c);
+    ended++;
   }
   return { ended, notEnded };
 }
+
+/** Plaid says the connection is already gone (or can never be reached): nothing to end. */
+const nothingLeftToEnd = (e: unknown): boolean =>
+  e instanceof WorkerError &&
+  ['ITEM_NOT_FOUND', 'INVALID_ACCESS_TOKEN', 'INVALID_PUBLIC_TOKEN'].includes(
+    e.plaid?.error_code ?? '',
+  );
 
 /** Development builds: make a Sandbox connection ask to sign in again, to try Reconnect. */
 export async function breakSandboxConnection(): Promise<boolean> {

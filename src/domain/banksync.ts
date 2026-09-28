@@ -4,7 +4,7 @@
  * the same way as a file import (income matching, bills), see importing.ts.
  */
 import { applyRules, type CategoryRule } from './categorize';
-import { tidyMerchant, transactionKey, type MergeResult } from './importing';
+import { tidyMerchant, type MergeResult } from './importing';
 import { suggestCategory } from './suggest';
 import type { Account, Cents, ISODate, Transaction } from './types';
 
@@ -80,9 +80,10 @@ export function mergeBankChanges(
   const dates: ISODate[] = [];
 
   // An account that came from files: what they brought in is already here. Before the file's
-  // last day everything is; on that day only what matches one of its transactions (counted, so
-  // two identical coffees in the file skip two, not three).
-  const fileTwins = new Map<string, Map<string, number>>();
+  // last day everything is; on that day only what matches one of its transactions by amount
+  // (the bank's merchant name rarely matches a file's description; counted, so two $5.25
+  // coffees in the file skip two, not three).
+  const fileTwins = new Map<string, Map<Cents, number>>();
   const takeFileTwin = (account: Account, b: BankTransaction): boolean => {
     let twins = fileTwins.get(account.id);
     if (!twins) {
@@ -91,15 +92,13 @@ export function mergeBankChanges(
         if (t.accountId !== account.id || t.externalId || t.date !== account.importedThrough) {
           continue;
         }
-        const k = transactionKey(t);
-        twins.set(k, (twins.get(k) ?? 0) + 1);
+        twins.set(t.amount, (twins.get(t.amount) ?? 0) + 1);
       }
       fileTwins.set(account.id, twins);
     }
-    const k = transactionKey(b);
-    const left = twins.get(k) ?? 0;
+    const left = twins.get(b.amount) ?? 0;
     if (!left) return false;
-    twins.set(k, left - 1);
+    twins.set(b.amount, left - 1);
     return true;
   };
 

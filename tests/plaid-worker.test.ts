@@ -309,7 +309,10 @@ describe('exchange', () => {
       const s = setup({ PLAID_SECRET_PRODUCTION: 'prod', COUNT }, 3);
       const res = await s.post('exchange', { public_token: 'public-production-xyz' });
       expect(res.status).toBe(200);
-      expect(await res.json()).toMatchObject({ access_token: 'access-production-abc' });
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body).toMatchObject({ access_token: 'access-production-abc' });
+      // No made-up count: the phone keeps the one it shows until the next check.
+      expect(body).not.toHaveProperty('used');
     }
   });
 

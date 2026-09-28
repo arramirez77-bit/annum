@@ -191,12 +191,12 @@ describe('mergeBankChanges', () => {
 
   it('skips what files already brought in for an account that was imported before', () => {
     const wasImported = { ...checking, importedThrough: '2026-09-18' };
-    // The file's last day had one Corner Market charge.
+    // The file's last day had one $42.50 charge, described the way the bank's file does.
     const fromFile: Transaction = {
       id: 'f1',
       accountId: 'acct-1',
       date: '2026-09-18',
-      merchant: 'Corner Market',
+      merchant: 'POS PURCHASE CORNER MKT #4411 SEATTLE WA',
       amount: -4250,
       tax: false,
       reviewed: true,
@@ -207,7 +207,7 @@ describe('mergeBankChanges', () => {
         ...none,
         added: [
           bank({ externalId: 'x0', date: '2026-09-17' }), // before the file's last day
-          bank({ date: '2026-09-18' }), // the file's own charge
+          bank({ date: '2026-09-18' }), // the file's own charge, named differently by Plaid
           bank({ externalId: 'x3', date: '2026-09-18', merchant: 'LATE SHOP', amount: -100 }),
           bank({ externalId: 'x2', date: '2026-09-19' }),
         ],
@@ -216,7 +216,7 @@ describe('mergeBankChanges', () => {
       [],
       newId,
     );
-    // On the last day, only what the file had is skipped: the later charge that day stays.
+    // On the last day, only what the file had (same amount) is skipped: the later charge stays.
     expect(r.transactions.map((t) => t.externalId ?? t.id)).toEqual(['f1', 'x3', 'x2']);
     expect(r.duplicates).toBe(2);
   });
