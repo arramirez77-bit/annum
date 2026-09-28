@@ -41,7 +41,8 @@ name: Bank 2 · settings and reconnect
     element:
       id: 'settings-bank-0'
     direction: DOWN
-- assertVisible: '.*Needs you to sign in again.*Reconnect.*'
+# Rows read name, value, detail (VoiceOver): 'First Platypus Bank (test), Reconnect, Needs you…'
+- assertVisible: 'First Platypus Bank \(test\), Reconnect, Needs you to sign in again'
 - tapOn:
     id: 'settings-bank-0'
 - extendedWaitUntil:
