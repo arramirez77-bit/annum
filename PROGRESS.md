@@ -48,7 +48,7 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 
 | # | Needed for | What | Status |
 | --- | --- | --- | --- |
-| H1 | M2+ visual checks | 40 screen PNGs in `docs/screens/` (git-ignored), **or** a link to the Figma file/branch that has the Screens, component, Tab Bar and Widgets pages. The connected Figma account only sees "Cover" and "Brand — Logo" in the Annum file. | Open |
+| H1 | M2+ visual checks | 40 screen PNGs in `docs/screens/` (git-ignored), **or** a link to the Figma file/branch that has the Screens, component, Tab Bar and Widgets pages. The connected Figma account only sees "Cover" and "Brand — Logo" in the Annum file. | **Unblocked 2026-09-28:** the Screens page (node `57:8`) is reachable by id although the page list hides it. Design pass planned (map + phases sent to Andy) |
 | H2 | M7 | **Decided (Andy, 2026-09-26): Plaid Trial, with file import as the backup.** Guardrails: shared "N of 10 left" count + confirmation before every new connection; repairs only via update mode; bank tokens in the encrypted backup; Delete everything warns; Plaid secret and Worker key only in Cloudflare secrets; never leave the Trial or add paid products | Decided |
 | H3 | M7 | Plaid and Cloudflare accounts (done 2026-09-27: subdomain `highdesert`, Trial approved, redirect URI added); `npx wrangler login` (done); keys set as Cloudflare secrets (`PLAID_CLIENT_ID`, `PLAID_SECRET_SANDBOX`) | Done 2026-09-28 (`npm run worker:set-plaid-keys`; the Worker reaches Plaid Sandbox). Open: where secrets are set from, see the proxy note in "Next session starts here" |
 | H4 | M7 | Which banks to test (kept private; placeholders only in the repo) + go-ahead to use real accounts | Pending H2 |
