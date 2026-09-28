@@ -7,6 +7,7 @@ import {
   countLabel,
   DIDNT_CONNECT,
   finishLaterMessage,
+  notFinishedMessage,
   notEndedNote,
   problemMessage,
   repairMessage,
@@ -49,6 +50,14 @@ describe('bank words', () => {
     expect(problemMessage('not-paired').body).toContain('“npm run worker:rotate-dev-key”');
   });
 
+  it('a connection Plaid wouldn’t hand over may count: it says so and offers a file instead', () => {
+    const m = notFinishedMessage('Bank A');
+    expect(m.title).toBe('Bank A didn’t finish connecting');
+    expect(m.body).toContain('It may still count as one of your 10');
+    expect(m.body).not.toMatch(/no connection was used/);
+    expect(m.action).toBe('import');
+  });
+
   it('E4 says nothing was saved or used', () => {
     expect(DIDNT_CONNECT).toEqual({
       title: 'That bank didn’t connect',
@@ -64,6 +73,7 @@ describe('bank words', () => {
       repairMessage('Bank A'),
       DIDNT_CONNECT,
       finishLaterMessage('Bank A'),
+      notFinishedMessage('Bank A'),
       connectedMessage('Bank A', 0),
       ...(
         [

@@ -14,6 +14,7 @@ import {
   connectedMessage,
   DIDNT_CONNECT,
   finishLaterMessage,
+  notFinishedMessage,
   problemMessage,
   repairedMessage,
   repairMessage,
@@ -76,7 +77,13 @@ export default function ConnectBank() {
 
   const run = async (skipLink = false) => {
     setPhase({ kind: 'working' });
-    const r = item ? await repairConnection(item) : await connectNewBank({ skipLink });
+    let r: ConnectOutcome;
+    try {
+      r = item ? await repairConnection(item) : await connectNewBank({ skipLink });
+    } catch {
+      // Never leave the sheet on "Bringing in your accounts…" with nothing to tap.
+      r = { kind: 'problem', problem: 'unknown' };
+    }
     const message: Message =
       r.kind === 'connected'
         ? connectedMessage(r.institution, r.transactions)
@@ -86,12 +93,14 @@ export default function ConnectBank() {
             ? finishLaterMessage(r.institution)
             : r.kind === 'didnt-connect'
               ? DIDNT_CONNECT
-              : problemMessage(r.problem);
+              : r.kind === 'not-finished'
+                ? notFinishedMessage(r.institution)
+                : problemMessage(r.problem);
     setPhase({
       kind: 'message',
       message,
       outcome: r.kind,
-      ...(r.kind === 'problem' && r.code ? { code: r.code } : {}),
+      ...((r.kind === 'problem' || r.kind === 'not-finished') && r.code ? { code: r.code } : {}),
     });
   };
 
@@ -154,7 +163,8 @@ export default function ConnectBank() {
           <Button
             variant="primary"
             label="Try again"
-            onPress={() => void (outcome === 'didnt-connect' ? run() : check())}
+            // Always back through the count and "uses 1 of your 10" before Link opens again.
+            onPress={check}
             testID="connect-retry"
           />
         ) : null}

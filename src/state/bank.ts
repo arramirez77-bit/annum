@@ -133,7 +133,12 @@ export type ConnectOutcome =
   /** Before Link opened (no connection used): not paired, offline, none left… `code`: Plaid's. */
   | { kind: 'problem'; problem: WorkerProblem | 'unknown'; code?: string }
   /** Link finished but saving it didn't (offline): Annum finishes it when it can. */
-  | { kind: 'finish-later'; institution: string };
+  | { kind: 'finish-later'; institution: string }
+  /**
+   * Link finished, then Plaid wouldn't hand the connection over (its public token was refused).
+   * The bank login exists at Plaid, so it may count against the 10.
+   */
+  | { kind: 'not-finished'; institution: string; code?: string };
 
 async function keep(c: BankConnection): Promise<void> {
   app().saveConnection(c);
@@ -229,7 +234,7 @@ async function exchangeOnce(pending: BankConnection): Promise<ConnectOutcome> {
         e.plaid?.error_code === 'INVALID_PUBLIC_TOKEN'
       ) {
         await forget(pending);
-        return { kind: 'problem', problem: 'plaid', ...plaidCode(e) };
+        return { kind: 'not-finished', institution: pending.institution, ...plaidCode(e) };
       }
       if (attempt >= 2) return { kind: 'finish-later', institution: pending.institution };
       await wait(1500 * (attempt + 1));

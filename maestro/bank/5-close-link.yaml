@@ -1,5 +1,5 @@
 # M7 E4: closing Plaid Link partway saves nothing and uses no connection; Annum says so and
-# offers Try again or a file import instead.
+# offers Try again (back through the confirmation) or a file import instead.
 appId: com.highdesert.annum
 name: Bank 5 · closing Plaid Link
 ---
@@ -30,6 +30,15 @@ name: Bank 5 · closing Plaid Link
 - assertVisible:
     id: 'connect-import'
 - takeScreenshot: m7-link-closed
+# Try again goes back through the count and the "uses 1 of your 10" confirmation (CLAUDE.md:
+# confirm before every new connection), not straight into Link.
+- tapOn:
+    id: 'connect-retry'
+- extendedWaitUntil:
+    visible:
+      id: 'connect-go'
+    timeout: 30000
+- assertVisible: '.*of your 10 bank connections.*'
 - tapOn:
     id: 'connect-cancel'
 - extendedWaitUntil:

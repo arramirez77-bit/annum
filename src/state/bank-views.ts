@@ -64,6 +64,16 @@ export const DIDNT_CONNECT: Message = {
 export const notEndedNote = (n: number): string =>
   `Plaid didn’t end ${n === 1 ? 'one of your bank connections' : `${n} of your bank connections`}, so nothing was deleted. Try again in a moment, or turn off “Also end my bank connections at Plaid” to delete anyway.`;
 
+/**
+ * Link finished but Plaid wouldn't hand the connection to Annum. Unlike every other problem,
+ * this one may have used a connection, so it says so and doesn't offer to spend another.
+ */
+export const notFinishedMessage = (institution: string): Message => ({
+  title: `${institution} didn’t finish connecting`,
+  body: 'Plaid signed you in but didn’t hand the connection to Annum, so nothing was brought in. It may still count as one of your 10: Plaid’s Dashboard → Usage has the real number.',
+  action: 'import',
+});
+
 export const finishLaterMessage = (institution: string): Message => ({
   title: `${institution} is almost connected`,
   body: 'Annum will finish bringing it in as soon as this phone is back online. It won’t use another connection.',

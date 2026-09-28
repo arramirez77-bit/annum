@@ -415,7 +415,7 @@ describe('connecting during setup', () => {
     plaid.exchangeErrors = [
       { status: 400, error_type: 'INVALID_INPUT', error_code: 'INVALID_PUBLIC_TOKEN' },
     ];
-    expect(await connectNewBank()).toMatchObject({ kind: 'problem', problem: 'plaid' });
+    expect(await connectNewBank()).toMatchObject({ kind: 'not-finished', institution: 'Bank A' });
     expect(s().connections).toEqual([]);
     expect([...mockDisk.keys()]).toEqual([]);
   });
