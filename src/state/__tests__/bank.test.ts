@@ -515,7 +515,18 @@ describe('pairing and ending', () => {
 
   it('ends every connection at Plaid only when asked', async () => {
     realWith([connected, { ...connected, itemId: 'item-2' }]);
-    expect(await endConnectionsAtPlaid()).toBe(2);
+    expect(await endConnectionsAtPlaid()).toEqual({ ended: 2, notEnded: 0 });
+    expect(plaid.calls.filter((c) => c === 'item/remove')).toHaveLength(2);
+    expect(s().connections).toEqual([]);
+  });
+
+  it('keeps the connections it couldn’t end, and a retry asks only about those', async () => {
+    realWith([connected, { ...connected, itemId: 'item-2' }]);
+    plaid.down = true;
+    expect(await endConnectionsAtPlaid()).toEqual({ ended: 0, notEnded: 2 });
+    expect(s().connections).toHaveLength(2);
+    plaid.down = false;
+    expect(await endConnectionsAtPlaid()).toEqual({ ended: 2, notEnded: 0 });
     expect(plaid.calls.filter((c) => c === 'item/remove')).toHaveLength(2);
   });
 });

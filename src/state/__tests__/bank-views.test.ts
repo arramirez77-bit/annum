@@ -7,6 +7,7 @@ import {
   countLabel,
   DIDNT_CONNECT,
   finishLaterMessage,
+  notEndedNote,
   problemMessage,
   repairMessage,
   todayBankFootnote,
@@ -77,6 +78,14 @@ describe('bank words', () => {
     for (const m of all) {
       expect(`${m.title} ${m.body}`).not.toMatch(/error|fail|warning|invalid/i);
     }
+    expect(notEndedNote(2)).not.toMatch(/error|fail|warning|invalid/i);
+  });
+
+  it('says nothing was deleted when Plaid didn’t end every connection', () => {
+    expect(notEndedNote(1)).toBe(
+      'Plaid didn’t end one of your bank connections, so nothing was deleted. Try again in a moment, or turn off “Also end my bank connections at Plaid” to delete anyway.',
+    );
+    expect(notEndedNote(2)).toMatch(/^Plaid didn’t end 2 of your bank connections/);
   });
 
   it('counts and lists connections', () => {

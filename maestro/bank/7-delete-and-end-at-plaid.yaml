@@ -1,0 +1,52 @@
+# M7: Delete everything with "Also end my bank connections at Plaid" on. Annum ends each
+# connection at Plaid first and deletes only if every one ended (otherwise it says so and keeps
+# everything), so reaching Welcome means Plaid ended it. This also removes the Worker access key,
+# like a real Delete everything: run it last (scripts/maestro-bank.sh pairs again at the start).
+appId: com.highdesert.annum
+name: Bank 7 · delete everything and end connections at Plaid
+---
+- runFlow: 1-connect-during-setup.yaml
+- tapOn:
+    id: 'open-settings'
+- scrollUntilVisible:
+    element:
+      id: 'privacy-delete'
+    direction: DOWN
+- tapOn:
+    id: 'privacy-delete'
+- extendedWaitUntil:
+    visible:
+      id: 'delete-banks-note'
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: 'delete-end-at-plaid'
+    direction: DOWN
+- tapOn:
+    id: 'delete-end-at-plaid-switch'
+- assertVisible: 'Ended connections still count against the 10, and a backup can’t bring them back\.'
+- scrollUntilVisible:
+    element:
+      id: 'delete-confirm-field'
+    direction: DOWN
+- tapOn:
+    id: 'delete-confirm-field'
+- inputText: 'DELETE'
+- runFlow:
+    when:
+      visible: 'Done'
+    commands:
+      - tapOn: 'Done'
+- scrollUntilVisible:
+    element:
+      id: 'delete-confirm'
+    direction: DOWN
+- tapOn:
+    id: 'delete-confirm'
+- extendedWaitUntil:
+    visible:
+      id: 'welcome'
+    timeout: 60000
+- assertNotVisible:
+    id: 'delete-not-ended'
+- takeScreenshot: m7-deleted-and-ended

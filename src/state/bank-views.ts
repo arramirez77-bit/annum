@@ -60,6 +60,10 @@ export const DIDNT_CONNECT: Message = {
   action: 'retry',
 };
 
+/** S8: "Also end my bank connections at Plaid" didn't reach every one, so nothing was deleted. */
+export const notEndedNote = (n: number): string =>
+  `Plaid didn’t end ${n === 1 ? 'one of your bank connections' : `${n} of your bank connections`}, so nothing was deleted. Try again in a moment, or turn off “Also end my bank connections at Plaid” to delete anyway.`;
+
 export const finishLaterMessage = (institution: string): Message => ({
   title: `${institution} is almost connected`,
   body: 'Annum will finish bringing it in as soon as this phone is back online. It won’t use another connection.',

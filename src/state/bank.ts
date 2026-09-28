@@ -384,18 +384,22 @@ export async function resumeSetupConnections(): Promise<void> {
  * Delete everything → "Also end my bank connections at Plaid". Ended connections still count
  * against the 10, and a backup can't bring them back. Returns how many were ended.
  */
-export async function endConnectionsAtPlaid(): Promise<number> {
+export async function endConnectionsAtPlaid(): Promise<{ ended: number; notEnded: number }> {
   let ended = 0;
+  let notEnded = 0;
   for (const c of app().connections) {
     if (!c.accessToken) continue;
     try {
       await client.removeItem(c.accessToken);
+      // Ended for good: forget it now, so trying again only asks about the rest.
+      await forget(c);
       ended++;
     } catch (e) {
       noted(e);
+      notEnded++;
     }
   }
-  return ended;
+  return { ended, notEnded };
 }
 
 /** Development builds: make a Sandbox connection ask to sign in again, to try Reconnect. */

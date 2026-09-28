@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { checkCount, endConnectionsAtPlaid, useBank } from '@/state/bank';
-import { countLabel } from '@/state/bank-views';
+import { countLabel, notEndedNote } from '@/state/bank-views';
 import { deleteEverything } from '@/state/session';
 import { useAppStore } from '@/state/store';
 import { space } from '@/theme';
@@ -35,6 +35,7 @@ export default function DeleteEverything() {
   const [typed, setTyped] = useState('');
   const [busy, setBusy] = useState(false);
   const [endAtPlaid, setEndAtPlaid] = useState(false);
+  const [notEnded, setNotEnded] = useState(0);
   const goes = banks ? [...GOES, ...BANK_GOES] : GOES;
   useEffect(() => {
     if (banks && !demo) void checkCount();
@@ -81,6 +82,11 @@ export default function DeleteEverything() {
                 Ended connections still count against the 10, and a backup can’t bring them back.
               </Text>
             ) : null}
+            {notEnded > 0 ? (
+              <GuardrailNote tone="heads-up" testID="delete-not-ended">
+                {notEndedNote(notEnded)}
+              </GuardrailNote>
+            ) : null}
           </>
         ) : null}
         <TextField
@@ -104,7 +110,16 @@ export default function DeleteEverything() {
             disabled={demo || typed.trim() !== 'DELETE' || busy}
             onPress={async () => {
               setBusy(true);
-              if (endAtPlaid) await endConnectionsAtPlaid();
+              setNotEnded(0);
+              if (endAtPlaid) {
+                // Deleting can't be undone: if any connection is still live at Plaid, stop here.
+                const r = await endConnectionsAtPlaid();
+                if (r.notEnded > 0) {
+                  setNotEnded(r.notEnded);
+                  setBusy(false);
+                  return;
+                }
+              }
               router.dismissAll();
               await deleteEverything();
             }}
