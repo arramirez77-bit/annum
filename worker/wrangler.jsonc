@@ -12,7 +12,7 @@
   "observability": { "enabled": false },
   "logpush": false,
   // One number: bank connections used on the Plaid Trial (shared by both phones).
-  "kv_namespaces": [{ "binding": "COUNT", "id": "KV_NAMESPACE_ID" }],
+  "kv_namespaces": [{ "binding": "COUNT", "id": "a5a4c647ef9c483c9138aed9bc6f7d1f" }],
   "ratelimits": [
     // Calls with the right access key, both phones together.
     { "name": "PHONES_LIMIT", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
