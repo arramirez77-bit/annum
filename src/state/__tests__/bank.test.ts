@@ -57,10 +57,18 @@ interface FakePlaid {
   calls: string[];
   loginRequired: boolean;
   down: boolean;
-  /** How many more first syncs come back empty (Plaid still preparing the data). */
+  /** How many more first syncs come back empty with no cursor. */
   notReady: number;
+  /** How many more first syncs say NOT_READY: an empty page, but with a cursor (Plaid's docs). */
+  pending: number;
 }
-const plaid: FakePlaid = { calls: [], loginRequired: false, down: false, notReady: 0 };
+const plaid: FakePlaid = {
+  calls: [],
+  loginRequired: false,
+  down: false,
+  notReady: 0,
+  pending: 0,
+};
 const kv = new Map<string, string>();
 const workerEnv: Env = {
   PLAID_CLIENT_ID: 'client',
@@ -148,8 +156,19 @@ function fakePlaid(url: string, init: RequestInit): Promise<Response> {
         plaid.notReady--;
         return ok({ added: [], modified: [], removed: [], next_cursor: '', has_more: false });
       }
+      if ((!body.cursor || body.cursor === 'c0') && plaid.pending > 0) {
+        plaid.pending--;
+        return ok({
+          added: [],
+          modified: [],
+          removed: [],
+          next_cursor: 'c0',
+          has_more: false,
+          transactions_update_status: 'NOT_READY',
+        });
+      }
       return ok(
-        body.cursor
+        body.cursor && body.cursor !== 'c0'
           ? {
               added: [txn('t3', 6.33, '2026-09-26', 'Starbucks')],
               modified: [],
@@ -201,6 +220,7 @@ beforeEach(() => {
   plaid.loginRequired = false;
   plaid.down = false;
   plaid.notReady = 0;
+  plaid.pending = 0;
   mockPhoneKey = 'k'.repeat(43);
   link.mockReset();
   link.mockResolvedValue({
@@ -371,6 +391,24 @@ describe('a brand-new connection', () => {
     expect(s().connections[0]).toMatchObject({ cursor: 'c1' });
     expect(s().connections[0].lastSynced).toBeDefined();
     expect(s().data.transactions.length).toBeGreaterThan(0);
+  });
+
+  it('keeps asking while Plaid says NOT_READY, even though it sent a cursor', async () => {
+    realWith([]);
+    plaid.pending = 2; // the first sync and the first retry: an empty page with cursor c0
+    const r = await connectNewBank();
+    expect(r).toMatchObject({ kind: 'connected', transactions: 0 });
+    // The retries run in the background (no waiting in tests), continuing from c0.
+    for (let i = 0; i < 50 && !s().connections[0]?.lastSynced; i++) {
+      await new Promise<void>((resolve) => setImmediate(() => resolve()));
+    }
+    expect(s().connections[0]).toMatchObject({ cursor: 'c1' });
+    expect(s().connections[0].lastSynced).toBeDefined();
+    expect(
+      s()
+        .data.transactions.map((t) => t.merchant)
+        .sort(),
+    ).toEqual(['Intrst Pymnt', 'SparkFun']);
   });
 });
 

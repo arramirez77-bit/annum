@@ -295,13 +295,15 @@ async function syncConnection(
           : {}),
       });
     }
-    // Right after linking, Plaid may have nothing yet (no cursor, no transactions): leave the
-    // connection "Getting your transactions…" so the next sync doesn't wait 6 hours.
+    // Right after linking, Plaid may have nothing yet: it says NOT_READY (an empty page with a
+    // cursor), or sends no cursor at all. Leave the connection "Getting your transactions…" so
+    // it's asked again soon instead of in 6 hours.
     const notReady =
-      !changes.cursor &&
-      !changes.added.length &&
-      !changes.modified.length &&
-      !changes.removed.length;
+      changes.notReady ||
+      (!changes.cursor &&
+        !changes.added.length &&
+        !changes.modified.length &&
+        !changes.removed.length);
     s.saveConnection({
       ...connection,
       status: 'ok',

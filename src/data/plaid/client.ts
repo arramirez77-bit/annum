@@ -51,6 +51,8 @@ export interface WorkerStatus {
 
 export interface SyncResult extends BankChanges {
   cursor: string;
+  /** Plaid hasn't finished pulling a new connection's transactions: ask again soon. */
+  notReady: boolean;
 }
 
 type Fetch = (url: string, init: RequestInit) => Promise<Response>;
@@ -183,6 +185,7 @@ export function workerClient(options: WorkerClientOptions) {
         const modified: PlaidSyncPage['modified'] = [];
         const removed: string[] = [];
         let next = cursor;
+        let status: string | undefined;
         try {
           for (;;) {
             const page = await call<PlaidSyncPage>('transactions/sync', {
@@ -194,6 +197,7 @@ export function workerClient(options: WorkerClientOptions) {
             modified.push(...page.modified);
             removed.push(...page.removed.map((r) => r.transaction_id));
             next = page.next_cursor;
+            status = page.transactions_update_status;
             if (!page.has_more) break;
           }
         } catch (e) {
@@ -208,6 +212,7 @@ export function workerClient(options: WorkerClientOptions) {
           modified: modified.map(mapTransaction),
           removed,
           cursor: next ?? '',
+          notReady: status === 'NOT_READY',
         };
       }
     },

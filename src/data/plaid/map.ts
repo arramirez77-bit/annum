@@ -47,6 +47,8 @@ export interface PlaidSyncPage {
   removed: { transaction_id: string }[];
   next_cursor: string;
   has_more: boolean;
+  /** NOT_READY: a new connection's first pull hasn't finished (empty page, but a cursor). */
+  transactions_update_status?: string;
 }
 
 export interface PlaidCreditLiability {
