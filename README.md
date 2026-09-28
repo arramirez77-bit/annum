@@ -88,7 +88,7 @@ npm test           # Jest: the 25 docs/03 test cases, engine, view, store, compo
 npm run lint       # ESLint + Prettier + token check (no raw colors/sizes outside src/theme)
 npm run typecheck  # TypeScript
 npx expo-doctor    # Expo project health
-maestro test maestro/               # all flow tests on the Simulator (needs `npm start` running)
+SIM=<sim-udid> scripts/maestro.sh maestro/   # all flow tests on the Simulator (needs `npm start` running)
 scripts/maestro-lock.sh <sim-udid>  # the Face ID lock flows (Maestro can't answer Face ID; this script does)
 scripts/maestro-files.sh <sim-udid> # bank-file import flows (copies the fictional files in fixtures/bank-files)
 ```
@@ -135,7 +135,7 @@ Flow tests use [Maestro](https://maestro.mobile.dev): `brew install openjdk@17 m
 
 ## Pushing to GitHub
 
-`main` is protected: a commit can land on `main` only after the `secrets` and `checks` CI jobs pass for it, and force-pushes and deletion are blocked. So push to a branch first, then move `main` to the same commit:
+`main` is protected: a commit can land on `main` only after the `secrets` and `checks` CI jobs pass for it, and force-pushes and deletion are blocked. `scripts/ship.sh` does all of this in one go. By hand: push to a branch first, then move `main` to the same commit:
 
 ```sh
 git push origin HEAD:refs/heads/ci-check     # CI runs on this branch

@@ -2,6 +2,15 @@
 
 Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public repo: no real names, balances, transactions or secrets here. Real banks are "Bank A", "Bank B"…
 
+## Next session starts here (saved 2026-09-27)
+
+- **Done and on `main`:** M0–M6. M6 is the files path (import, bills, reminders); bank connection moved to M7.
+- **Decided:** Plaid Trial with file import as the backup, plus Andy's guardrails and the M7 design below (all approved, including 730 days of history, the 12-character backup passphrase, the per-phone access key by QR code, and "If a phone is lost").
+- **Waiting on Andy:** the steps in **Before M7** (Cloudflare account and workers.dev subdomain, Plaid Trial approval). He'll send the subdomain.
+- **Then start M7** (`docs/06-BUILD-PLAN.md`): restate its goal and files, then the Plaid React Native SDK spike in Sandbox on Expo 57 / iOS 27 (Hosted Link as the fallback), then the Worker. No M7 code exists yet.
+- **Still owed to Andy:** H9 (rebuild on his iPhone), H1 (Figma screens not visible), H7 (on-device checks).
+- **Working here:** Metro on port **8082** (8081 is another project — never stop processes by a broad name match); iOS 27 Simulator "iPhone 18 Pro"; `SIM=<udid> scripts/maestro.sh maestro/` plus `scripts/maestro-lock.sh` and `scripts/maestro-files.sh`; ship with `scripts/ship.sh` (ci-check → CI → main). Last full run: 234 Jest tests; Maestro 16 main + 5 Face ID + 5 file flows, all passing.
+
 ## Status
 
 | Milestone | Status | Evidence |
