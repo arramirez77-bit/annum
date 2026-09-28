@@ -4,7 +4,7 @@
  * the same way as a file import (income matching, bills), see importing.ts.
  */
 import { applyRules, type CategoryRule } from './categorize';
-import { tidyMerchant, type MergeResult } from './importing';
+import { tidyMerchant, transactionKey, type MergeResult } from './importing';
 import { suggestCategory } from './suggest';
 import type { Account, Cents, ISODate, Transaction } from './types';
 
@@ -79,11 +79,39 @@ export function mergeBankChanges(
   let duplicates = 0;
   const dates: ISODate[] = [];
 
+  // An account that came from files: what they brought in is already here. Before the file's
+  // last day everything is; on that day only what matches one of its transactions (counted, so
+  // two identical coffees in the file skip two, not three).
+  const fileTwins = new Map<string, Map<string, number>>();
+  const takeFileTwin = (account: Account, b: BankTransaction): boolean => {
+    let twins = fileTwins.get(account.id);
+    if (!twins) {
+      twins = new Map();
+      for (const t of existing) {
+        if (t.accountId !== account.id || t.externalId || t.date !== account.importedThrough) {
+          continue;
+        }
+        const k = transactionKey(t);
+        twins.set(k, (twins.get(k) ?? 0) + 1);
+      }
+      fileTwins.set(account.id, twins);
+    }
+    const k = transactionKey(b);
+    const left = twins.get(k) ?? 0;
+    if (!left) return false;
+    twins.set(k, left - 1);
+    return true;
+  };
+
   for (const b of [...changes.added, ...changes.modified]) {
     const account = byBankAccount.get(b.accountExternalId);
     if (!account) continue;
     const cutoff = account.importedThrough;
-    if (cutoff && b.date <= cutoff && !at.has(b.externalId)) {
+    if (
+      cutoff &&
+      !at.has(b.externalId) &&
+      (b.date < cutoff || (b.date === cutoff && takeFileTwin(account, b)))
+    ) {
       duplicates++;
       continue;
     }
@@ -124,7 +152,8 @@ export function mergeBankChanges(
       amount: b.amount,
       externalId: b.externalId,
       tax: false,
-      reviewed: !!options.reviewedBefore && b.date < options.reviewedBefore,
+      // Marked reviewed (history) below, after the rules have had their say.
+      reviewed: false,
       ...(b.pending ? { pending: true } : {}),
       ...(suggestion ? { suggestedCategory: suggestion } : {}),
     };
@@ -137,8 +166,17 @@ export function mergeBankChanges(
   const kept = transactions.filter((t) => !t.externalId || !drop.has(t.externalId));
   const removed = transactions.length - kept.length;
 
-  // Rules fill suggestions on the new ones (a rule beats the bank's category).
-  const ruled = new Map(applyRules(fresh, rules).map((t) => [t.id, t]));
+  // Rules fill suggestions on the new ones, as they ended up after this batch (a pending charge
+  // may have posted, a change may have followed): a rule beats the bank's category. Then history
+  // from before the review week is marked reviewed, with its rules (tax tags) already applied.
+  const freshIds = new Set(fresh.map((t) => t.id));
+  const history = (t: Transaction) => !!options.reviewedBefore && t.date < options.reviewedBefore;
+  const ruled = new Map(
+    applyRules(
+      kept.filter((t) => freshIds.has(t.id)),
+      rules,
+    ).map((t) => [t.id, history(t) ? { ...t, reviewed: true } : t]),
+  );
   const merged = kept.map((t) => ruled.get(t.id) ?? t);
   const addedIds = new Set([...fresh, ...posted].map((t) => t.id));
   dates.sort();
@@ -153,9 +191,10 @@ export function mergeBankChanges(
 }
 
 /**
- * The bank's accounts joined to the ones Annum has: the same bank account is updated; an
- * account that came from files (same kind, same last 4 digits) becomes the connected one and
- * keeps its history and name; anything else is new.
+ * The bank's accounts joined to the ones Annum has: the same bank account is updated (its name
+ * stays Annum's: the person may have chosen it); an account that came from files (same kind,
+ * same last 4 digits) becomes the connected one and keeps its history and name; anything else is
+ * new.
  */
 export function mergeBankAccounts(
   existing: readonly Account[],
@@ -167,7 +206,7 @@ export function mergeBankAccounts(
   for (const a of incoming) {
     const same = out.findIndex((x) => !!x.plaidAccountId && x.plaidAccountId === a.plaidAccountId);
     if (same >= 0) {
-      out[same] = { ...out[same], ...a, id: out[same].id };
+      out[same] = { ...out[same], ...a, id: out[same].id, name: out[same].name };
       continue;
     }
     const imported = out.findIndex(

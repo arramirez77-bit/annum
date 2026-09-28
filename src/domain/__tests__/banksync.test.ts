@@ -191,18 +191,90 @@ describe('mergeBankChanges', () => {
 
   it('skips what files already brought in for an account that was imported before', () => {
     const wasImported = { ...checking, importedThrough: '2026-09-18' };
+    // The file's last day had one Corner Market charge.
+    const fromFile: Transaction = {
+      id: 'f1',
+      accountId: 'acct-1',
+      date: '2026-09-18',
+      merchant: 'Corner Market',
+      amount: -4250,
+      tax: false,
+      reviewed: true,
+    };
     const r = mergeBankChanges(
-      [],
+      [fromFile],
       {
         ...none,
-        added: [bank({ date: '2026-09-18' }), bank({ externalId: 'x2', date: '2026-09-19' })],
+        added: [
+          bank({ externalId: 'x0', date: '2026-09-17' }), // before the file's last day
+          bank({ date: '2026-09-18' }), // the file's own charge
+          bank({ externalId: 'x3', date: '2026-09-18', merchant: 'LATE SHOP', amount: -100 }),
+          bank({ externalId: 'x2', date: '2026-09-19' }),
+        ],
       },
       [wasImported],
       [],
       newId,
     );
-    expect(r.transactions.map((t) => t.externalId)).toEqual(['x2']);
-    expect(r.duplicates).toBe(1);
+    // On the last day, only what the file had is skipped: the later charge that day stays.
+    expect(r.transactions.map((t) => t.externalId ?? t.id)).toEqual(['f1', 'x3', 'x2']);
+    expect(r.duplicates).toBe(2);
+  });
+
+  it('a pending charge that posts in the same batch ends up posted, once', () => {
+    const r = mergeBankChanges(
+      [],
+      {
+        added: [
+          bank({ externalId: 'p1', pending: true }),
+          bank({ externalId: 'q1', replaces: 'p1', amount: -5000 }),
+        ],
+        modified: [],
+        removed: ['p1'],
+      },
+      [checking],
+      [],
+      newId,
+    );
+    expect(r.transactions).toHaveLength(1);
+    expect(r.transactions[0]).toMatchObject({ externalId: 'q1', amount: -5000 });
+    expect(r.transactions[0].pending).toBeUndefined();
+    expect(r.added.map((t) => t.externalId)).toEqual(['q1']);
+  });
+
+  it('an add and a change in the same batch keep the change', () => {
+    const r = mergeBankChanges(
+      [],
+      { ...none, added: [bank()], modified: [bank({ amount: -9999 })] },
+      [checking],
+      [],
+      newId,
+    );
+    expect(r.transactions).toHaveLength(1);
+    expect(r.transactions[0].amount).toBe(-9999);
+  });
+
+  it("applies the person's rules to history before marking it reviewed", () => {
+    const rule = {
+      merchant: 'corner market',
+      category: 'Software',
+      tax: true,
+      taxCategory: 'Tools',
+    };
+    const r = mergeBankChanges(
+      [],
+      { ...none, added: [bank({ date: '2025-01-01' })] },
+      [checking],
+      [rule],
+      newId,
+      { reviewedBefore: '2026-09-21' },
+    );
+    expect(r.transactions[0]).toMatchObject({
+      reviewed: true,
+      tax: true,
+      taxCategory: 'Tools',
+      suggestedCategory: 'Software',
+    });
   });
 });
 
@@ -227,6 +299,21 @@ describe('mergeBankAccounts', () => {
     const first = mergeBankAccounts([], [incoming], [], () => 'a1');
     const next = mergeBankAccounts(first, [{ ...incoming, balance: 1 }], [], () => 'a2');
     expect(next).toEqual([{ ...incoming, id: 'a1', balance: 1 }]);
+  });
+
+  it("keeps Annum's name for an account on every sync, not just the first", () => {
+    const imported: Account = {
+      id: 'acct-file',
+      name: 'My name',
+      type: 'checking',
+      balance: 100,
+      last4: '0000',
+      source: 'import',
+      status: 'ok',
+    };
+    const once = mergeBankAccounts([imported], [incoming], [], () => 'new');
+    const twice = mergeBankAccounts(once, [incoming], [], () => 'new');
+    expect(twice.map((a) => a.name)).toEqual(['My name']);
   });
 
   it('turns an imported account with the same last 4 into the connected one', () => {

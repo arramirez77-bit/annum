@@ -20,8 +20,10 @@ export function tidyMerchant(name: string): string {
     .join(' ');
 }
 
-const key = (t: { date: ISODate; amount: number; merchant: string }) =>
+/** Same day, amount and merchant: how a file's transaction is recognised without a bank id. */
+export const transactionKey = (t: { date: ISODate; amount: number; merchant: string }) =>
   `${t.date}|${t.amount}|${normalizeMerchant(t.merchant)}`;
+const key = transactionKey;
 
 export interface MergeResult {
   transactions: Transaction[];
