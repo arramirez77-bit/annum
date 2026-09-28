@@ -5,12 +5,14 @@
 import { create } from 'zustand';
 
 import { demoScenario, type ScenarioName } from '@/data/demo';
-import { DEFAULT_PREFS, type PendingTransfer, type Prefs } from '@/data/repo';
+import { DEFAULT_PREFS, type BankConnection, type PendingTransfer, type Prefs } from '@/data/repo';
 import {
   applyImport,
   applyTaxChanges,
   confirmSplit,
   currentDeposit,
+  mergeBankAccounts,
+  mergeBankChanges,
   mergeImport,
   proposeBills,
   localISODate,
@@ -22,6 +24,7 @@ import {
   withDerived,
   type Account,
   type AppData,
+  type BankChanges,
   type Bill,
   type Cadence,
   type CsvMapping,
@@ -65,6 +68,22 @@ export interface ImportOutcome {
   proposals: number;
 }
 export type Blocked = 'key-missing' | 'newer' | 'cant-open';
+
+/** One connection's sync, ready to apply (state/bank.ts fetches it). */
+export interface BankSync {
+  accounts: Omit<Account, 'id'>[];
+  changes: BankChanges;
+  /** First sync of a connection: history before this date arrives already reviewed. */
+  reviewedBefore?: ISODate;
+}
+
+export interface BankSyncOutcome {
+  added: number;
+  removed: number;
+  /** A landed invoice to split (Money → Split it). */
+  depositId?: string;
+  proposals: number;
+}
 
 export interface AppState extends Persisted {
   mode: 'demo' | 'real';
@@ -127,6 +146,11 @@ export interface AppState extends Persisted {
   rememberMapping: (headerKey: string, mapping: CsvMapping) => void;
   /** E5 "Add one by hand". */
   addTransaction: (transaction: Transaction) => void;
+  /** M7 bank connections: add or replace one (by item id), or remove it. */
+  saveConnection: (connection: BankConnection) => void;
+  removeConnection: (itemId: string) => void;
+  /** Apply what a connected bank sent: accounts, balances, transactions. */
+  applyBankSync: (sync: BankSync) => BankSyncOutcome;
   /** Bills: confirm or dismiss a proposal, add or edit, remove. */
   confirmBill: (id: string) => void;
   dismissBill: (id: string) => void;
@@ -149,6 +173,7 @@ const empty = (today: ISODate): Persisted => ({
   reviews: [],
   rules: [],
   deferred: [],
+  connections: [],
   reviewStep: 1,
   pendingTransfer: null,
   startedOn: null,
@@ -435,6 +460,47 @@ export const useAppStore = create<AppState>((set, get) => {
 
     addTransaction: (transaction) =>
       commit({ ...get().data, transactions: [...get().data.transactions, transaction] }),
+
+    saveConnection: (c) =>
+      set((s) => ({
+        connections: s.connections.some((x) => x.itemId === c.itemId)
+          ? s.connections.map((x) => (x.itemId === c.itemId ? c : x))
+          : [...s.connections, c],
+      })),
+    removeConnection: (itemId) =>
+      set((s) => ({ connections: s.connections.filter((c) => c.itemId !== itemId) })),
+
+    applyBankSync: (sync) => {
+      const { data, rules, deposits } = get();
+      const accounts = mergeBankAccounts(data.accounts, sync.accounts, data.transactions, () =>
+        newId('acct'),
+      );
+      const merge = mergeBankChanges(
+        data.transactions,
+        sync.changes,
+        accounts,
+        rules,
+        () => newId('txn'),
+        sync.reviewedBefore ? { reviewedBefore: sync.reviewedBefore } : {},
+      );
+      const applied = applyImport({ ...data, accounts }, merge);
+      const proposals = proposeBills(applied.data);
+      commit({ ...applied.data, bills: [...applied.data.bills, ...proposals] });
+      set({
+        deposits: applied.deposits.reduce(
+          (list, d) => depositsWith(list, d),
+          depositsWith(deposits, data.pendingDeposit),
+        ),
+      });
+      return {
+        added: merge.added.length,
+        removed: merge.removed,
+        ...(applied.deposits.length && applied.data.pendingDeposit
+          ? { depositId: applied.data.pendingDeposit.id }
+          : {}),
+        proposals: proposals.length,
+      };
+    },
 
     confirmBill: (id) =>
       bills((list) => list.map((b) => (b.id === id ? { ...b, confirmed: true } : b))),

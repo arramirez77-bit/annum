@@ -260,6 +260,8 @@ export async function finishOnboarding(draft: OnboardingDraft): Promise<boolean>
     reviews: [],
     rules: [],
     deferred: [],
+    // A bank connected during setup is already saved; keep it (it can't be made again).
+    connections: store().connections,
     reviewStep: 1,
     pendingTransfer: null,
     startedOn: day,

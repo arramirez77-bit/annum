@@ -55,6 +55,11 @@ export interface Account {
   /** Plaid's id for this account, and for the bank login (Item) it belongs to. */
   plaidAccountId?: string;
   itemId?: string;
+  /**
+   * An account that came from bank files before its bank was connected: the last date the
+   * files covered. Bank transactions on or before it are already here.
+   */
+  importedThrough?: ISODate;
   status: 'ok' | 'stale' | 'disconnected';
 }
 

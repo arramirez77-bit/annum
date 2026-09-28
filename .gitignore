@@ -58,3 +58,6 @@ yarn-error.*
 # Build output (EAS local builds, archives)
 build-*.tar.gz
 *.ipa
+
+# Wrangler local secrets (never used here, but never committed either)
+.dev.vars*

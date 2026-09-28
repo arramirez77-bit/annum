@@ -18,6 +18,7 @@ export * from './csv';
 export * from './ofx';
 export * from './suggest';
 export * from './importing';
+export * from './banksync';
 export * from './bills';
 export * from './reminders';
 export * from './bankfile';

@@ -1,0 +1,13 @@
+{
+  "name": "annum-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Annum's Plaid proxy on Cloudflare Workers (free plan). See README.md.",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "wrangler": "4.142.0"
+  }
+}

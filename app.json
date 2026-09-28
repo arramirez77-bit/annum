@@ -33,7 +33,8 @@
           }
         ],
         "LSSupportsOpeningDocumentsInPlace": false
-      }
+      },
+      "associatedDomains": ["applinks:annum.highdesert.workers.dev"]
     },
     "plugins": [
       "expo-router",
@@ -70,7 +71,8 @@
         }
       ],
       "expo-sharing",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-background-task"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -80,7 +82,8 @@
       "router": {},
       "eas": {
         "projectId": "f072493d-428e-496f-b175-46d99ea783f5"
-      }
+      },
+      "workerUrl": "https://annum.highdesert.workers.dev"
     },
     "owner": "arramirez77"
   }

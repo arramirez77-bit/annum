@@ -1,0 +1,49 @@
+# M7 spike: Plaid's Link SDK loads on Expo 57 / iOS 27 and answers from native code (SPIKES.md).
+# Run on demand, not part of `maestro test maestro/`.
+appId: com.highdesert.annum
+name: Spike Plaid SDK
+---
+- stopApp
+- openLink: 'exp+annum://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082'
+- extendedWaitUntil:
+    visible:
+      id: 'dev-entry|status-pill'
+    timeout: 30000
+- runFlow:
+    when:
+      visible:
+        id: 'dev-entry'
+    commands:
+      - longPressOn:
+          id: 'dev-entry'
+- runFlow:
+    when:
+      visible:
+        id: 'status-pill'
+    commands:
+      - longPressOn:
+          id: 'status-pill'
+- scrollUntilVisible:
+    element:
+      id: 'open-spikes'
+    direction: DOWN
+- tapOn:
+    id: 'open-spikes'
+- scrollUntilVisible:
+    element:
+      id: 'run-plaid'
+    direction: DOWN
+- tapOn:
+    id: 'run-plaid'
+# Plaid's own Link sheet opens and refuses the made-up token; leaving it sends onExit back.
+- extendedWaitUntil:
+    visible: 'Exit'
+    timeout: 30000
+- takeScreenshot: spike-plaid-link-sheet
+- tapOn: 'Exit'
+- extendedWaitUntil:
+    visible:
+      id: 'plaid-result'
+    timeout: 30000
+- takeScreenshot: spike-plaid
+- assertVisible: 'Plaid SDK: all checks pass'

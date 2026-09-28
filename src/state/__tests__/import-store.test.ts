@@ -37,6 +37,7 @@ function realSeed() {
       reviews: [],
       rules: [],
       deferred: [],
+      connections: [],
       reviewStep: 1,
       pendingTransfer: null,
       startedOn: '2026-09-01',

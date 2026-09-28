@@ -10,7 +10,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 import * as SQLite from 'expo-sqlite';
 
 import { openEncryptedDatabase } from './db';
-import { Repo, TABLE_NAMES, type Stored } from './repo';
+import { Repo, TABLE_NAMES, type BankConnection, type Stored } from './repo';
 import { migrate, NewerSchemaError, SCHEMA_VERSION, type Db } from './schema';
 import { createDatabaseKey, deleteAllSecrets, readDatabaseKey } from './secure';
 
@@ -85,6 +85,26 @@ export function closeStorage(): Promise<void> {
       open = null;
     }
   });
+}
+
+/**
+ * Save one bank connection right away, even during setup (the file is created if it has to
+ * be): a connection can't be made again, so it's never left only in memory.
+ */
+export function putConnection(c: BankConnection): Promise<void> {
+  return openStorage(true).then((r) => {
+    if (r.kind !== 'ok') throw new Error(`Storage ${r.kind}`);
+    return exclusive(async () => open?.repo.putConnection(c));
+  });
+}
+
+export function deleteConnection(itemId: string): Promise<void> {
+  return exclusive(async () => open?.repo.deleteConnection(itemId));
+}
+
+/** Connections saved before setup finished (null if there's no database yet). */
+export function loadConnections(): Promise<BankConnection[]> {
+  return exclusive(async () => (open ? open.repo.loadConnections() : []));
 }
 
 export function save(stored: Stored): Promise<number> {

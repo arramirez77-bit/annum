@@ -6,8 +6,11 @@ import { create } from 'zustand';
 
 import type { DemoConnection } from '@/data/demo';
 import {
+  addDays,
   learnedMonthlySpend,
   localISODate,
+  mergeBankAccounts,
+  mergeBankChanges,
   mergeImport,
   type Account,
   type Bill,
@@ -18,9 +21,9 @@ import {
   type Transaction,
 } from '@/domain';
 
-import { localDateTime, type ImportOutcome, type ImportPlan } from './store';
+import { localDateTime, type BankSync, type ImportOutcome, type ImportPlan } from './store';
 
-export type ConnectPath = 'demo' | 'manual' | 'import';
+export type ConnectPath = 'demo' | 'manual' | 'import' | 'bank';
 
 export interface OnboardingDraft {
   incomeType: IncomeType | null;
@@ -41,6 +44,8 @@ interface OnboardingState extends OnboardingDraft {
   setPaySchedule: (pay: PaySchedule | null) => void;
   setInvoice: (invoice: ExpectedIncome | null) => void;
   connectDemo: (connection: DemoConnection) => void;
+  /** A bank connected during setup: its accounts and transactions join the draft. */
+  connectBank: (sync: BankSync) => void;
   enterByHand: () => void;
   setAccount: (account: Account) => void;
   removeAccount: (id: string) => void;
@@ -93,6 +98,33 @@ export const useOnboarding = create<OnboardingState>((set, get) => ({
       bills: c.bills,
       monthlySpend: c.monthlySpend,
     }),
+  connectBank: (sync) => {
+    const s = get();
+    // The two empty by-hand accounts give way to real ones.
+    const kept = s.path === 'manual' ? s.accounts.filter((a) => a.balance !== 0) : s.accounts;
+    const accounts = mergeBankAccounts(
+      kept,
+      sync.accounts,
+      s.transactions,
+      () => `acct-draft-${draftId++}`,
+    );
+    const today = localISODate(new Date());
+    const merge = mergeBankChanges(
+      s.transactions,
+      sync.changes,
+      accounts,
+      [],
+      () => `txn-draft-${draftId++}`,
+      // Only this week waits for the first review; older history arrives reviewed.
+      { reviewedBefore: addDays(today, -6) },
+    );
+    set({
+      path: 'bank',
+      accounts,
+      transactions: merge.transactions,
+      monthlySpend: s.monthlySpend ?? learnedMonthlySpend(merge.transactions, today) ?? null,
+    });
+  },
   enterByHand: () =>
     set((s) => ({
       path: 'manual',

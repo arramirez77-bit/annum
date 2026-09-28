@@ -40,6 +40,10 @@ export const MIGRATIONS: readonly string[] = [
   CREATE TABLE deferred (
     id TEXT PRIMARY KEY NOT NULL, wait_until TEXT NOT NULL, status TEXT NOT NULL, body TEXT NOT NULL);
   `,
+  // 2 — bank connections (M7): one row per Plaid Item, with its access token and sync cursor.
+  `
+  CREATE TABLE connections (id TEXT PRIMARY KEY NOT NULL, status TEXT NOT NULL, body TEXT NOT NULL);
+  `,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

@@ -2,7 +2,14 @@
  * Between the store and the repository: which parts of the app state are saved, and how a saved
  * file becomes AppData again. Pure (no React Native), so a save→load round trip is unit-tested.
  */
-import type { PendingTransfer, Prefs, ReviewRecord, SplitRecord, Stored } from '@/data/repo';
+import type {
+  BankConnection,
+  PendingTransfer,
+  Prefs,
+  ReviewRecord,
+  SplitRecord,
+  Stored,
+} from '@/data/repo';
 import {
   currentDeposit,
   withDerived,
@@ -22,6 +29,8 @@ export interface Persisted {
   reviews: ReviewRecord[];
   rules: CategoryRule[];
   deferred: DeferredPurchase[];
+  /** Bank connections (M7), with their access tokens: never shown or logged. */
+  connections: BankConnection[];
   reviewStep: number;
   pendingTransfer: PendingTransfer | null;
   startedOn: ISODate | null;
@@ -35,6 +44,7 @@ export const PERSISTED_KEYS: readonly (keyof Persisted)[] = [
   'reviews',
   'rules',
   'deferred',
+  'connections',
   'reviewStep',
   'pendingTransfer',
   'startedOn',
@@ -62,6 +72,7 @@ export function storedFrom(p: Persisted): Stored {
     reviews: p.reviews,
     rules: p.rules,
     deferred: p.deferred,
+    connections: p.connections,
     ...(data.weekStart ? { weekStart: data.weekStart } : {}),
     savingsUnsplit: data.savingsUnsplit,
     lateAssumeDays: data.lateAssumeDays,
@@ -94,6 +105,7 @@ export function persistedFrom(stored: Stored, today: ISODate): Persisted {
     reviews: stored.reviews,
     rules: stored.rules,
     deferred: stored.deferred,
+    connections: stored.connections,
     reviewStep: stored.reviewStep,
     pendingTransfer: stored.pendingTransfer,
     startedOn: stored.startedOn,

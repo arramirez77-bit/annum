@@ -8,6 +8,13 @@ import * as SecureStore from 'expo-secure-store';
 const DB_KEY = 'annum.db.key.v1';
 /** "1" when the Face ID lock is on. Read before the database opens, so it lives here. */
 const LOCK_KEY = 'annum.lock.v1';
+/**
+ * The Worker access key this phone scanned (`npm run worker:rotate-key`). This device only, so
+ * it's never in an iCloud backup or an Annum backup file (docs/02 "The Worker").
+ */
+const WORKER_KEY = 'annum.worker.key.v1';
+/** A random id for this phone, sent to Plaid as `client_user_id` (no personal data). */
+const PLAID_USER = 'annum.plaid.user.v1';
 
 export const toHex = (bytes: Uint8Array): string =>
   Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
@@ -59,8 +66,27 @@ export const setLockEnabled = (on: boolean): Promise<void> =>
     ? SecureStore.setItemAsync(LOCK_KEY, '1', storeOptions({}))
     : SecureStore.deleteItemAsync(LOCK_KEY);
 
-/** Delete everything: every Keychain entry Annum wrote (bank tokens join this list in M6+). */
+export const readWorkerKey = (): Promise<string | null> =>
+  SecureStore.getItemAsync(WORKER_KEY, storeOptions({}));
+
+export const saveWorkerKey = (key: string): Promise<void> =>
+  SecureStore.setItemAsync(WORKER_KEY, key, storeOptions({}));
+
+export async function getOrCreatePlaidUserId(): Promise<string> {
+  const existing = await SecureStore.getItemAsync(PLAID_USER, storeOptions({}));
+  if (existing) return existing;
+  const id = `phone-${toHex(await Crypto.getRandomBytesAsync(16))}`;
+  await SecureStore.setItemAsync(PLAID_USER, id, storeOptions({}));
+  return id;
+}
+
+/**
+ * Delete everything: every Keychain entry Annum wrote. Bank tokens live in the database (so
+ * backups carry them); the Worker key goes too, so this phone scans a new code afterwards.
+ */
 export async function deleteAllSecrets(): Promise<void> {
   await SecureStore.deleteItemAsync(DB_KEY);
   await SecureStore.deleteItemAsync(LOCK_KEY);
+  await SecureStore.deleteItemAsync(WORKER_KEY);
+  await SecureStore.deleteItemAsync(PLAID_USER);
 }

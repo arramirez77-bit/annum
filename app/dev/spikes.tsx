@@ -36,6 +36,17 @@ function Spikes() {
     }
   };
 
+  const [plaid, setPlaid] = useState<SpikeStep[] | null>(null);
+  const runPlaid = async () => {
+    setProblem(null);
+    try {
+      const { runPlaidSpike } = await import('@/data/spikes/plaid');
+      setPlaid(await runPlaidSpike());
+    } catch (e) {
+      setProblem(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const [reminders, setReminders] = useState<string[] | null>(null);
   const showReminders = async () => {
     const { scheduledReminderIds } = await import('@/services/notifications');
@@ -99,6 +110,32 @@ function Spikes() {
               last={i === backup.length - 1}
             />
           ))}
+        </View>
+      ) : null}
+      <Text tone="secondary">M7: Plaid Link SDK loads and answers from native code.</Text>
+      <Button
+        variant="secondary"
+        label="Run Plaid SDK check"
+        onPress={runPlaid}
+        testID="run-plaid"
+      />
+      {plaid ? (
+        <View>
+          {plaid.map((s, i) => (
+            <LedgerRow
+              key={s.name}
+              surface="dark"
+              title={s.name}
+              subtitle={s.detail}
+              value={s.pass ? 'Pass' : 'Fail'}
+              last={i === plaid.length - 1}
+            />
+          ))}
+          <Text testID="plaid-result">
+            {plaid.every((s) => s.pass)
+              ? 'Plaid SDK: all checks pass'
+              : 'Plaid SDK: a check failed'}
+          </Text>
         </View>
       ) : null}
       <Button

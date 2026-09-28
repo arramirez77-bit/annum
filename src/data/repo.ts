@@ -52,6 +52,33 @@ export interface LastImport {
   duplicates: number;
 }
 
+/**
+ * A bank connection (a Plaid Item). The access token lives only here, in the encrypted
+ * database, so an encrypted backup brings the connection back without using one of the 10.
+ * Never log it, show it, or put it in a URL.
+ */
+export interface BankConnection {
+  /** Plaid's item_id; for a connection still being finished, a temporary id. */
+  itemId: string;
+  /** The bank's name from Plaid Link, for Settings ("Bank A"). */
+  institution: string;
+  env: 'sandbox' | 'production';
+  /**
+   * ok · needs-reauth: the bank asks to sign in again (Reconnect, update mode) ·
+   * exchanging: Link finished but the token exchange hasn't yet (kept so a restart can finish
+   * it within the public token's 30 minutes: the connection is already used at Plaid).
+   */
+  status: 'ok' | 'needs-reauth' | 'exchanging';
+  accessToken?: string;
+  /** Only while exchanging. */
+  publicToken?: string;
+  /** transactions/sync position; null until the first full sync is saved. */
+  cursor: string | null;
+  /** ISO datetime (local) the connection was made, and of its last good sync. */
+  createdAt: string;
+  lastSynced?: string;
+}
+
 /** Preferences that aren't money settings (S3 Notifications and Privacy, S11 imports). */
 export interface Prefs {
   showAmountsOnLockScreen: boolean;
@@ -95,6 +122,7 @@ export interface Stored {
   reviews: ReviewRecord[];
   rules: CategoryRule[];
   deferred: DeferredPurchase[];
+  connections: BankConnection[];
   weekStart?: WeekStart;
   savingsUnsplit: boolean;
   lateAssumeDays: number;
@@ -180,6 +208,13 @@ const TABLES = [
     columns: ['wait_until', 'status'],
     values: (d) => [d.waitUntil, d.status],
   }),
+  table<BankConnection>({
+    name: 'connections',
+    list: (s) => s.connections,
+    id: (c) => c.itemId,
+    columns: ['status'],
+    values: (c) => [c.status],
+  }),
 ] as Table<unknown>[];
 
 /** Key/value rows: Settings fields and prefs go in `settings`, the rest in `meta`. */
@@ -258,6 +293,7 @@ export class Repo {
       reviews: lists.reviews as ReviewRecord[],
       rules: lists.rules as CategoryRule[],
       deferred: lists.deferred as DeferredPurchase[],
+      connections: lists.connections as BankConnection[],
       buckets: m<Buckets>('buckets', { tax: 0, bills: 0, runway: 0, invest: 0, free: 0 }),
       ...(weekStart ? { weekStart } : {}),
       savingsUnsplit: m('savingsUnsplit', false),
@@ -324,6 +360,36 @@ export class Repo {
     }
     this.saved = nextSaved;
     return plan.length;
+  }
+
+  /**
+   * Bank connections on their own: read before onboarding has finished (a connection made
+   * during setup is saved at once, since it can't be made again).
+   */
+  async loadConnections(): Promise<BankConnection[]> {
+    const rows = await this.db.getAllAsync<{ id: string; body: string }>(
+      'SELECT id, body FROM connections ORDER BY rowid',
+      [],
+    );
+    return rows.map((r) => JSON.parse(r.body) as BankConnection);
+  }
+
+  /** Save one connection now, outside the usual save (see BankConnection). */
+  async putConnection(c: BankConnection): Promise<void> {
+    const body = JSON.stringify(c);
+    await this.db.runAsync(
+      'INSERT INTO connections (id, status, body) VALUES (?, ?, ?) ' +
+        'ON CONFLICT (id) DO UPDATE SET status = excluded.status, body = excluded.body',
+      [c.itemId, c.status, body],
+    );
+    const saved = this.saved.get('connections') ?? new Map<string, string>();
+    saved.set(c.itemId, body);
+    this.saved.set('connections', saved);
+  }
+
+  async deleteConnection(itemId: string): Promise<void> {
+    await this.db.runAsync('DELETE FROM connections WHERE id = ?', [itemId]);
+    this.saved.get('connections')?.delete(itemId);
   }
 
   /** Empty every table (Import backup replaces everything; Delete everything removes the file). */

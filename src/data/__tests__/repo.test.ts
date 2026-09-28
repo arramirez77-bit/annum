@@ -5,7 +5,7 @@
 import { DatabaseSync } from 'node:sqlite';
 
 import { demoSeed } from '@/data/demo';
-import { DEFAULT_PREFS, Repo, type Stored } from '@/data/repo';
+import { DEFAULT_PREFS, Repo, type BankConnection, type Stored } from '@/data/repo';
 import {
   migrate,
   MIGRATIONS,
@@ -47,6 +47,16 @@ function nodeDb(): Db & { raw: DatabaseSync; statements: string[] } {
 }
 
 const seed = demoSeed();
+/** A made-up Sandbox connection (never a real token in this repo). */
+const connection: BankConnection = {
+  itemId: 'item-sandbox-1',
+  institution: 'Bank A',
+  env: 'sandbox',
+  status: 'ok',
+  accessToken: 'access-sandbox-00000000-0000-0000-0000-000000000000',
+  cursor: 'cursor-1',
+  createdAt: '2026-09-20T09:00:00',
+};
 const stored = (): Stored => ({
   settings: seed.settings,
   prefs: DEFAULT_PREFS,
@@ -60,6 +70,7 @@ const stored = (): Stored => ({
   reviews: [],
   rules: [{ merchant: 'litware', category: 'Software', tax: true }],
   deferred: [],
+  connections: [connection],
   weekStart: seed.weekStart,
   savingsUnsplit: false,
   lateAssumeDays: 5,
@@ -79,9 +90,11 @@ describe('migrations', () => {
       .all()
       .map((r) => (r as { name: string }).name);
     // docs/02: accounts, transactions, bills, expected_income, deposits, splits, reviews, rules, deferred, settings, meta
+    // docs/02 + M7: connections (Plaid Items).
     expect(tables).toEqual([
       'accounts',
       'bills',
+      'connections',
       'deferred',
       'deposits',
       'expected_income',
@@ -92,6 +105,19 @@ describe('migrations', () => {
       'splits',
       'transactions',
     ]);
+  });
+
+  test('a file from M5–M6 (version 1) gains the connections table and keeps its data', async () => {
+    const db = nodeDb();
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(MIGRATIONS[0]);
+      await db.execAsync('PRAGMA user_version = 1');
+    });
+    const old = stored();
+    await new Repo(db).save({ ...old, connections: [] });
+    expect(await migrate(db)).toBe(1);
+    const loaded = await new Repo(db).load();
+    expect(loaded?.connections).toEqual([]);
   });
 
   test('a file from a newer Annum is refused, not overwritten', async () => {
@@ -173,6 +199,22 @@ describe('repository', () => {
     broken.settings = { ...broken.settings, taxRate: 0.35 };
     await expect(repo.save(broken)).rejects.toThrow();
     expect((await new Repo(db).load())?.settings.taxRate).toBe(stored().settings.taxRate);
+  });
+
+  test('a connection made during setup is saved at once and read before setup finishes', async () => {
+    const db = nodeDb();
+    await migrate(db);
+    const repo = new Repo(db);
+    await repo.putConnection({ ...connection, status: 'exchanging', publicToken: 'public-x' });
+    expect(await repo.load()).toBeNull(); // setup hasn't finished
+    expect(await new Repo(db).loadConnections()).toMatchObject([{ status: 'exchanging' }]);
+    await repo.putConnection(connection);
+    expect(await new Repo(db).loadConnections()).toEqual([connection]);
+    // The usual save knows about it: it neither rewrites nor deletes it.
+    await repo.save(stored());
+    expect(await new Repo(db).loadConnections()).toEqual([connection]);
+    await repo.deleteConnection(connection.itemId);
+    expect(await new Repo(db).loadConnections()).toEqual([]);
   });
 
   test('clear empties every table', async () => {

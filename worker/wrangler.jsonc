@@ -1,0 +1,22 @@
+// Annum's Plaid proxy on the Cloudflare Workers Free plan. See README.md in this folder.
+// Secrets (PLAID_CLIENT_ID, PLAID_SECRET_SANDBOX, PLAID_SECRET_PRODUCTION, ANNUM_WORKER_KEY)
+// are set with `wrangler secret put` and never live in this file or this repo.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "annum",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  // No logs of any kind: Cloudflare keeps no copy of what passes through.
+  "observability": { "enabled": false },
+  "logpush": false,
+  // One number: bank connections used on the Plaid Trial (shared by both phones).
+  "kv_namespaces": [{ "binding": "COUNT", "id": "KV_NAMESPACE_ID" }],
+  "ratelimits": [
+    // Calls with the right access key, both phones together.
+    { "name": "PHONES_LIMIT", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
+    // Calls with a wrong or old key.
+    { "name": "REFUSED_LIMIT", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } }
+  ]
+}

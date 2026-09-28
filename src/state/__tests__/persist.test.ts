@@ -20,6 +20,7 @@ const persisted = (): Persisted => ({
   reviews: [{ id: 'review-2026-09-20', date: '2026-09-20' }],
   rules: [],
   deferred: [],
+  connections: [],
   reviewStep: 3,
   pendingTransfer: { amount: 105000, markedOn: '2026-09-23' },
   startedOn: '2026-09-01',
