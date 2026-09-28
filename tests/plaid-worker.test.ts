@@ -255,6 +255,18 @@ describe('exchange', () => {
     expect(s.kv.get(COUNT_KEY)).toBe('3');
   });
 
+  it('always hands back the token, even when the count can’t be read or written', async () => {
+    for (const COUNT of [
+      { get: async () => null, put: async () => Promise.reject(new Error('KV write limit')) },
+      { get: async () => Promise.reject(new Error('KV down')), put: async () => undefined },
+    ]) {
+      const s = setup({ PLAID_SECRET_PRODUCTION: 'prod', COUNT }, 3);
+      const res = await s.post('exchange', { public_token: 'public-production-xyz' });
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({ access_token: 'access-production-abc' });
+    }
+  });
+
   it('passes Plaid problems through and counts nothing', async () => {
     const s = setup({ PLAID_SECRET_PRODUCTION: 'prod' }, 3, 400);
     const res = await s.post('exchange', { public_token: 'public-production-xyz' });
@@ -289,7 +301,16 @@ describe('forwarded calls', () => {
 
   it('refuses calls outside the allowlist', async () => {
     const s = setup();
-    for (const path of ['transfer/create', 'item/webhook/update', 'processor/token/create']) {
+    for (const path of [
+      'transfer/create',
+      'item/webhook/update',
+      'processor/token/create',
+      // Object's own built-ins are not routes (they used to crash the Worker).
+      'constructor',
+      '__proto__',
+      'toString',
+      'hasOwnProperty',
+    ]) {
       expect((await s.post(path, { access_token: 'access-sandbox-1' })).status).toBe(404);
     }
     expect((await s.post('accounts/get', { access_token: 'nope' })).status).toBe(400);

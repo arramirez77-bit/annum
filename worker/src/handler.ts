@@ -232,10 +232,17 @@ export async function handle(request: Request, env: Env, fetchPlaid: Fetch): Pro
     if (r.off) return off(plaidEnv);
     if (!r.res.ok) return relay(r.res);
     const out = (await r.res.json()) as { access_token: string; item_id: string };
-    let used = await readCount(env);
-    if (plaidEnv === 'production') {
-      used += 1;
-      await env.COUNT.put(COUNT_KEY, String(used));
+    // The access token must reach the phone whatever happens to the count (it's a courtesy
+    // number; Plaid's Dashboard is the real one): a KV hiccup here would lose the connection.
+    let used = 0;
+    try {
+      used = await readCount(env);
+      if (plaidEnv === 'production') {
+        used += 1;
+        await env.COUNT.put(COUNT_KEY, String(used));
+      }
+    } catch {
+      // Keep going: the phone gets its token; the count can be corrected from the Dashboard.
     }
     return json(200, { access_token: out.access_token, item_id: out.item_id, used });
   }
@@ -254,7 +261,8 @@ export async function handle(request: Request, env: Env, fetchPlaid: Fetch): Pro
     return r.off ? off('sandbox') : relay(r.res);
   }
 
-  const forward = FORWARD[route];
+  // Own keys only: `/v1/constructor` or `/v1/__proto__` must not find Object's built-ins.
+  const forward = Object.hasOwn(FORWARD, route) ? FORWARD[route] : undefined;
   if (forward) {
     const plaidEnv = envOfToken(body.access_token);
     if (!plaidEnv) return refuse(400, 'bad-request');
