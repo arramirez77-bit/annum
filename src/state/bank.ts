@@ -444,15 +444,22 @@ export type PairResult = 'paired' | 'refused' | 'offline' | 'unavailable';
 
 /** Pair this phone with the key from the QR code, and check it with the Worker. */
 export async function pairWith(key: string): Promise<PairResult> {
-  await saveWorkerKey(key);
-  const r = await checkCount();
-  if (r.kind === 'ok') {
+  // Checked before it's saved: a link from anywhere (a web page, a message) could carry a
+  // made-up key, and saving that would cut this phone off from its banks. Until the Worker
+  // accepts the new key, the phone keeps the one it has.
+  try {
+    const status = await client.statusWith(key);
+    await saveWorkerKey(key);
+    reached();
+    useBank.setState({ count: status });
     void syncAll({ force: true });
     return 'paired';
+  } catch (e) {
+    if (!(e instanceof WorkerError)) return 'unavailable';
+    if (e.problem === 'key-refused') return 'refused';
+    if (e.problem === 'offline') return 'offline';
+    return 'unavailable';
   }
-  if (r.problem === 'key-refused') return 'refused';
-  if (r.problem === 'offline') return 'offline';
-  return 'unavailable';
 }
 
 /** The access key from a QR code link: 32+ URL-safe characters, nothing else. */

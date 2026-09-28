@@ -78,8 +78,13 @@ export function workerClient(options: WorkerClientOptions) {
   const doFetch: Fetch = options.fetch ?? ((url, init) => fetch(url, init));
   const timeoutMs = options.timeoutMs ?? 30_000;
 
-  async function call<T>(route: string, body: Record<string, unknown>): Promise<T> {
-    const key = await options.getKey();
+  /** `withKey`: a scanned key being checked before it's saved (otherwise the saved one). */
+  async function call<T>(
+    route: string,
+    body: Record<string, unknown>,
+    withKey?: string,
+  ): Promise<T> {
+    const key = withKey ?? (await options.getKey());
     if (!key) throw new WorkerError('not-paired');
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -121,6 +126,9 @@ export function workerClient(options: WorkerClientOptions) {
 
   return {
     status: () => call<WorkerStatus>('status', {}),
+
+    /** The count, asked with a scanned key that isn't saved yet: does the Worker accept it? */
+    statusWith: (key: string) => call<WorkerStatus>('status', {}, key),
 
     /** A link token for a new connection. */
     linkToken: (env: PlaidEnv, clientUserId: string) =>

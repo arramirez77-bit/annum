@@ -18,8 +18,8 @@ const STEPS = [
 
 /**
  * Pair this phone: opened by the QR code from `npm run worker:rotate-key` (annum://pair?key=…),
- * or from Settings to see how. Saves the key in the Keychain (this device only) after Annum is
- * unlocked, then checks it with the Worker. Bank connections don't change. docs/05.
+ * or from Settings to see how. After Annum is unlocked, checks the key with the Worker and only
+ * then saves it in the Keychain (this device only). Bank connections don't change. docs/05.
  */
 export default function Pair() {
   const phase = useAppStore((s) => s.phase);
@@ -73,7 +73,7 @@ export default function Pair() {
         ) : null}
         {state === 'refused' ? (
           <GuardrailNote tone="heads-up" testID="pair-result">
-            That code has already been replaced. Scan the newest code from your laptop.
+            That isn’t the current code, so nothing changed. Scan the newest code from your laptop.
           </GuardrailNote>
         ) : null}
         {state === 'invalid' ? (
@@ -84,8 +84,8 @@ export default function Pair() {
         {state === 'offline' || state === 'unavailable' ? (
           <GuardrailNote tone="info" testID="pair-result">
             {state === 'offline'
-              ? 'Saved. Annum will check the code when this phone is back online.'
-              : 'Saved. Annum couldn’t check it just now and will try again later.'}
+              ? 'This phone is offline, so the code wasn’t saved yet. Scan it again when you’re back online.'
+              : 'Annum couldn’t check the code just now, so it wasn’t saved yet. Scan it again in a moment.'}
           </GuardrailNote>
         ) : null}
         {state === 'instructions' || state === 'refused' || state === 'invalid' ? (

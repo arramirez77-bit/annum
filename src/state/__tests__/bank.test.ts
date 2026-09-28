@@ -567,8 +567,22 @@ describe('pairing and ending', () => {
   it('pairs with a scanned key', async () => {
     mockPhoneKey = null;
     expect(await pairWith('k'.repeat(43))).toBe('paired');
+    expect(mockPhoneKey).toBe('k'.repeat(43));
     expect(useBank.getState().access).toBe('paired');
+  });
+
+  it('keeps the working key when a link carries one the Worker refuses', async () => {
+    // e.g. a web page opening annum://pair?key=<made up>
     expect(await pairWith('x'.repeat(43))).toBe('refused');
+    expect(mockPhoneKey).toBe('k'.repeat(43));
+    expect(useBank.getState().access).not.toBe('key-refused');
+  });
+
+  it('saves nothing it couldn’t check (offline)', async () => {
+    mockPhoneKey = null;
+    plaid.down = true;
+    expect(await pairWith('k'.repeat(43))).toBe('offline');
+    expect(mockPhoneKey).toBeNull();
   });
 
   it('ends every connection at Plaid only when asked', async () => {
