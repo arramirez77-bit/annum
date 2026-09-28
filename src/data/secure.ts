@@ -84,9 +84,10 @@ export async function getOrCreatePlaidUserId(): Promise<string> {
  * Delete everything: every Keychain entry Annum wrote. Bank tokens live in the database (so
  * backups carry them); the Worker key goes too, so this phone scans a new code afterwards.
  */
-export async function deleteAllSecrets(): Promise<void> {
+export async function deleteAllSecrets(options: { keepPairing?: boolean } = {}): Promise<void> {
   await SecureStore.deleteItemAsync(DB_KEY);
   await SecureStore.deleteItemAsync(LOCK_KEY);
-  await SecureStore.deleteItemAsync(WORKER_KEY);
+  // Development "start over" keeps the pairing so test runs don't need a new code each time.
+  if (!options.keepPairing) await SecureStore.deleteItemAsync(WORKER_KEY);
   await SecureStore.deleteItemAsync(PLAID_USER);
 }

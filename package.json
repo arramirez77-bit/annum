@@ -13,7 +13,9 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "prepare": "git config core.hooksPath .githooks || true",
+    "worker:deploy": "npm --prefix worker run deploy",
+    "worker:rotate-key": "node worker/scripts/rotate-key.mjs"
   },
   "dependencies": {
     "@react-native-community/datetimepicker": "9.1.0",

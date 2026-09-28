@@ -16,7 +16,7 @@ name: Salary end to end
 - tapOn:
     id: 'onboarding-continue'
 - tapOn:
-    id: 'connect-bank'
+    id: 'connect-sample'
 - assertVisible: 'Accounts found'
 - assertVisible: 'Woodgrove checking.*\$3,800.*Sample bank.*'
 - assertVisible: 'Fabrikam Invest.*Entered by hand.*'

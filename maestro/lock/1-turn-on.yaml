@@ -9,7 +9,7 @@ name: 'Lock 1: turn on Face ID and reminders'
 - tapOn:
     id: 'onboarding-skip'
 - tapOn:
-    id: 'connect-bank'
+    id: 'connect-sample'
 - scrollUntilVisible:
     element:
       id: 'onboarding-continue'

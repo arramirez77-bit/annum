@@ -28,6 +28,7 @@ import {
   takeLaunchReminder,
 } from '@/services/notifications';
 
+import { resetBankUi } from './bank';
 import { relockAfterMs, shouldRelock } from './lock-rules';
 import { useOnboarding, type OnboardingDraft } from './onboarding';
 import { PERSISTED_KEYS, persistedFrom, storedFrom, type Persisted } from './persist';
@@ -98,6 +99,8 @@ const SHEETS = new Set([
   'account/[id]/balance',
   'bill/[id]',
   'transaction/new',
+  'bank/connect',
+  'pair',
 ]);
 
 type NavState = { routes: { name: string; state?: NavState }[] };
@@ -320,13 +323,14 @@ export async function restoreFrom(uri: string, passphrase: string): Promise<Rest
 }
 
 /** S8 Delete everything: database, Keychain, notifications, exported files. Widget snapshot: M8. */
-export async function deleteEverything(): Promise<void> {
+export async function deleteEverything(options: { keepPairing?: boolean } = {}): Promise<void> {
   if (timer) clearTimeout(timer);
   timer = null;
   lastPlan = '';
-  await wipeStorage();
+  await wipeStorage(options);
   await clearAllNotifications();
   useOnboarding.getState().clear();
+  if (!options.keepPairing) resetBankUi();
   store().reset();
 }
 

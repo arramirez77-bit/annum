@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 
 import { setPrivacyCoverColor } from '../modules/privacy-cover';
 import { configureNotifications } from '@/services/notifications';
+import { startBankSync } from '@/state/bank';
 import {
   boot,
   startAutosave,
@@ -49,7 +50,13 @@ export default function RootLayout() {
 
   useEffect(() => {
     setPrivacyCoverColor(color.bgBase);
-    const stops = [startAutosave(), startLifecycle(), startReminders(), startReminderLinks()];
+    const stops = [
+      startAutosave(),
+      startLifecycle(),
+      startReminders(),
+      startReminderLinks(),
+      startBankSync(),
+    ];
     void boot();
     return () => stops.forEach((stop) => stop());
   }, []);
@@ -86,6 +93,8 @@ export default function RootLayout() {
         </Stack.Protected>
         <Stack.Screen name="account/[id]/balance" options={formSheet([0.7, 1])} />
         <Stack.Screen name="import" options={pushedHeader('Import a file', 'Back')} />
+        <Stack.Screen name="bank/connect" options={formSheet([0.7, 1])} />
+        <Stack.Screen name="pair" options={modalScreen} />
       </Stack>
       <Gate />
     </ThemeProvider>

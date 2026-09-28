@@ -10,7 +10,11 @@ import {
   type ISODate,
 } from '@/domain';
 
-import type { SyncProblem } from '../sync/provider';
+/**
+ * Why a sync couldn't finish; each maps to a calm state (Reconnect, or try again later).
+ * Offline and a replaced access key are Worker problems (client.ts), not Plaid's.
+ */
+export type SyncProblem = 'needs-reauth' | 'provider-unavailable' | 'unknown';
 
 /* ---------- the parts of Plaid's responses Annum reads ---------- */
 

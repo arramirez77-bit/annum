@@ -1,0 +1,102 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "solid": "srgb:0.06667,0.11765,0.09804,1.00000"
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "solid": "srgb:0.06667,0.11765,0.09804,1.00000"
+      }
+    }
+  ],
+  "groups": [
+    {
+      "name": "Today",
+      "layers": [
+        {
+          "image-name": "today.svg",
+          "name": "today",
+          "glass": true,
+          "position": {
+            "scale": 1.1,
+            "translation-in-points": [0, 0]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.4
+      },
+      "specular": true
+    },
+    {
+      "name": "Buckets",
+      "layers": [
+        {
+          "image-name": "tax.svg",
+          "name": "tax",
+          "glass": true,
+          "position": {
+            "scale": 1.1,
+            "translation-in-points": [0, 0]
+          }
+        },
+        {
+          "image-name": "bills.svg",
+          "name": "bills",
+          "glass": true,
+          "position": {
+            "scale": 1.1,
+            "translation-in-points": [0, 0]
+          }
+        },
+        {
+          "image-name": "runway.svg",
+          "name": "runway",
+          "glass": true,
+          "position": {
+            "scale": 1.1,
+            "translation-in-points": [0, 0]
+          }
+        },
+        {
+          "image-name": "invest.svg",
+          "name": "invest",
+          "glass": true,
+          "position": {
+            "scale": 1.1,
+            "translation-in-points": [0, 0]
+          }
+        },
+        {
+          "image-name": "free.svg",
+          "name": "free",
+          "glass": true,
+          "position": {
+            "scale": 1.1,
+            "translation-in-points": [0, 0]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.3
+      },
+      "specular": true
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

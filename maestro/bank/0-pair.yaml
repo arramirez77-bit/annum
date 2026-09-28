@@ -1,0 +1,17 @@
+# Pairing: scripts/maestro-bank.sh has just sent this Simulator the pairing link (the key never
+# appears in a flow or a log). Tap "Open" if iOS asks, then the Pair screen checks the key.
+appId: com.highdesert.annum
+name: Bank 0 · pair this phone
+---
+- runFlow:
+    when:
+      visible: 'Open'
+    commands:
+      - tapOn: 'Open'
+- extendedWaitUntil:
+    visible: 'This phone is paired|This phone can reach your banks again'
+    timeout: 30000
+- assertVisible: 'Nothing about your bank connections changed\..*'
+- takeScreenshot: m7-paired
+- tapOn:
+    id: 'pair-done'

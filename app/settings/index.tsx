@@ -5,6 +5,8 @@ import { View } from 'react-native';
 
 import { lockCapability, authenticate, type LockCapability } from '@/services/lock';
 import { askForReminders } from '@/services/notifications';
+import { checkCount, useBank } from '@/state/bank';
+import { connectionRows, countLabel } from '@/state/bank-views';
 import { setLock } from '@/state/session';
 import { buildSettingsView } from '@/state/settings-views';
 import { useAppStore } from '@/state/store';
@@ -31,6 +33,9 @@ export default function SettingsScreen() {
   const prefs = useAppStore((s) => s.prefs);
   const mode = useAppStore((s) => s.mode);
   const lockEnabled = useAppStore((s) => s.lockEnabled);
+  const connections = useAppStore((s) => s.connections);
+  const count = useBank((s) => s.count);
+  const access = useBank((s) => s.access);
   const setModules = useAppStore((s) => s.setModules);
   const setPrefs = useAppStore((s) => s.setPrefs);
   const [capability, setCapability] = useState<LockCapability>('face-id');
@@ -39,6 +44,11 @@ export default function SettingsScreen() {
   useEffect(() => {
     void lockCapability().then(setCapability);
   }, []);
+  useEffect(() => {
+    // The shared count ("7 of 10 left"), fresh each visit: the other phone may have used one.
+    if (mode === 'real') void checkCount();
+  }, [mode]);
+  const banks = connectionRows(connections, new Date());
 
   const toggleLock = async (on: boolean) => {
     setNote(null);
@@ -176,7 +186,45 @@ export default function SettingsScreen() {
             />
           ))}
         </View>
+        {banks.length ? (
+          <View>
+            {banks.map((b, i) => (
+              <LedgerRow
+                key={b.id}
+                surface="dark"
+                title={b.title}
+                subtitle={b.subtitle}
+                value={b.reconnect ? 'Reconnect' : undefined}
+                onPress={
+                  b.reconnect
+                    ? () => router.push({ pathname: '/bank/connect', params: { item: b.id } })
+                    : undefined
+                }
+                last={i === banks.length - 1}
+                testID={`settings-bank-${i}`}
+              />
+            ))}
+          </View>
+        ) : null}
         <SettingsGroup>
+          <SettingsRow
+            variant="value"
+            label="Bank connections"
+            value={access === 'not-paired' ? 'Pair this phone first' : countLabel(count)}
+            testID="settings-bank-count"
+          />
+          <SettingsRow
+            variant="chevron"
+            label="Add a bank"
+            onPress={() => router.push('/bank/connect')}
+            testID="settings-add-bank"
+          />
+          <SettingsRow
+            variant="chevron"
+            label="Scan a new access code"
+            onPress={() => router.push('/pair')}
+            testID="settings-pair"
+          />
           <SettingsRow
             variant="chevron"
             label="Add an account by hand"
@@ -243,7 +291,6 @@ export default function SettingsScreen() {
           onValueChange={(showAmountsOnLockScreen) => setPrefs({ showAmountsOnLockScreen })}
           testID="privacy-amounts"
         />
-        <SettingsRow variant="value" label="Connected banks" value={v.connected} />
         <SettingsRow
           variant="chevron"
           label="Export all data"

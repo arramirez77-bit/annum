@@ -201,7 +201,10 @@ export async function handle(request: Request, env: Env, fetchPlaid: Fetch): Pro
       // Update mode: repairs a connection in place. Always allowed, even with none left.
       const plaidEnv = envOfToken(accessToken);
       if (!plaidEnv) return refuse(400, 'bad-request');
-      const r = await plaid(plaidEnv, 'link/token/create', { ...common, access_token: accessToken });
+      const r = await plaid(plaidEnv, 'link/token/create', {
+        ...common,
+        access_token: accessToken,
+      });
       return r.off ? off(plaidEnv) : relay(r.res);
     }
     const plaidEnv = body.env;

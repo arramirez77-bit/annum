@@ -58,7 +58,8 @@ function setup(over: Partial<Env> = {}, used = 0, plaidStatus = 200) {
       env,
       fetchPlaid,
     );
-  const get = (path: string) => handle(new Request(`https://annum.example${path}`), env, fetchPlaid);
+  const get = (path: string) =>
+    handle(new Request(`https://annum.example${path}`), env, fetchPlaid);
   return { env, kv, calls, limits, post, get };
 }
 

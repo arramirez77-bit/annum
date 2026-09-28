@@ -1,6 +1,8 @@
 /** Account rows (O4 Accounts, S10, Settings). Pure, unit-tested. */
 import { formatDollars, formatShortDate, type Account } from '@/domain';
 
+import { syncedLabel } from './bank-views';
+
 export const ACCOUNT_TYPES: { value: Account['type']; label: string }[] = [
   { value: 'checking', label: 'Checking' },
   { value: 'savings', label: 'Savings' },
@@ -29,7 +31,7 @@ export function accountRow(a: Account) {
             ? `Imported ${formatShortDate(a.lastSynced.slice(0, 10))}`
             : 'From a file'
           : a.lastSynced
-            ? `Updated ${time.format(new Date(a.lastSynced))}`
+            ? `Updated ${syncedLabel(a.lastSynced, new Date())}`
             : 'Connected';
   return {
     id: a.id,

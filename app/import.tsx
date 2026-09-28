@@ -109,6 +109,11 @@ export default function ImportFile() {
   const prefs = useAppStore((s) => s.prefs);
   const draftAccounts = useOnboarding((s) => s.accounts);
   const accounts = onboarding ? draftAccounts : data.accounts;
+  /** Connected banks (and the sample bank) update themselves: files go to the other accounts. */
+  const importable = useMemo(
+    () => accounts.filter((a) => a.source !== 'demo' && a.source !== 'plaid'),
+    [accounts],
+  );
 
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -130,8 +135,8 @@ export default function ImportFile() {
     (file: Extract<BankFile, { kind: 'ofx' }>, i: number) => {
       const s = file.statements[i];
       const match =
-        accounts.find((a) => s.last4 && a.last4 === s.last4) ??
-        accounts.find((a) => a.type === s.type && a.source !== 'demo');
+        importable.find((a) => s.last4 && a.last4 === s.last4) ??
+        importable.find((a) => a.type === s.type);
       setStatement(i);
       setTarget(match?.id ?? 'new');
       setNewType(s.type);
@@ -139,7 +144,7 @@ export default function ImportFile() {
       setBalance(s.balance ?? match?.balance ?? null);
       setBalanceFrom(s.balance !== undefined ? (s.balanceDate ?? null) : null);
     },
-    [accounts],
+    [importable],
   );
 
   /** Read a file's text into the review step. */
@@ -470,25 +475,23 @@ export default function ImportFile() {
           Which account is this?
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[8] }}>
-          {accounts
-            .filter((a) => a.source !== 'demo')
-            .map((a) => (
-              <Chip
-                key={a.id}
-                kind="category"
-                label={a.name}
-                selected={target === a.id}
-                onPress={() => {
-                  setTarget(a.id);
-                  if (file.kind !== 'ofx' || file.statements[statement].balance === undefined) {
-                    const fromFile = csv && mapping ? csvBalance(csv, mapping) : undefined;
-                    setBalance(fromFile?.amount ?? a.balance);
-                    setBalanceFrom(fromFile?.date ?? null);
-                  }
-                }}
-                testID={`import-account-${a.id}`}
-              />
-            ))}
+          {importable.map((a) => (
+            <Chip
+              key={a.id}
+              kind="category"
+              label={a.name}
+              selected={target === a.id}
+              onPress={() => {
+                setTarget(a.id);
+                if (file.kind !== 'ofx' || file.statements[statement].balance === undefined) {
+                  const fromFile = csv && mapping ? csvBalance(csv, mapping) : undefined;
+                  setBalance(fromFile?.amount ?? a.balance);
+                  setBalanceFrom(fromFile?.date ?? null);
+                }
+              }}
+              testID={`import-account-${a.id}`}
+            />
+          ))}
           <Chip
             kind="category"
             label="A new account"

@@ -1,0 +1,54 @@
+# M7: first run with a Sandbox bank through the Worker (a test connection without Link's
+# screens): the "uses 1 of your 10" sheet, the connection, accounts found, then Today.
+appId: com.highdesert.annum
+name: Bank 1 · connect during setup
+---
+- runFlow: ../common/start-over.yaml
+- tapOn:
+    id: 'welcome-start'
+- tapOn:
+    id: 'onboarding-skip'
+- tapOn:
+    id: 'connect-bank'
+- extendedWaitUntil:
+    visible:
+      id: 'connect-go'
+    timeout: 30000
+- assertVisible: 'Connect a test bank'
+- assertVisible: '.*doesn’t use any of your 10 bank connections \([0-9]+ left for both phones\)\.'
+- takeScreenshot: m7-confirm
+- tapOn:
+    id: 'connect-skip-link'
+- extendedWaitUntil:
+    visible: 'First Platypus Bank is connected'
+    timeout: 90000
+- assertVisible: 'Annum brought in [0-9,]+ transactions\.'
+- takeScreenshot: m7-connected
+- tapOn:
+    id: 'connect-done'
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-accounts'
+    timeout: 10000
+- assertVisible: 'Accounts found'
+- assertVisible: 'Plaid Checking.*'
+- assertVisible: 'Plaid Saving.*'
+- takeScreenshot: m7-accounts
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-continue'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-continue'
+- tapOn:
+    id: 'face-id-later'
+- tapOn:
+    id: 'reminders-later'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 10000
+- assertVisible:
+    id: 'today-updated'
+    text: '.* · Updated .*'
+- takeScreenshot: m7-today

@@ -112,7 +112,7 @@ export function save(stored: Stored): Promise<number> {
 }
 
 /** Delete everything: the database file, the Keychain entries, and files Annum wrote. */
-export function wipeStorage(): Promise<void> {
+export function wipeStorage(options: { keepPairing?: boolean } = {}): Promise<void> {
   return exclusive(async () => {
     if (open) {
       await open.db.closeAsync().catch(() => undefined);
@@ -126,7 +126,7 @@ export function wipeStorage(): Promise<void> {
       );
       if (side.exists) side.delete();
     }
-    await deleteAllSecrets();
+    await deleteAllSecrets(options);
     clearExportedFiles();
   });
 }

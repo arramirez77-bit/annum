@@ -34,6 +34,7 @@ app/
   account/[id]/balance.tsx     S10 Edit balance (manual accounts) presentation: 'formSheet'
   import.tsx                   S11 Import a file (CSV/OFX)
   pair.tsx                     Pair this phone (opened by the QR code from `npm run worker:rotate-key`)
+  bank/connect.tsx             Connect a bank: "uses 1 of your 10" → Plaid Link · E4 · Reconnect (?item=)  presentation: 'formSheet'
   invest.tsx                   S6 Invest handoff
   deferred/[id].tsx            S7 Waited-on purchase             presentation: 'formSheet'
   settings/index.tsx           S3 Settings (pushed from Today header)

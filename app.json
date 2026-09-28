@@ -34,7 +34,8 @@
         ],
         "LSSupportsOpeningDocumentsInPlace": false
       },
-      "associatedDomains": ["applinks:annum.highdesert.workers.dev"]
+      "associatedDomains": ["applinks:annum.highdesert.workers.dev"],
+      "icon": "./assets/Annum.icon"
     },
     "plugins": [
       "expo-router",

@@ -10,16 +10,17 @@ import { AmountInput, Button, LedgerRow, ScreenScroll, Text } from '@/ui/compone
 export default function Accounts() {
   const o = useOnboarding();
   const rows = o.accounts.map(accountRow);
+  const found = o.path === 'demo' || o.path === 'bank';
   const edit = (id: string) =>
     router.push({ pathname: '/account/[id]/balance', params: { id, draft: '1' } });
   return (
     <ScreenScroll testID="onboarding-accounts">
       <View style={{ gap: space[4] }}>
         <Text variant="title2" accessibilityRole="header">
-          {o.path === 'demo' ? 'Accounts found' : 'Your accounts'}
+          {found ? 'Accounts found' : 'Your accounts'}
         </Text>
         <Text tone="secondary">
-          {o.path === 'demo'
+          {found
             ? 'Add a brokerage or loan by hand if it didn’t come through.'
             : 'Type in what each account holds today. You can change these any time.'}
         </Text>
@@ -38,8 +39,16 @@ export default function Accounts() {
           />
         ))}
       </View>
+      {o.path === 'bank' ? (
+        <Button
+          variant="secondary"
+          label="Add another bank"
+          onPress={() => router.push({ pathname: '/bank/connect', params: { from: 'setup' } })}
+          testID="account-add-bank"
+        />
+      ) : null}
       <Button
-        variant="secondary"
+        variant={o.path === 'bank' ? 'quiet' : 'secondary'}
         label="Add an account by hand"
         onPress={() => edit('new')}
         testID="account-add"

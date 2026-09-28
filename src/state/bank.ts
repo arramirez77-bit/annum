@@ -21,6 +21,7 @@ import type { BankConnection } from '@/data/repo';
 import { getOrCreatePlaidUserId, readWorkerKey, saveWorkerKey } from '@/data/secure';
 import { deleteConnection, loadConnections, putConnection } from '@/data/storage';
 import { reviewWeekStart, type Account } from '@/domain';
+import { registerBackgroundRefresh, setBackgroundRefresh } from '@/services/background';
 import { openPlaidLink, type LinkResult } from '@/services/plaid-link';
 
 import { useOnboarding } from './onboarding';
@@ -395,8 +396,21 @@ export const isPairingKey = (key: string): boolean => /^[A-Za-z0-9_-]{32,128}$/.
 
 /* ---------- when to sync ---------- */
 
+/**
+ * Background refresh: only with data already in memory (see services/background.ts); the
+ * autosave writes the result before iOS suspends the app again.
+ */
+async function backgroundSync(): Promise<void> {
+  const s = app();
+  if (s.mode !== 'real' || !s.loaded || !s.connections.length) return;
+  await syncAll();
+  const { flushSaves } = await import('./session');
+  await flushSaves();
+}
+
 /** Sync when data is loaded or the app comes back, and learn whether this phone is paired. */
 export function startBankSync(): () => void {
+  setBackgroundRefresh(backgroundSync);
   void readWorkerKey()
     .then((key) => {
       if (!key) useBank.setState({ access: 'not-paired' });
@@ -405,6 +419,7 @@ export function startBankSync(): () => void {
   const unsubscribe = useAppStore.subscribe((s, prev) => {
     if (s.loaded && s.phase === 'ready' && !(prev.loaded && prev.phase === 'ready')) {
       void syncAll();
+      if (s.connections.length) void registerBackgroundRefresh();
     }
   });
   const sub = AppState.addEventListener('change', (next) => {

@@ -1,0 +1,33 @@
+# M7: with a bank connected, Delete everything names the cost of reconnecting later and offers
+# ending the connections at Plaid (off by default). This flow cancels: it deletes nothing.
+appId: com.highdesert.annum
+name: Bank 3 · delete everything warns
+---
+- stopApp
+- openLink: 'exp+annum://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 30000
+- tapOn:
+    id: 'open-settings'
+- scrollUntilVisible:
+    element:
+      id: 'privacy-delete'
+    direction: DOWN
+- tapOn:
+    id: 'privacy-delete'
+- extendedWaitUntil:
+    visible:
+      id: 'delete-banks-note'
+    timeout: 10000
+- assertVisible: '.*Reconnecting banks later uses new connections — [0-9]+ of 10 left for both phones\. A backup brings these connections back without using any\.'
+- assertVisible: 'Bank connections on this phone'
+- scrollUntilVisible:
+    element:
+      id: 'delete-end-at-plaid'
+    direction: DOWN
+- assertVisible: 'Also end my bank connections at Plaid.*'
+- takeScreenshot: m7-delete
+- tapOn:
+    id: 'delete-cancel'

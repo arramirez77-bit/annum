@@ -1,0 +1,10 @@
+# Opens Annum (Metro on :8082) before scripts/maestro-bank.sh sends the pairing link.
+appId: com.highdesert.annum
+name: Bank · open the app
+---
+- stopApp
+- openLink: 'exp+annum://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082'
+- extendedWaitUntil:
+    visible:
+      id: 'welcome|today|onboarding-.*'
+    timeout: 30000

@@ -2,6 +2,7 @@ import { Redirect, router, Stack } from 'expo-router';
 import { ScrollView } from 'react-native';
 
 import { DEMO_SCENARIOS, type ScenarioName } from '@/data/demo';
+import { breakSandboxConnection } from '@/state/bank';
 import { setRelockAfterForTesting } from '@/state/lock-rules';
 import { backToMyData, deleteEverything } from '@/state/session';
 import { useAppStore } from '@/state/store';
@@ -23,6 +24,7 @@ export default function ScenariosScreen() {
   const current = useAppStore((s) => s.scenario);
   const mode = useAppStore((s) => s.mode);
   const setScenario = useAppStore((s) => s.setScenario);
+  const testBank = useAppStore((s) => s.connections.some((c) => c.env === 'sandbox'));
   if (!__DEV__ && mode !== 'demo') return <Redirect href="/" />;
   return (
     <>
@@ -71,12 +73,23 @@ export default function ScenariosScreen() {
         {__DEV__ && (
           <Button
             variant="quiet"
-            label="Erase this phone’s Annum data and start over"
+            label="Erase and start over (keeps pairing)"
             onPress={async () => {
-              await deleteEverything();
+              await deleteEverything({ keepPairing: true });
               router.dismissTo('/welcome');
             }}
             testID="dev-start-over"
+          />
+        )}
+        {__DEV__ && mode === 'real' && testBank && (
+          <Button
+            variant="quiet"
+            label="Make the test bank ask to sign in again"
+            onPress={async () => {
+              await breakSandboxConnection();
+              router.dismissTo('/');
+            }}
+            testID="dev-break-bank"
           />
         )}
         {__DEV__ && (

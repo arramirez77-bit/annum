@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
-import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, useWindowDimensions, View } from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -10,6 +10,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { formatDollars } from '@/domain';
+import { syncAll, useBank } from '@/state/bank';
+import { todayBankFootnote, todayBankNote } from '@/state/bank-views';
 import { useTodayView } from '@/state/hooks';
 import { useAppStore } from '@/state/store';
 import { color, layout, motion, opacity, radius, space, symbols } from '@/theme';
@@ -21,6 +23,19 @@ export default function TodayScreen() {
   const v = useTodayView();
   const demo = useAppStore((s) => s.mode === 'demo');
   const saveProblem = useAppStore((s) => s.saveProblem);
+  const connections = useAppStore((s) => s.connections);
+  const { access, syncing, offline } = useBank();
+  const bankNote = todayBankNote(access, connections);
+  const bankFootnote = todayBankFootnote(syncing, offline, connections);
+  // Pull to refresh asks the bank for live balances (docs/02).
+  const refresh =
+    connections.length && !demo ? (
+      <RefreshControl
+        refreshing={syncing}
+        onRefresh={() => void syncAll({ live: true, force: true })}
+        tintColor={color.textPrimary}
+      />
+    ) : undefined;
   // 01c: short screens (iPhone SE) get the Display hero and a one-line sentence. docs/04.
   const compact = useWindowDimensions().height < layout.compactHeight;
   const reduceMotion = useReducedMotion();
@@ -57,6 +72,7 @@ export default function TodayScreen() {
         contentContainerStyle={{ flexGrow: 1 }}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
+        refreshControl={refresh}
       >
         <Animated.View
           style={[
@@ -71,7 +87,7 @@ export default function TodayScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[8] }}>
             <View style={{ flex: 1 }}>
               <Text variant="footnote" tone={secondary} testID="today-updated">
-                {`${v.dateLabel} · ${v.updatedLabel}`}
+                {`${v.dateLabel} · ${syncing && !demo ? 'Updating…' : v.updatedLabel}`}
               </Text>
             </View>
             <StatusPill
@@ -151,6 +167,11 @@ export default function TodayScreen() {
                 {v.emptyNote}
               </GuardrailNote>
             ) : null}
+            {bankNote && !demo ? (
+              <GuardrailNote tone="heads-up" surface="light" testID="bank-note">
+                {bankNote}
+              </GuardrailNote>
+            ) : null}
             {v.staleNote ? (
               <GuardrailNote tone="heads-up" surface="light" testID="stale-note">
                 {v.staleNote}
@@ -171,6 +192,11 @@ export default function TodayScreen() {
                 />
               ))}
             </View>
+            {bankFootnote && !demo && bankFootnote !== 'Updating…' ? (
+              <Text variant="footnote" tone="onLightSecondary" testID="bank-footnote">
+                {bankFootnote}
+              </Text>
+            ) : null}
             <Button
               variant={v.button.variant}
               surface="light"

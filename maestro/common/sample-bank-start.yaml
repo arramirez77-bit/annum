@@ -7,7 +7,7 @@ appId: com.highdesert.annum
 - tapOn:
     id: 'onboarding-skip'
 - tapOn:
-    id: 'connect-bank'
+    id: 'connect-sample'
 - scrollUntilVisible:
     element:
       id: 'onboarding-continue'

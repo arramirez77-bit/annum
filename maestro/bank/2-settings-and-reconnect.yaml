@@ -1,0 +1,51 @@
+# M7: Settings shows the shared count and the connection; a connection that needs signing in
+# again shows on Today and in Settings, and Reconnect opens Plaid Link in update mode (closing
+# it is E4: nothing saved, no connection used).
+appId: com.highdesert.annum
+name: Bank 2 · settings and reconnect
+---
+- stopApp
+- openLink: 'exp+annum://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 30000
+- tapOn:
+    id: 'open-settings'
+- scrollUntilVisible:
+    element:
+      id: 'settings-bank-count'
+    direction: DOWN
+- assertVisible: 'Bank connections, [0-9]+ of 10 left'
+- assertVisible: 'First Platypus Bank \(test\).*Updated.*'
+- takeScreenshot: m7-settings
+- runFlow: ../common/go-back.yaml
+# Development: make the Sandbox bank ask to sign in again.
+- longPressOn:
+    id: 'status-pill'
+- scrollUntilVisible:
+    element:
+      id: 'dev-break-bank'
+    direction: DOWN
+- tapOn:
+    id: 'dev-break-bank'
+- extendedWaitUntil:
+    visible:
+      id: 'bank-note'
+    timeout: 60000
+- assertVisible: '.*First Platypus Bank needs you to sign in again\. Reconnect it in Settings; it won’t use a new connection\.'
+- takeScreenshot: m7-needs-reauth
+- tapOn:
+    id: 'open-settings'
+- scrollUntilVisible:
+    element:
+      id: 'settings-bank-0'
+    direction: DOWN
+- assertVisible: '.*Needs you to sign in again.*Reconnect.*'
+- tapOn:
+    id: 'settings-bank-0'
+- extendedWaitUntil:
+    visible: 'Sign in to First Platypus Bank again'
+    timeout: 30000
+- assertVisible: 'This repairs your connection in place\. It doesn’t use a new one\.'
+- takeScreenshot: m7-reconnect

@@ -2,7 +2,7 @@
 
 A calm personal-finance iPhone app for freelancers, built with Expo (React Native + TypeScript). It answers one question: **how much can I spend today and still be safe?**
 
-**Status:** M0 (project setup) is done: a dark Annum shell with three native tabs runs on iPhone as a development build. The app is built one milestone at a time (see `docs/06-BUILD-PLAN.md`).
+**Status:** M0–M6 are done; M7 (bank connection through Plaid's free Trial, polish, TestFlight) is in progress. The app is built one milestone at a time (see `docs/06-BUILD-PLAN.md`; progress in `PROGRESS.md`).
 
 - `START-HERE.md`: how the project is run
 - `PROGRESS.md`, `SPIKES.md`: build log, open human checkpoints, and feasibility spikes
@@ -91,13 +91,14 @@ npx expo-doctor    # Expo project health
 SIM=<sim-udid> scripts/maestro.sh maestro/   # all flow tests on the Simulator (needs `npm start` running)
 scripts/maestro-lock.sh <sim-udid>  # the Face ID lock flows (Maestro can't answer Face ID; this script does)
 scripts/maestro-files.sh <sim-udid> # bank-file import flows (copies the fictional files in fixtures/bank-files)
+scripts/maestro-bank.sh <sim-udid>  # bank connection flows in Plaid Sandbox (pairs the Simulator with a NEW access key: add --qr to re-pair phones in the same run)
 ```
 
 Flow tests use [Maestro](https://maestro.mobile.dev): `brew install openjdk@17 mobile-dev-inc/tap/maestro`, and set `JAVA_HOME` to `$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home`.
 
 **Demo scenarios and the component gallery (development builds):** long-press the status pill on Today (or the mark on Welcome and on the lock screen) to switch scenarios (on track, heads up, stale sync, late invoice, first run, salary). Demo data is never saved and never touches your own. The same screen has **Use my data** (back to this phone's data), **Erase this phone's Annum data and start over** (first launch again), links to the component gallery and the spikes (SPIKES.md), and a test-only "Lock after 5 seconds away".
 
-**Sample bank (development builds):** until a bank provider is chosen (M7), "Connect a bank" during setup adds a sample bank with made-up numbers, so you can try the whole app. It never syncs, so after two days Today says it hasn't synced.
+**Test banks (development builds):** development builds connect to Plaid's **Sandbox** (fake banks, free, never counted against the 10). In Plaid Link pick any bank and sign in with `user_good` / `pass_good`. The connect sheet also has "Test bank without Link" for automated tests, and setup keeps "Use a sample bank" (made-up numbers that never sync). TestFlight builds connect real banks.
 
 ## How the project is organized
 
@@ -146,8 +147,11 @@ git push origin --delete ci-check            # tidy up
 
 `npm install` turns on the pre-commit hook automatically. If you cloned without running it, turn it on by hand with `git config core.hooksPath .githooks` (needs `brew install gitleaks`).
 
-## Getting your numbers in (until a bank connection is chosen)
+## Getting your numbers in
 
+- **Connect a bank** (Plaid's free Trial): during setup, or Settings → Accounts → **Add a bank**. Annum first says what it costs: *"This uses 1 of your 10 bank connections. 7 left for both phones."* The 10 are for life and shared by both phones; ending one doesn't give it back. You sign in on your bank's own page inside Plaid; Annum never sees your password and can't move money. Annum then updates when you open it (if it's been over 6 hours), when you pull down on Today (live balances), and sometimes in the background.
+- **If a bank asks you to sign in again**, Today says so and Settings → Accounts shows **Reconnect**. That repairs the same connection; it never uses a new one.
+- **Each phone is paired once** with the Worker by scanning a QR code: on the Mac, in the `annum` folder, run `npm run worker:rotate-key` and point each iPhone's Camera at the code, then tap **Open in Annum**. A new code replaces the old one on every phone (see `PROGRESS.md`, "If a phone is lost").
 - **Import a file:** on your bank's website, download the account's transactions as **CSV** or **OFX/QFX** (Quicken). In Annum: Money → **Import a file** → Choose file, or open the download from Files or Mail and pick **Annum**. Tell Annum which account it is and the balance today; it adds what's new and skips what it already has. The weekly review offers this first.
 - **By hand:** Settings → Accounts for balances (brokerage, loans), Money → All transactions → **Add one by hand** for a purchase a file doesn't have.
 - **Bills:** Money → Bills. Annum proposes bills it notices in checking; you confirm them.
@@ -161,12 +165,13 @@ git push origin --delete ci-check            # tidy up
 - **Face ID lock (optional):** Annum asks when it opens and after 5 minutes away. While Annum isn't on screen (App Switcher, Face ID prompt), it shows a plain cover instead of your numbers.
 
 **Getting a new phone:** your iCloud backup includes the encrypted file, but not its key (the key is "this device only"), so an iCloud restore alone can't open your data. Before you switch:
-1. Old phone: Annum → Settings → **Export all data**. Choose a passphrase (at least 8 characters) and save the file to Files or AirDrop it. Keep the passphrase somewhere safe; Annum can't recover it.
-2. New phone: install Annum, tap **Restore from a backup** on the first screen, choose the file, type the passphrase.
+1. Old phone: Annum → Settings → **Export all data**. Choose a passphrase (at least 8 characters, or 12 when banks are connected) and save the file to Files or AirDrop it. Keep the passphrase somewhere safe; Annum can't recover it.
+2. New phone: install Annum, tap **Restore from a backup** on the first screen, choose the file, type the passphrase. Your bank connections come back with it, **without using any of the 10**.
+3. Pair the new phone: `npm run worker:rotate-key` on the Mac, then scan the code on every phone you use (the access key is never in a backup).
 
 If a phone restored from iCloud ever shows "Annum can't open the data on this phone", that's this case: choose **Restore from a backup** (or **Start fresh**).
 
-**Delete everything** (Settings → Privacy) removes the database, the Keychain entries, Annum's reminders, and any exported files from the phone. It can't be undone.
+**Delete everything** (Settings → Privacy) removes the database (with the bank connections), the Keychain entries (including this phone's pairing), Annum's reminders, and any exported files from the phone. It can't be undone. With banks connected it first says that reconnecting later uses new connections, and offers "Also end my bank connections at Plaid" (off by default: a backup can bring un-ended connections back).
 
 ## Security & privacy
 
@@ -187,7 +192,7 @@ This repository is **public**. The app handles personal finances, so the repo ho
 | --- | --- |
 | Local development values | `.env` on your Mac (git-ignored); copy `.env.example`, which lists the names only |
 | Worker access key | Made by `npm run worker:rotate-key`: stored as a Cloudflare secret and, on each phone, in the Keychain (scanned from a QR code). Never in the app bundle, backups, files, or this repo |
-| Plaid client ID + secret | Cloudflare secrets only: `wrangler secret put PLAID_CLIENT_ID` and `wrangler secret put PLAID_SECRET`. Never in the app, never in this repo |
+| Plaid client ID + secrets | Cloudflare secrets only: `wrangler secret put PLAID_CLIENT_ID`, `PLAID_SECRET_SANDBOX`, and (only on the go-ahead for real banks) `PLAID_SECRET_PRODUCTION`. Never in the app, never in this repo. See `worker/README.md` |
 | Values needed by app builds | EAS environment variables (`eas env:create`) |
 | Database key | The iPhone Keychain, per person, created at runtime |
 | Plaid access tokens (one per bank login) | Inside the encrypted database on each phone, so an Annum backup (itself encrypted with your passphrase) can carry them to a new phone without using new bank connections |

@@ -6,7 +6,7 @@ Short feasibility checks on the risky parts before building on them. Evidence co
 | --- | --- | --- |
 | 1. SQLCipher (encrypted local database) | ✅ Proven | `main` (commit "M0.5: SQLCipher spike…") |
 | 2. Widgets (lock screen + home screen) | ✅ Plumbing proven · visual check on device pending | branch `spike/widgets` (not merged) |
-| 3. Bank sync | ⏸ **Pending: provider undecided** | `src/data/sync/provider.ts` (interface only) |
+| 3. Bank sync: Plaid Link SDK on Expo 57 / iOS 27 | ✅ Proven (M7) | `src/data/spikes/plaid.ts`, `maestro/spikes/plaid.yaml` |
 
 ## 1. SQLCipher — proven
 
@@ -62,7 +62,24 @@ Short feasibility checks on the risky parts before building on them. Evidence co
 
 Researched 2026-09-26: Teller appears to have withdrawn its API in July 2026; SimpleFIN costs about $15 a year per person; Plaid's Trial is free with **10 bank logins for life, shared by both phones**. Andy chose **Plaid Trial, with file import (S11) kept as the backup**. Built in M7.
 
-**Interface (`src/data/sync/provider.ts`):** `SyncProvider` with `listAccounts()`, `listTransactions(accountId, since)`, `disconnect()`, `needsNetwork`. Problems are typed — `needs-reauth`, `offline`, `provider-unavailable`, `unknown` — and map to the calm Reconnect, Offline and E4 states. Screens and the domain never see a provider.
+### M7 spike: Plaid's React Native SDK — proven (2026-09-27)
+
+**Question:** does `react-native-plaid-link-sdk` v13 (rebuilt on Expo Modules; Plaid tests it up to Expo 56) build and run on Expo 57 / Xcode 27 / iOS 27 with scene support on? If not, the fallback is Hosted Link in `ASWebAuthenticationSession`.
+
+**How:** `npx expo install react-native-plaid-link-sdk` (13.3.0, bundling LinkKit 7.2.0), `expo prebuild --clean`, development build on the iOS 27 Simulator. Spikes screen → **Run Plaid SDK check**: loads the SDK, then starts a Link session with a made-up token. Flow: `maestro/spikes/plaid.yaml`.
+
+**Results (all pass):**
+
+| Check | Result |
+| --- | --- |
+| Pod builds with Xcode 27 | `ReactNativePlaidLinkSdk` + vendored `LinkKit.xcframework`, no warnings to fix |
+| SDK loads | `sdkVersion` = 13.3.0 |
+| Link opens natively | Plaid's own sheet presents over the app with scene support on (it shows "Something went wrong" for the made-up token, as it should) |
+| Answer comes back | Tapping Exit → `onExit` with `INVALID_FIELD` in JS |
+
+**Decision:** use the SDK; Hosted Link isn't needed. Sandbox end-to-end (real link token from the Worker) and an OAuth bank on the device are M7 steps, not part of this spike.
+
+**Interface (M0.5, since replaced by the Plaid client in `src/data/plaid/`):** `SyncProvider` with `listAccounts()`, `listTransactions(accountId, since)`, `disconnect()`, `needsNetwork`. Problems are typed — `needs-reauth`, `offline`, `provider-unavailable`, `unknown` — and map to the calm Reconnect, Offline and E4 states. Screens and the domain never see a provider.
 
 **Andy's guardrails (the 10 logins never come back):** a shared "N of 10 left" count and a confirmation before every new connection; repairs only through Plaid's update mode; bank tokens travel in the encrypted backup; Delete everything warns before connections are lost; the Plaid secret and Worker key only in Cloudflare secrets; never leave the Trial plan or add paid products.
 
