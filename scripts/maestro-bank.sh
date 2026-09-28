@@ -15,7 +15,7 @@ maestro --device "$SIM" test "$ROOT/maestro/bank/open-app.yaml" || exit 1
 # Annum stays open: a development build's launcher catches links that start the app, so
 # pairing from a closed app is checked on the iPhone with a TestFlight build instead.
 node "$ROOT/worker/scripts/rotate-key.mjs" --simulator "$SIM" $QR || exit 1
-for flow in 0-pair 1-connect-during-setup 2-settings-and-reconnect 3-delete-warns; do
+for flow in 0-pair 1-connect-during-setup 2-settings-and-reconnect 3-delete-warns 4-plaid-link 5-close-link; do
   maestro --device "$SIM" test "$ROOT/maestro/bank/$flow.yaml" || exit 1
 done
 echo "Bank flows passed."

@@ -10,10 +10,7 @@ name: Bank 1 · connect during setup
     id: 'onboarding-skip'
 - tapOn:
     id: 'connect-bank'
-- extendedWaitUntil:
-    visible:
-      id: 'connect-go'
-    timeout: 30000
+- runFlow: connect-sheet-ready.yaml
 - assertVisible: 'Connect a test bank'
 - assertVisible: '.*doesn’t use any of your 10 bank connections \([0-9]+ left for both phones\)\.'
 - takeScreenshot: m7-confirm

@@ -1,0 +1,25 @@
+# The connect sheet, ready to connect. If the count check didn't get through (the development
+# Mac's security proxy sometimes blocks the Simulator: "You're offline"), tap Try again, up to
+# three times.
+appId: com.highdesert.annum
+---
+- extendedWaitUntil:
+    visible:
+      id: 'connect-go|connect-retry'
+    timeout: 30000
+- repeat:
+    times: 3
+    while:
+      visible:
+        id: 'connect-retry'
+    commands:
+      - tapOn:
+          id: 'connect-retry'
+      - extendedWaitUntil:
+          visible:
+            id: 'connect-go|connect-retry'
+          timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: 'connect-go'
+    timeout: 30000

@@ -1,0 +1,38 @@
+# M7 E4: closing Plaid Link partway saves nothing and uses no connection; Annum says so and
+# offers Try again or a file import instead.
+appId: com.highdesert.annum
+name: Bank 5 · closing Plaid Link
+---
+- runFlow: ../common/start-over.yaml
+- tapOn:
+    id: 'welcome-start'
+- tapOn:
+    id: 'onboarding-skip'
+- tapOn:
+    id: 'connect-bank'
+- runFlow: connect-sheet-ready.yaml
+- tapOn:
+    id: 'connect-go'
+- extendedWaitUntil:
+    visible: 'Continue without phone number|Select your institution'
+    timeout: 30000
+- tapOn: 'Exit'
+- extendedWaitUntil:
+    visible: 'Yes, exit'
+    timeout: 10000
+- tapOn: 'Yes, exit'
+- extendedWaitUntil:
+    visible: 'That bank didn’t connect'
+    timeout: 20000
+- assertVisible: 'Nothing was saved and no connection was used\.'
+- assertVisible:
+    id: 'connect-retry'
+- assertVisible:
+    id: 'connect-import'
+- takeScreenshot: m7-link-closed
+- tapOn:
+    id: 'connect-cancel'
+- extendedWaitUntil:
+    visible:
+      id: 'connect-bank'
+    timeout: 10000

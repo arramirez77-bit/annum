@@ -1,0 +1,81 @@
+# M7: a Sandbox bank through Plaid Link's own screens (real link token from the Worker), with
+# Plaid's public test login. Checks the balances Annum shows against the ones Plaid publishes for
+# user_good: checking shows what's available ($100, not the $110 current), others the current
+# balance, cards and loans as owed, whole dollars rounded down (IRA $320.76 → $320).
+# Plaid's optional screens (phone number, Trial notice, saving a Plaid account) run only when shown.
+appId: com.highdesert.annum
+name: Bank 4 · Plaid Link with a test login
+---
+- runFlow: ../common/start-over.yaml
+- tapOn:
+    id: 'welcome-start'
+- tapOn:
+    id: 'onboarding-skip'
+- tapOn:
+    id: 'connect-bank'
+- runFlow: connect-sheet-ready.yaml
+- tapOn:
+    id: 'connect-go'
+# Plaid Link
+- extendedWaitUntil:
+    visible: 'Continue without phone number|Select your institution'
+    timeout: 30000
+- runFlow:
+    when:
+      visible: 'Continue without phone number'
+    commands:
+      - tapOn: 'Continue without phone number'
+- extendedWaitUntil:
+    visible: 'Select your institution'
+    timeout: 20000
+- tapOn: 'Search'
+- inputText: 'First Platypus'
+- tapOn: 'First Platypus Bank.*'
+# Plaid lists the plain bank and two OAuth versions; the plain one takes a username and password.
+- extendedWaitUntil:
+    visible: '[0-9]+ associated institutions'
+    timeout: 20000
+- tapOn:
+    text: 'First Platypus Bank'
+    index: 1
+- extendedWaitUntil:
+    visible: 'Log into First Platypus Bank'
+    timeout: 20000
+- tapOn: 'Username'
+- inputText: 'user_good'
+- tapOn: 'Password'
+- inputText: 'pass_good'
+- tapOn: 'Submit'
+- extendedWaitUntil:
+    visible: 'Your accounts'
+    timeout: 30000
+- tapOn: 'Continue'
+- extendedWaitUntil:
+    visible: 'Share data|Finish without saving'
+    timeout: 30000
+- runFlow:
+    when:
+      visible: 'Share data'
+    commands:
+      - tapOn: 'Share data'
+- extendedWaitUntil:
+    visible: 'Finish without saving'
+    timeout: 30000
+- tapOn: 'Finish without saving'
+# Back in Annum
+- extendedWaitUntil:
+    visible: 'First Platypus Bank is connected'
+    timeout: 90000
+- assertVisible: 'Annum brought in [0-9,]+ transactions\.'
+- takeScreenshot: m7-link-connected
+- tapOn:
+    id: 'connect-done'
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-accounts'
+    timeout: 10000
+- assertVisible: 'Plaid Checking, \$100, Updated .*'
+- assertVisible: 'Plaid Saving, \$210, Updated .*'
+- assertVisible: 'Plaid Credit Card, \$410 owed, Updated .*'
+- assertVisible: 'Plaid IRA, \$320, Updated .*'
+- takeScreenshot: m7-link-accounts
