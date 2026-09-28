@@ -47,6 +47,12 @@ function Spikes() {
     }
   };
 
+  const [shapes, setShapes] = useState<string | null>(null);
+  const checkKeys = async () => {
+    const { workerKeyShapes } = await import('@/state/bank');
+    setShapes(await workerKeyShapes());
+  };
+
   const [reminders, setReminders] = useState<string[] | null>(null);
   const showReminders = async () => {
     const { scheduledReminderIds } = await import('@/services/notifications');
@@ -138,6 +144,13 @@ function Spikes() {
           </Text>
         </View>
       ) : null}
+      <Button
+        variant="secondary"
+        label="Check the Worker’s Plaid keys"
+        onPress={() => void checkKeys()}
+        testID="check-worker-keys"
+      />
+      {shapes ? <Text testID="worker-key-shapes">{shapes}</Text> : null}
       <Button
         variant="secondary"
         label="Show scheduled reminders"

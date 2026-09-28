@@ -138,6 +138,26 @@ describe('access key', () => {
   });
 });
 
+describe('key shapes (development check)', () => {
+  it('describes each key without showing it', async () => {
+    const fakeId = 'abc'.repeat(8); // made up; built so it can't be mistaken for a real key
+    const s = setup({
+      PLAID_CLIENT_ID: fakeId,
+      PLAID_SECRET_SANDBOX: '"secret\u200b"',
+    });
+    const body = (await (await s.post('status', { diagnose: true })).json()) as {
+      shapes: Record<string, string>;
+    };
+    expect(body.shapes).toEqual({
+      clientId: '24 · hex',
+      sandbox: '9 · hidden or non-ASCII characters, quotes',
+      production: 'not set',
+    });
+    expect(JSON.stringify(body)).not.toContain(fakeId);
+    expect(await (await s.post('status', {})).json()).not.toHaveProperty('shapes');
+  });
+});
+
 describe('status', () => {
   it('reports the shared count and which environments are on', async () => {
     const res = await setup({}, 3).post('status', {});
