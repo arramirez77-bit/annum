@@ -61,6 +61,10 @@ interface FakePlaid {
   notReady: number;
   /** How many more first syncs say NOT_READY: an empty page, but with a cursor (Plaid's docs). */
   pending: number;
+  /** Older transactions (before this review week) Plaid sends for a new connection. */
+  history: ReturnType<typeof txn>[];
+  /** The first batch is recent only (INITIAL_UPDATE_COMPLETE); history follows next sync. */
+  twoStage: boolean;
 }
 const plaid: FakePlaid = {
   calls: [],
@@ -68,6 +72,8 @@ const plaid: FakePlaid = {
   down: false,
   notReady: 0,
   pending: 0,
+  history: [],
+  twoStage: false,
 };
 const kv = new Map<string, string>();
 const workerEnv: Env = {
@@ -167,24 +173,33 @@ function fakePlaid(url: string, init: RequestInit): Promise<Response> {
           transactions_update_status: 'NOT_READY',
         });
       }
+      // Older history comes with the first batch, or (twoStage) with the next one.
       return ok(
         body.cursor && body.cursor !== 'c0'
           ? {
-              added: [txn('t3', 6.33, '2026-09-26', 'Starbucks')],
+              added: [
+                txn('t3', 6.33, '2026-09-26', 'Starbucks'),
+                ...(plaid.twoStage ? plaid.history : []),
+              ],
               modified: [],
               removed: [],
               next_cursor: 'c2',
               has_more: false,
+              transactions_update_status: 'HISTORICAL_UPDATE_COMPLETE',
             }
           : {
               added: [
                 txn('t1', 89.4, '2026-09-24', 'SparkFun'),
                 txn('t2', -500, '2026-09-25', 'INTRST PYMNT', 'pa-sav'),
+                ...(plaid.twoStage ? [] : plaid.history),
               ],
               modified: [],
               removed: [],
               next_cursor: 'c1',
               has_more: false,
+              transactions_update_status: plaid.twoStage
+                ? 'INITIAL_UPDATE_COMPLETE'
+                : 'HISTORICAL_UPDATE_COMPLETE',
             },
       );
     case 'item/remove':
@@ -221,6 +236,8 @@ beforeEach(() => {
   plaid.down = false;
   plaid.notReady = 0;
   plaid.pending = 0;
+  plaid.history = [];
+  plaid.twoStage = false;
   mockPhoneKey = 'k'.repeat(43);
   link.mockReset();
   link.mockResolvedValue({
@@ -396,6 +413,7 @@ describe('a brand-new connection', () => {
   it('keeps asking while Plaid says NOT_READY, even though it sent a cursor', async () => {
     realWith([]);
     plaid.pending = 2; // the first sync and the first retry: an empty page with cursor c0
+    plaid.history = [txn('t0', 42, '2025-06-02', 'Old Shop')];
     const r = await connectNewBank();
     expect(r).toMatchObject({ kind: 'connected', transactions: 0 });
     // The retries run in the background (no waiting in tests), continuing from c0.
@@ -404,13 +422,38 @@ describe('a brand-new connection', () => {
     }
     expect(s().connections[0]).toMatchObject({ cursor: 'c1' });
     expect(s().connections[0].lastSynced).toBeDefined();
-    expect(
-      s()
-        .data.transactions.map((t) => t.merchant)
-        .sort(),
-    ).toEqual(['Intrst Pymnt', 'SparkFun']);
+    // Last year's history isn't news; this review week (from Sep 21) still waits for review.
+    expect(reviewedByMerchant()).toEqual({
+      'Intrst Pymnt': false,
+      'Old Shop': true,
+      SparkFun: false,
+    });
+    expect(s().connections[0].historyDone).toBe(true);
+  });
+
+  it('history that follows the first batch arrives reviewed too', async () => {
+    realWith([]);
+    plaid.twoStage = true; // first: recent only (INITIAL_UPDATE_COMPLETE); then the rest
+    plaid.history = [txn('t0', 42, '2025-06-02', 'Old Shop')];
+    await connectNewBank();
+    expect(s().connections[0]).toMatchObject({ cursor: 'c1', historyDone: false });
+    await syncAll({ force: true });
+    expect(s().connections[0]).toMatchObject({ cursor: 'c2', historyDone: true });
+    expect(reviewedByMerchant()).toMatchObject({ 'Old Shop': true, Starbucks: false });
+  });
+
+  it('a connection that has finished syncing leaves review state alone', async () => {
+    realWith([connected]); // synced before `historyDone` existed
+    plaid.twoStage = true; // its next batch carries an older posting
+    plaid.history = [txn('t9', 7, '2026-09-01', 'Late Posting')];
+    await syncAll({ force: true });
+    expect(reviewedByMerchant()).toEqual({ Starbucks: false, 'Late Posting': false });
+    expect(s().connections[0].historyDone).toBe(true);
   });
 });
+
+const reviewedByMerchant = () =>
+  Object.fromEntries(s().data.transactions.map((t) => [t.merchant, t.reviewed]));
 
 describe('syncing', () => {
   it('syncs from the cursor, and not again within 6 hours', async () => {

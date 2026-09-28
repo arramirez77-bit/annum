@@ -77,6 +77,12 @@ export interface BankConnection {
   /** ISO datetime (local) the connection was made, and of its last good sync. */
   createdAt: string;
   lastSynced?: string;
+  /**
+   * Plaid has sent all the history it will (its first pull brings ~30 days, the rest follows).
+   * Until then, transactions from before this review week arrive already reviewed. Missing on
+   * connections saved before this existed: those count as done once they've synced.
+   */
+  historyDone?: boolean;
 }
 
 /** Preferences that aren't money settings (S3 Notifications and Privacy, S11 imports). */

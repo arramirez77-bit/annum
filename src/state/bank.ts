@@ -218,6 +218,10 @@ async function finishExchange(pending: BankConnection): Promise<ConnectOutcome> 
   };
 }
 
+/** Plaid is still sending this connection's history (see `historyDone`). */
+const historyComing = (c: BankConnection): boolean =>
+  c.historyDone === undefined ? !c.lastSynced : !c.historyDone;
+
 /** Plaid usually has a new connection's transactions within a minute or two: ask again. */
 const FIRST_SYNC_RETRIES_MS = [10_000, 30_000, 90_000];
 
@@ -290,7 +294,9 @@ async function syncConnection(
       s.applyBankSync({
         accounts,
         changes,
-        ...(connection.cursor === null
+        // A new connection's history (its first pull, then the rest) isn't news: only this
+        // review week waits for the review.
+        ...(historyComing(connection)
           ? { reviewedBefore: reviewWeekStart(s.data.today, s.data.weekStart) }
           : {}),
       });
@@ -308,6 +314,7 @@ async function syncConnection(
       ...connection,
       status: 'ok',
       cursor: changes.cursor || null,
+      historyDone: !notReady && !changes.historyPending,
       ...(notReady ? {} : { lastSynced: syncedAt }),
     });
     return { transactions: changes.added.length, notReady };

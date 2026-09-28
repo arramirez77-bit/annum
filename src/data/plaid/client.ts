@@ -53,6 +53,8 @@ export interface SyncResult extends BankChanges {
   cursor: string;
   /** Plaid hasn't finished pulling a new connection's transactions: ask again soon. */
   notReady: boolean;
+  /** Recent transactions are in, older history is still coming (INITIAL_UPDATE_COMPLETE). */
+  historyPending: boolean;
 }
 
 type Fetch = (url: string, init: RequestInit) => Promise<Response>;
@@ -213,6 +215,7 @@ export function workerClient(options: WorkerClientOptions) {
           removed,
           cursor: next ?? '',
           notReady: status === 'NOT_READY',
+          historyPending: status === 'INITIAL_UPDATE_COMPLETE',
         };
       }
     },
