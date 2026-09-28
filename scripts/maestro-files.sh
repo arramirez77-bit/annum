@@ -4,6 +4,7 @@
 # Documents folder and the flows open them the way "Open in Annum" does.
 # Usage: scripts/maestro-files.sh <simulator-udid>   (Metro on :8082, development build installed)
 SIM=${1:?Usage: scripts/maestro-files.sh <simulator-udid>}
+export JAVA_HOME="${JAVA_HOME:-$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home}"
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 DATA=$(xcrun simctl get_app_container "$SIM" com.highdesert.annum data) || exit 1
 mkdir -p "$DATA/Documents/test-bank-files"

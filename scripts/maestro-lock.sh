@@ -3,6 +3,7 @@
 # in the Simulator and keeps presenting a matching (or non-matching) face while each flow runs.
 # Usage: scripts/maestro-lock.sh <simulator-udid>   (Metro on :8082, development build installed)
 SIM=${1:?Usage: scripts/maestro-lock.sh <simulator-udid>}
+export JAVA_HOME="${JAVA_HOME:-$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home}"
 DIR=$(cd "$(dirname "$0")/.." && pwd)/maestro/lock
 
 xcrun simctl spawn "$SIM" notifyutil -s com.apple.BiometricKit.enrollmentChanged 1

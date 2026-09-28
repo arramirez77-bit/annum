@@ -222,7 +222,9 @@ async function checkBackup(
   passphrase: string,
 ): Promise<'ok' | 'wrong-passphrase' | 'newer' | 'not-a-backup'> {
   const dir = pathOf(new Directory(Paths.cache));
-  const db = await SQLite.openDatabaseAsync(file.name, {}, dir);
+  // A connection of its own: expo-sqlite otherwise reuses an open one to the same path, which
+  // may already carry a key, so a wrong passphrase could look like "not a backup".
+  const db = await SQLite.openDatabaseAsync(file.name, { useNewConnection: true }, dir);
   try {
     await db.execAsync(`PRAGMA key = ${literal(passphrase)}`);
     try {
