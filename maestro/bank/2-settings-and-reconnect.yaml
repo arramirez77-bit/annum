@@ -1,6 +1,6 @@
 # M7: Settings shows the shared count and the connection; a connection that needs signing in
-# again shows on Today and in Settings, and Reconnect opens Plaid Link in update mode (closing
-# it is E4: nothing saved, no connection used).
+# again shows on Today and in Settings, and Reconnect repairs it through Plaid Link's update mode
+# (straight to that bank's sign-in, no bank list): "up to date again", no new connection used.
 appId: com.highdesert.annum
 name: Bank 2 · settings and reconnect
 ---
@@ -50,3 +50,49 @@ name: Bank 2 · settings and reconnect
     timeout: 30000
 - assertVisible: 'This repairs your connection in place\. It doesn’t use a new one\.'
 - takeScreenshot: m7-reconnect
+- tapOn:
+    id: 'connect-go'
+# Plaid Link, update mode: this bank's sign-in again (the Sandbox user from flow 1).
+- extendedWaitUntil:
+    visible: 'Continue without phone number|Log into First Platypus Bank'
+    timeout: 30000
+- runFlow:
+    when:
+      visible: 'Continue without phone number'
+    commands:
+      - tapOn: 'Continue without phone number'
+- extendedWaitUntil:
+    visible: 'Log into First Platypus Bank'
+    timeout: 20000
+- tapOn: 'Username'
+- inputText: 'user_transactions_dynamic'
+- tapOn: 'Password'
+- inputText: 'pass_good'
+- runFlow:
+    when:
+      visible: 'Done'
+    commands:
+      - tapOn: 'Done'
+- tapOn: 'Submit'
+- extendedWaitUntil:
+    visible: 'Your accounts'
+    timeout: 30000
+- tapOn: 'Continue'
+- extendedWaitUntil:
+    visible: 'Finish without saving'
+    timeout: 30000
+- tapOn: 'Finish without saving'
+# Back in Annum
+- extendedWaitUntil:
+    visible: 'First Platypus Bank is up to date again'
+    timeout: 60000
+- assertVisible: 'Your connection was repaired\. No new connection was used\.'
+- takeScreenshot: m7-repaired
+- tapOn:
+    id: 'connect-done'
+- scrollUntilVisible:
+    element:
+      id: 'settings-bank-0'
+    direction: DOWN
+- assertVisible: 'First Platypus Bank \(test\), Updated .*'
+- assertVisible: 'Bank connections, [0-9]+ of 10 left'
