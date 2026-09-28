@@ -36,10 +36,22 @@ type Phase =
 export default function ConnectBank() {
   const { item, from } = useLocalSearchParams<{ item?: string; from?: string }>();
   const connection = useAppStore((s) => s.connections.find((c) => c.itemId === item));
+  const demo = useAppStore((s) => s.mode === 'demo');
   const [phase, setPhase] = useState<Phase>({ kind: 'checking' });
 
   /** Ask the Worker for the count (fresh every time: the other phone may have used one). */
   const ask = useCallback(async (): Promise<Phase> => {
+    if (demo) {
+      // Demo data is never saved, so a connection made now would have nowhere to go.
+      return {
+        kind: 'message',
+        message: {
+          title: 'You’re looking at demo data',
+          body: 'Demo data isn’t saved. Pick “Use my data” in Scenarios, then connect a bank.',
+        },
+        outcome: 'problem',
+      };
+    }
     const r = await checkCount();
     if (r.kind === 'problem') {
       return { kind: 'message', message: problemMessage(r.problem), outcome: 'problem' };
@@ -50,7 +62,7 @@ export default function ConnectBank() {
         ? repairMessage(connection.institution)
         : confirmMessage(r.status, PLAID_ENV === 'sandbox'),
     };
-  }, [connection]);
+  }, [connection, demo]);
   const check = () => {
     setPhase({ kind: 'checking' });
     void ask().then(setPhase);

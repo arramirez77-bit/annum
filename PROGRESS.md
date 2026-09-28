@@ -198,6 +198,22 @@ Why not a fully automatic fix: the Worker can only tell your phones from the los
 8. **Access key per phone, by QR code** (Andy's lost-phone request): the Worker access key isn't built into the app; each phone scans it from `npm run worker:rotate-key` and keeps it in its Keychain (never in backups). Rotating it cuts off a lost phone at once; each remaining phone scans the new code, with no new connections. This replaces the earlier plan of putting the key in the app build.
 9. **What the Worker stores: only the connection count** (one KV number). No bank names, tokens, account numbers, balances or transactions; no request or response bodies logged; Workers Logs off.
 
+**M7 — Bank connection build (please review; 2026-09-27):**
+1. **Plaid SDK spike passed:** `react-native-plaid-link-sdk` 13.3.0 builds and opens Link natively on Expo 57 / iOS 27 with scene support (SPIKES.md §3). Hosted Link isn't needed.
+2. **Two Plaid secrets instead of one switch** (proposed at M7 start, default unless you say otherwise): the Worker holds `PLAID_SECRET_SANDBOX` now and `PLAID_SECRET_PRODUCTION` only on your go-ahead; each request's environment comes from its token. Until the production secret exists, a real-bank connection is impossible. Development builds use Sandbox (free, never counted); TestFlight builds use real banks.
+3. **Fixed at connect time, on every connection:** transactions with 730 days of history, card statements as an *optional* product (banks without cards or statements still connect). Plaid can't change these afterwards.
+4. **A connection is saved the moment Link succeeds**, before the token exchange: if the network drops right then, Annum shows "{Bank} is almost connected" and finishes within Plaid's 30-minute window (on the next open, too). If the app is closed mid-setup, O3 brings the connection back instead of connecting again. The one case that can't be saved: Plaid completes the exchange but its answer never reaches the phone.
+5. **The count shown is always asked fresh** from the Worker right before Link opens (the other phone may have used one). Copy follows docs/05: "This uses 1 of your 10 bank connections. 7 left for both phones." — the number is what's left before this one.
+6. **Balances:** checking uses the bank's *available* balance (it already counts pending charges, which Annum doesn't subtract again); savings, cards and loans use the current balance. A card statement that was already paid counts as $0.
+7. **History arrives reviewed:** a new connection brings up to two years of transactions; everything before the current review week comes in already reviewed, so "Needs a look" and the weekly review only hold this week.
+8. **Categories:** your rules first, then Plaid's category where it clearly matches Annum's (e.g. groceries, dining, gas, bills), then the keyword guesses.
+9. **An account you were importing from files** (same kind, same last 4 digits) becomes the connected one when its bank connects: it keeps its name and history, and bank transactions up to the last imported date are skipped as already there. Import a file no longer offers connected accounts (they update themselves).
+10. **Delete everything also removes this phone's pairing** (docs/02: it wipes Keychain entries), so the phone scans a new code afterwards; S8 lists it. The development "start over" keeps the pairing so test runs don't need a new code.
+11. **Background refresh** runs only when Annum's data is already in memory: the database key can't be read while the iPhone is locked, and a background start mustn't get around the Face ID lock. Otherwise the next open syncs (over 6 hours old).
+12. **Rate limits** (Cloudflare's free rate-limit binding): 60 calls a minute for both phones together, 10 a minute for wrong keys. Counted without addresses.
+13. **App icon** is generated from the mark's exact arcs and the bucket colors as an Icon Composer file (`assets/Annum.icon`, default / dark / tinted / clear), by `node scripts/make-app-icon.js`. The Figma Brand — Logo page isn't visible to the connected account (H1); open the file in Icon Composer to refine it.
+14. **Removed** the M0.5 `SyncProvider` placeholder; the Plaid client (`src/data/plaid/`) replaces it.
+
 ## Dependabot (Expo-owned transitive packages — not CI failures, don't downgrade Expo)
 
 | Package | Via | Where it runs | Status |

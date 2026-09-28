@@ -210,7 +210,7 @@ export default function SettingsScreen() {
           <SettingsRow
             variant="value"
             label="Bank connections"
-            value={access === 'not-paired' ? 'Pair this phone first' : countLabel(count)}
+            value={access === 'not-paired' ? 'Not paired' : countLabel(count)}
             testID="settings-bank-count"
           />
           <SettingsRow
