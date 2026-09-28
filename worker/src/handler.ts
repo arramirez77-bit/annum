@@ -101,8 +101,11 @@ export function envOfToken(token: unknown): PlaidEnv | null {
   return m ? (m[1] as PlaidEnv) : null;
 }
 
+/** Secrets as pasted into `wrangler secret put`, without stray spaces or line breaks. */
+const clean = (value: string | undefined) => value?.trim() || undefined;
+
 const secretFor = (env: Env, plaidEnv: PlaidEnv) =>
-  plaidEnv === 'sandbox' ? env.PLAID_SECRET_SANDBOX : env.PLAID_SECRET_PRODUCTION;
+  clean(plaidEnv === 'sandbox' ? env.PLAID_SECRET_SANDBOX : env.PLAID_SECRET_PRODUCTION);
 
 async function readCount(env: Env): Promise<number> {
   const n = Number.parseInt((await env.COUNT.get(COUNT_KEY)) ?? '0', 10);
@@ -138,9 +141,11 @@ export async function handle(request: Request, env: Env, fetchPlaid: Fetch): Pro
   if (request.method !== 'POST') return refuse(405, 'post-only');
 
   // The access key: without it anyone could create link tokens and use up connections.
-  if (!env.ANNUM_WORKER_KEY || !env.PLAID_CLIENT_ID) return refuse(503, 'not-configured');
+  const workerKey = clean(env.ANNUM_WORKER_KEY);
+  const clientId = clean(env.PLAID_CLIENT_ID);
+  if (!workerKey || !clientId) return refuse(503, 'not-configured');
   const key = request.headers.get('x-annum-key') ?? '';
-  if (!sameKey(key, env.ANNUM_WORKER_KEY)) {
+  if (!sameKey(key, workerKey)) {
     const { success } = (await env.REFUSED_LIMIT?.limit({ key: 'refused' })) ?? { success: true };
     return success ? refuse(401, 'key-refused') : refuse(429, 'slow-down');
   }
@@ -163,7 +168,7 @@ export async function handle(request: Request, env: Env, fetchPlaid: Fetch): Pro
     const res = await fetchPlaid(`${HOSTS[plaidEnv]}/${path}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ client_id: env.PLAID_CLIENT_ID, secret, ...payload }),
+      body: JSON.stringify({ client_id: clientId, secret, ...payload }),
     });
     return { off: false as const, res };
   };

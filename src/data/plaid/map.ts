@@ -61,6 +61,8 @@ export interface PlaidCreditLiability {
 export interface PlaidError {
   error_type: string;
   error_code: string;
+  /** Plaid's explanation (which field, which rule). Never contains tokens. */
+  error_message?: string;
 }
 
 /* ---------- mapping ---------- */

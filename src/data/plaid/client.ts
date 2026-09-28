@@ -99,9 +99,18 @@ export function workerClient(options: WorkerClientOptions) {
       throw new WorkerError('unavailable');
     }
     if (res.ok) return answer as T;
-    const a = (answer ?? {}) as { problem?: string; error_code?: string; error_type?: string };
+    const a = (answer ?? {}) as {
+      problem?: string;
+      error_code?: string;
+      error_type?: string;
+      error_message?: string;
+    };
     if (a.error_code && a.error_type) {
-      throw new WorkerError('plaid', { error_code: a.error_code, error_type: a.error_type });
+      throw new WorkerError('plaid', {
+        error_code: a.error_code,
+        error_type: a.error_type,
+        ...(a.error_message ? { error_message: a.error_message } : {}),
+      });
     }
     throw new WorkerError((a.problem && PROBLEMS[a.problem]) || 'unavailable');
   }

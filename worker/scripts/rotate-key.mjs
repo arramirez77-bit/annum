@@ -13,7 +13,8 @@
  */
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { dirname } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
@@ -61,7 +62,39 @@ if (code !== 0) {
   );
   process.exit(1);
 }
-console.log('Done. The old key no longer works.\n');
+/** The Worker's address, from app.json (the only place it's written). */
+const appJson = JSON.parse(readFileSync(join(workerDir, '..', 'app.json'), 'utf8'));
+const workerUrl = appJson.expo.extra.workerUrl;
+
+/**
+ * Cloudflare takes a few seconds to switch to the new key everywhere: wait until the Worker
+ * accepts it, so a phone that scans right away isn't turned down.
+ */
+async function acceptedByWorker() {
+  for (let i = 0; i < 45; i++) {
+    try {
+      const res = await fetch(`${workerUrl}/v1/status`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-annum-key': key },
+        body: '{}',
+      });
+      if (res.ok) return true;
+    } catch {
+      // offline for a moment: try again
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+  return false;
+}
+
+process.stdout.write('Waiting for the Worker to switch to it…');
+if (!(await acceptedByWorker())) {
+  console.error(
+    '\nThe Worker has the new key but isn’t answering with it yet. Wait a minute and run this again.',
+  );
+  process.exit(1);
+}
+console.log(' done. The old key no longer works.\n');
 
 if (simulator) {
   const sent = await run('xcrun', ['simctl', 'openurl', simulator, link], { quiet: true });

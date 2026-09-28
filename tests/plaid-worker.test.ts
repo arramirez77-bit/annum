@@ -124,6 +124,12 @@ describe('access key', () => {
     expect(await (await s.post('status', {})).json()).toEqual({ problem: 'not-configured' });
   });
 
+  it('ignores stray spaces and line breaks pasted into a secret', async () => {
+    const s = setup({ PLAID_CLIENT_ID: ' client-id\n', PLAID_SECRET_SANDBOX: 'sandbox-secret\n' });
+    await s.post('link-token', { env: 'sandbox', client_user_id: USER });
+    expect(s.calls[0].body).toMatchObject({ client_id: 'client-id', secret: 'sandbox-secret' });
+  });
+
   it('compares keys fully', () => {
     expect(sameKey(KEY, KEY)).toBe(true);
     expect(sameKey(KEY, KEY.slice(1))).toBe(false);

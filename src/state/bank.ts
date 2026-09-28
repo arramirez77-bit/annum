@@ -84,6 +84,15 @@ function noted(e: unknown): WorkerProblem | 'unknown' {
   return e.problem;
 }
 const reached = () => useBank.setState({ access: 'paired', offline: false });
+/** Plaid's error code (a label like ITEM_LOGIN_REQUIRED, never a token), when there is one. */
+const plaidCode = (e: unknown): { code?: string } =>
+  e instanceof WorkerError && e.plaid
+    ? {
+        code: __DEV__
+          ? `${e.plaid.error_code}: ${e.plaid.error_message ?? ''}`.trim()
+          : e.plaid.error_code,
+      }
+    : {};
 
 /* ---------- the shared count ---------- */
 
@@ -113,8 +122,8 @@ export type ConnectOutcome =
   | { kind: 'repaired'; institution: string }
   /** E4: Link was closed or failed. Nothing was saved and no connection was used. */
   | { kind: 'didnt-connect' }
-  /** Before Link opened (no connection used): not paired, offline, none left… */
-  | { kind: 'problem'; problem: WorkerProblem | 'unknown' }
+  /** Before Link opened (no connection used): not paired, offline, none left… `code`: Plaid's. */
+  | { kind: 'problem'; problem: WorkerProblem | 'unknown'; code?: string }
   /** Link finished but saving it didn't (offline): Annum finishes it when it can. */
   | { kind: 'finish-later'; institution: string };
 
@@ -148,7 +157,7 @@ export async function connectNewBank(
           }
         : await link(token);
   } catch (e) {
-    return { kind: 'problem', problem: noted(e) };
+    return { kind: 'problem', problem: noted(e), ...plaidCode(e) };
   }
   if (result.kind === 'exit') return { kind: 'didnt-connect' };
 
@@ -240,7 +249,7 @@ export async function repairConnection(itemId: string): Promise<ConnectOutcome> 
     reached();
     result = await link(token);
   } catch (e) {
-    return { kind: 'problem', problem: noted(e) };
+    return { kind: 'problem', problem: noted(e), ...plaidCode(e) };
   }
   if (result.kind === 'exit') return { kind: 'didnt-connect' };
   const fixed: BankConnection = { ...connection, status: 'ok' };

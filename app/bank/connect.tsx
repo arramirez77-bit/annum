@@ -25,7 +25,7 @@ import { Button, GuardrailNote, ScreenScroll, Text } from '@/ui/components';
 
 type Phase =
   | { kind: 'checking' }
-  | { kind: 'message'; message: Message; outcome?: ConnectOutcome['kind'] }
+  | { kind: 'message'; message: Message; outcome?: ConnectOutcome['kind']; code?: string }
   | { kind: 'working' };
 
 /**
@@ -87,7 +87,12 @@ export default function ConnectBank() {
             : r.kind === 'didnt-connect'
               ? DIDNT_CONNECT
               : problemMessage(r.problem);
-    setPhase({ kind: 'message', message, outcome: r.kind });
+    setPhase({
+      kind: 'message',
+      message,
+      outcome: r.kind,
+      ...(r.kind === 'problem' && r.code ? { code: r.code } : {}),
+    });
   };
 
   const done = () => {
@@ -114,7 +119,7 @@ export default function ConnectBank() {
     );
   }
 
-  const { message, outcome } = phase;
+  const { message, outcome, code } = phase;
   const isConfirm = message.action === 'connect';
   const settled = outcome === 'connected' || outcome === 'repaired' || outcome === 'finish-later';
   return (
@@ -125,6 +130,11 @@ export default function ConnectBank() {
       <Text tone="secondary" testID="connect-body">
         {message.body}
       </Text>
+      {__DEV__ && code ? (
+        <Text variant="footnote" tone="secondary" testID="connect-code">
+          {`Development: Plaid said ${code}.`}
+        </Text>
+      ) : null}
       {isConfirm && !item ? (
         <GuardrailNote tone="info">
           Free and read-only. You sign in on your bank’s own page through Plaid; Annum never sees
