@@ -111,6 +111,17 @@ Why not a fully automatic fix: the Worker can only tell your phones from the los
 
 ## Decisions log
 
+**Design pass from the Figma Screens page (Andy, 2026-09-28):** build from page `57:8` only, phases 1–5 (components/tokens → changed screens → new screens S13, S14, 09b, S6, S7 → words → navigation). Data layer (Plaid/Worker, storage, backups) unchanged.
+1. O1 "Restore from a backup" opens Annum's existing restore (Files picker → passphrase), label kept.
+2. S12 "Scan an access code" opens the Pair screen (no expo-camera). Row line: "Pair this phone with the code from your laptop."
+3. S8 keeps the bank warning and "Also end my bank connections at Plaid", restyled.
+4. S3 keeps Import backup, under Privacy.
+5. 09b: no new rule — Free absorbs every edit; no "Left to place" line; Free updates live; note "Whatever you don't place goes to Free."; Save never blocked.
+6. S6 "I moved it": like the review's move step — Invest bucket to $0, log "Moved $X to Fabrikam Invest" with the date; savings total only from the bank sync; pending ("Pending until it leaves Woodgrove") until the sync shows savings dropping by about that amount; if the brokerage is entered by hand, offer one tap to add $X (never automatic). Stop and ask if this needs a data change beyond logging the event.
+7. S3 rows for connected accounts open a per-account Transactions view.
+Copy fixes: O4b "Your data is encrypted on this phone."; O3 tip "Free and read-only. Annum keeps your data on this phone. Plaid holds your bank connection so it can sync."; S8 footnote "Deletes everything from this phone. Your iCloud backup can't open it without this phone's key."; S8 bank line (switch off) "Your bank logins stay open at Plaid, so a backup can bring them back without using any of your 10."; S5 stays "Your numbers stay on this phone." Bank counter: add "test banks don't count" in development builds only. Screens with no frame (Pair, Import backup, export passphrase, reminder time, spending/tax/Runway editors, Bills list + editor, add a transaction by hand, privacy page, dev screens) stay, restyled with the new tokens/components, not redesigned. Copy source: the Figma frames (plus these fixes).
+
+
 - Milestone numbering follows `docs/06-BUILD-PLAN.md` (M0–M8). The loop instructions mentioned M0.5, TestFlight in "M6" and the App Group in "M9"; the rest of that message was cut off, so docs/06 wins until clarified.
 - **Bank sync (Andy, 2026-09-25 → decided 2026-09-26: Plaid Trial, file import as backup):** Teller had no public sign-up, so the provider was undecided until M7. File import (S11) and manual accounts (S10) are the data path; sync sits behind a provider interface in `src/data/` so Teller, Plaid or SimpleFIN can plug in later without touching screens. The Teller-only Cloudflare Worker is on hold. At M7: stop and present the options.
 - **M0.5 order:** the SQLCipher and widget spikes ran after M3 (they inform M5 storage and M8 widgets, not M1–M4).
