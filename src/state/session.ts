@@ -12,6 +12,7 @@ import {
   databaseExists,
   isOpen,
   openStorage,
+  putConnection,
   restoreBackup,
   save,
   wipeStorage,
@@ -31,7 +32,13 @@ import {
 import { resetBankUi } from './bank';
 import { relockAfterMs, shouldRelock } from './lock-rules';
 import { useOnboarding, type OnboardingDraft } from './onboarding';
-import { PERSISTED_KEYS, persistedFrom, storedFrom, type Persisted } from './persist';
+import {
+  connectionsKeptThroughRestore,
+  PERSISTED_KEYS,
+  persistedFrom,
+  storedFrom,
+  type Persisted,
+} from './persist';
 import { useAppStore } from './store';
 
 const today = () => localISODate(new Date());
@@ -315,9 +322,17 @@ export async function restoreFrom(uri: string, passphrase: string): Promise<Rest
   if (store().phase === 'blocked')
     await wipeStorage(); // the unreadable file has to go first
   else await flushSaves();
+  // Bank connections this phone has (in memory, during setup too) that the backup may not.
+  const had = store().connections;
   const result = await restoreBackup(uri, passphrase);
   if (result.kind !== 'ok') return result.kind;
-  store().hydrate(persistedFrom(result.stored, today()), await isLockEnabled());
+  const kept = connectionsKeptThroughRestore(had, result.stored.connections);
+  for (const c of kept) await putConnection(c);
+  const restored = persistedFrom(result.stored, today());
+  store().hydrate(
+    { ...restored, connections: [...restored.connections, ...kept] },
+    await isLockEnabled(),
+  );
   useOnboarding.getState().clear();
   return 'ok';
 }

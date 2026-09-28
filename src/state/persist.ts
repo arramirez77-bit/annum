@@ -118,3 +118,19 @@ export const lastReviewDate = (reviews: readonly ReviewRecord[]): ISODate | null
     (latest, r) => (!latest || r.date > latest ? r.date : latest),
     null,
   );
+
+/**
+ * Restoring a backup keeps the bank connections this phone has that the backup doesn't (made
+ * after it, or earlier in this setup): each counts against the 10 and can't be made again, so
+ * its access is never dropped. Their accounts and transactions aren't in the backup, so they
+ * start over: the next sync brings their history in again (as history, already reviewed).
+ */
+export function connectionsKeptThroughRestore(
+  current: readonly BankConnection[],
+  restored: readonly BankConnection[],
+): BankConnection[] {
+  const inBackup = new Set(restored.map((c) => c.itemId));
+  return current
+    .filter((c) => !inBackup.has(c.itemId) && (!!c.accessToken || c.status === 'exchanging'))
+    .map(({ lastSynced: _synced, historyDone: _done, ...c }) => ({ ...c, cursor: null }));
+}

@@ -1,4 +1,6 @@
-# Opens Annum (Metro on :8082) before scripts/maestro-bank.sh sends the pairing link.
+# Opens Annum (Metro on :8082) before scripts/maestro-bank.sh sends the pairing link, then the
+# Pair screen itself, as after Settings → "Scan a new access code": the code then arrives on a
+# Pair screen that's already open, and must still be taken (code review #8).
 appId: com.highdesert.annum
 name: Bank · open the app
 ---
@@ -8,3 +10,13 @@ name: Bank · open the app
     visible:
       id: 'welcome|today|onboarding-.*'
     timeout: 30000
+- openLink: 'annum://pair'
+- runFlow:
+    when:
+      visible: 'Open'
+    commands:
+      - tapOn: 'Open'
+- extendedWaitUntil:
+    visible:
+      id: 'pair'
+    timeout: 15000

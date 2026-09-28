@@ -1,5 +1,5 @@
 import { redirectSystemPath } from '../../../app/+native-intent';
-import { takeKeyFromLink, takeWaitingKey } from '../pairing';
+import { onKeyWaiting, takeKeyFromLink, takeWaitingKey } from '../pairing';
 
 const KEY = 'test-key-'.padEnd(43, 'x');
 
@@ -13,6 +13,18 @@ describe('links from outside', () => {
   it('keeps the key out of the route', () => {
     const route = redirectSystemPath({ path: `annum://pair?key=${KEY}`, initial: true });
     expect(route).not.toContain(KEY);
+    takeWaitingKey();
+  });
+
+  it('tells an open Pair screen that a code arrived, until it stops listening', () => {
+    const heard = jest.fn();
+    const stop = onKeyWaiting(heard);
+    takeKeyFromLink(`annum://pair?key=${KEY}`);
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(takeWaitingKey()).toBe(KEY);
+    stop();
+    takeKeyFromLink(`annum://pair?key=${KEY}`);
+    expect(heard).toHaveBeenCalledTimes(1);
     takeWaitingKey();
   });
 

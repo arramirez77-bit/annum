@@ -7,8 +7,15 @@
  */
 import { File, Paths } from 'expo-file-system';
 
+import type { BankConnection } from '@/data/repo';
 import { deleteDatabaseKey, readWorkerKey, saveWorkerKey } from '@/data/secure';
-import { closeStorage, wipeStorage, writeBackup } from '@/data/storage';
+import {
+  closeStorage,
+  deleteConnection,
+  putConnection,
+  wipeStorage,
+  writeBackup,
+} from '@/data/storage';
 import { localISODate } from '@/domain';
 
 import { pairWith, syncAll } from '../bank';
@@ -52,6 +59,20 @@ export async function runBackupCheck(): Promise<CheckStep[]> {
   add('Backup file written', (file.size ?? 0) > 0, `${file.size ?? 0} bytes`);
   add('File is encrypted', head !== SQLITE_HEADER, 'No plain SQLite header');
 
+  // A bank connected after this backup was made (a stand-in, removed below): a restore must
+  // keep it, since it counts against the 10 and can't be made again.
+  const later: BankConnection = {
+    itemId: 'check-after-backup',
+    institution: 'Check',
+    env: 'sandbox',
+    status: 'ok',
+    accessToken: 'access-sandbox-check',
+    cursor: 'check-cursor',
+    createdAt: localISODate(new Date()) + 'T00:00:00',
+  };
+  store().saveConnection(later);
+  await putConnection(later);
+
   store().setNumbers({ monthlySpend: before + 10000 });
   await flushSaves();
   const wrong = await restoreFrom(file.uri, 'not-the-passphrase');
@@ -68,6 +89,14 @@ export async function runBackupCheck(): Promise<CheckStep[]> {
     `${right}; monthly spending back to the exported value`,
   );
   if (banks.length) add('Bank connections come back', right === 'ok' && banksBack(), banksDetail);
+  const survivor = store().connections.find((c) => c.itemId === later.itemId);
+  add(
+    'A bank connected after the backup is kept',
+    right === 'ok' && survivor?.accessToken === later.accessToken && survivor?.cursor === null,
+    survivor ? 'kept; its history comes in again' : 'dropped',
+  );
+  store().removeConnection(later.itemId);
+  await deleteConnection(later.itemId);
   if (file.exists) file.delete();
 
   // The next two erase this phone's data first, so they only run on made-up numbers (the

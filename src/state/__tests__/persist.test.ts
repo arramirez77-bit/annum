@@ -1,14 +1,15 @@
 import { demoSeed } from '@/data/demo';
-import { DEFAULT_PREFS } from '@/data/repo';
+import { DEFAULT_PREFS, type BankConnection } from '@/data/repo';
 import { availableToSpend, newAppData } from '@/domain';
 
 import { LOCK_AFTER_MS, shouldRelock } from '../lock-rules';
 import {
+  connectionsKeptThroughRestore,
   depositsWith,
   lastReviewDate,
+  type Persisted,
   persistedFrom,
   storedFrom,
-  type Persisted,
 } from '../persist';
 
 const seed = demoSeed();
@@ -74,6 +75,45 @@ describe('saving and loading the app state', () => {
         { id: 'b', date: '2026-09-20' },
       ]),
     ).toBe('2026-09-20');
+  });
+});
+
+describe('restoring a backup', () => {
+  const made = (itemId: string, over: Partial<BankConnection> = {}): BankConnection => ({
+    itemId,
+    institution: 'Bank A',
+    env: 'production',
+    status: 'ok',
+    accessToken: `access-production-${itemId}`,
+    cursor: 'c9',
+    createdAt: '2026-09-20T09:00:00',
+    lastSynced: '2026-09-27T07:02:00',
+    historyDone: true,
+    ...over,
+  });
+
+  it('keeps connections the backup doesn’t have, to bring their history in again', () => {
+    const kept = connectionsKeptThroughRestore(
+      [
+        made('in-both'),
+        made('after-backup'),
+        made('unfinished', {
+          status: 'exchanging',
+          accessToken: undefined,
+          publicToken: 'public-production-x',
+        }),
+      ],
+      [made('in-both', { cursor: 'c1' })],
+    );
+    expect(kept.map((c) => c.itemId)).toEqual(['after-backup', 'unfinished']);
+    expect(kept[0]).toMatchObject({ accessToken: 'access-production-after-backup', cursor: null });
+    expect(kept[0].lastSynced).toBeUndefined();
+    expect(kept[0].historyDone).toBeUndefined();
+  });
+
+  it('keeps nothing when the backup has them all, or the phone had none', () => {
+    expect(connectionsKeptThroughRestore([made('a')], [made('a')])).toEqual([]);
+    expect(connectionsKeptThroughRestore([], [made('a')])).toEqual([]);
   });
 });
 

@@ -27,6 +27,7 @@ name: Bank 6 · backup with a bank
     timeout: 90000
 - assertVisible: 'Backup: all checks pass'
 - assertVisible: 'Bank connections come back.*Pass.*'
+- assertVisible: 'A bank connected after the backup is kept.*Pass.*'
 - assertVisible: 'New phone: restore from Welcome.*Pass.*'
 - assertVisible: 'New phone: bank connections back.*Pass.*'
 - assertVisible: 'New phone: scan the code again.*Pass.*'

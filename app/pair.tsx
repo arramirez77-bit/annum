@@ -4,7 +4,7 @@ import { View } from 'react-native';
 
 import { isPairingKey, pairWith, useBank, type PairResult } from '@/state/bank';
 import { countLabel, PAIRING_COMMAND } from '@/state/bank-views';
-import { takeWaitingKey } from '@/state/pairing';
+import { onKeyWaiting, takeWaitingKey } from '@/state/pairing';
 import { useAppStore } from '@/state/store';
 import { space } from '@/theme';
 import { Button, GuardrailNote, HeaderButton, ScreenScroll, Text } from '@/ui/components';
@@ -27,6 +27,9 @@ export default function Pair() {
   const hasBanks = useAppStore((s) => s.connections.length > 0);
   const count = useBank((s) => s.count);
   const [state, setState] = useState<State>('instructions');
+  // Bumped when a code arrives while this screen is already open.
+  const [arrivals, setArrivals] = useState(0);
+  useEffect(() => onKeyWaiting(() => setArrivals((n) => n + 1)), []);
 
   useEffect(() => {
     // Behind the Face ID lock, wait: the key is saved once the owner is in.
@@ -42,7 +45,7 @@ export default function Pair() {
       setState(await pairWith(key));
     };
     void pair();
-  }, [phase]);
+  }, [phase, arrivals]);
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
