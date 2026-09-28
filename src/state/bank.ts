@@ -201,11 +201,25 @@ async function finishExchange(pending: BankConnection): Promise<ConnectOutcome> 
         : s.count,
   }));
   const synced = await syncConnection(connection, { live: false });
+  if (!synced || synced.notReady) void retryFirstSync(connection.itemId);
   return {
     kind: 'connected',
     institution: connection.institution,
     transactions: synced?.transactions ?? 0,
   };
+}
+
+/** Plaid usually has a new connection's transactions within a minute or two: ask again. */
+const FIRST_SYNC_RETRIES_MS = [10_000, 30_000, 90_000];
+
+async function retryFirstSync(itemId: string): Promise<void> {
+  for (const delay of FIRST_SYNC_RETRIES_MS) {
+    await wait(delay);
+    const c = app().connections.find((x) => x.itemId === itemId);
+    if (!c || c.lastSynced || c.status !== 'ok') return;
+    if (app().phase === 'onboarding') await syncConnection(c, { live: false });
+    else await syncAll();
+  }
 }
 
 /** Connections whose exchange didn't finish (offline, app closed): finish or let go. */
@@ -244,7 +258,7 @@ export async function repairConnection(itemId: string): Promise<ConnectOutcome> 
 async function syncConnection(
   connection: BankConnection,
   options: { live: boolean },
-): Promise<{ transactions: number } | null> {
+): Promise<{ transactions: number; notReady: boolean } | null> {
   if (!connection.accessToken) return null;
   const token = connection.accessToken;
   try {
@@ -272,13 +286,20 @@ async function syncConnection(
           : {}),
       });
     }
+    // Right after linking, Plaid may have nothing yet (no cursor, no transactions): leave the
+    // connection "Getting your transactions…" so the next sync doesn't wait 6 hours.
+    const notReady =
+      !changes.cursor &&
+      !changes.added.length &&
+      !changes.modified.length &&
+      !changes.removed.length;
     s.saveConnection({
       ...connection,
       status: 'ok',
       cursor: changes.cursor || null,
-      lastSynced: syncedAt,
+      ...(notReady ? {} : { lastSynced: syncedAt }),
     });
-    return { transactions: changes.added.length };
+    return { transactions: changes.added.length, notReady };
   } catch (e) {
     if (
       noted(e) === 'plaid' &&

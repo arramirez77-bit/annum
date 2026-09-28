@@ -2,14 +2,13 @@
 
 Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public repo: no real names, balances, transactions or secrets here. Real banks are "Bank A", "Bank B"…
 
-## Next session starts here (saved 2026-09-27)
+## Next session starts here (saved 2026-09-27, M7 in progress)
 
-- **Done and on `main`:** M0–M6. M6 is the files path (import, bills, reminders); bank connection moved to M7.
-- **Decided:** Plaid Trial with file import as the backup, plus Andy's guardrails and the M7 design below (all approved, including 730 days of history, the 12-character backup passphrase, the per-phone access key by QR code, and "If a phone is lost").
-- **Waiting on Andy:** the steps in **Before M7** (Cloudflare account and workers.dev subdomain, Plaid Trial approval). He'll send the subdomain.
-- **Then start M7** (`docs/06-BUILD-PLAN.md`): restate its goal and files, then the Plaid React Native SDK spike in Sandbox on Expo 57 / iOS 27 (Hosted Link as the fallback), then the Worker. No M7 code exists yet.
-- **Still owed to Andy:** H9 (rebuild on his iPhone), H1 (Figma screens not visible), H7 (on-device checks).
-- **Working here:** Metro on port **8082** (8081 is another project — never stop processes by a broad name match); iOS 27 Simulator "iPhone 18 Pro"; `SIM=<udid> scripts/maestro.sh maestro/` plus `scripts/maestro-lock.sh` and `scripts/maestro-files.sh`; ship with `scripts/ship.sh` (ci-check → CI → main). Last full run: 234 Jest tests; Maestro 16 main + 5 Face ID + 5 file flows, all passing.
+- **Done and on `main`:** M0–M6. **M7 work is on the local branch `m7`** (3 commits, not pushed): Plaid SDK spike (passed), Worker + tests, bank sync engine, connect sheet, pairing, Settings/Today/Delete/Export bank states, background refresh, rotate-key script, app icon, bank Maestro flows.
+- **Waiting on Andy (in order):** (1) `cd ~/Desktop/Dev/Git/annum/worker && npx wrangler login`. (2) After I create the KV namespace and deploy: `npx wrangler secret put PLAID_CLIENT_ID` and `npx wrangler secret put PLAID_SECRET_SANDBOX` in `worker/`. (3) Confirm or change the two-secret design (decisions log, M7-2).
+- **Then:** `scripts/maestro-bank.sh <sim>` (pairs the Simulator, Sandbox end to end), a Plaid Link UI flow with `user_good`/`pass_good`, then H9 (one rebuild on Andy's iPhone: Plaid SDK, background task, Associated Domains, icon) and an OAuth Sandbox bank on the phone, then the EAS production build → TestFlight (Andy signs in to Apple once), then real banks on his go-ahead (production secret). Real banks = TestFlight builds; development builds always use Sandbox.
+- **Still owed to Andy:** H1 (Figma screens not visible), H7 (on-device checks).
+- **Working here:** Metro on port **8082** (8081 is another project — never stop processes by a broad name match); iOS 27 Simulator "iPhone 18 Pro"; `SIM=<udid> scripts/maestro.sh maestro/` plus `scripts/maestro-lock.sh`, `scripts/maestro-files.sh`, `scripts/maestro-bank.sh`; ship with `scripts/ship.sh` (ci-check → CI → main). Last full run (M7 branch): 312 Jest tests; Maestro 16 main + 5 Face ID + 5 file flows, all passing; bank flows not run yet (need the Worker).
 
 ## Status
 
@@ -23,7 +22,7 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 | M4 Weekly Review + Deposit split | ✅ Done | Review flow (5–6 steps, Finish later resumes), tagging with rules and live Taxes totals, Move money + pending transfer, Week reviewed; deposit split sheet + O6 first-split setup; Transactions with filters; Taxes with CSV + PDF export (share sheet). 147 tests. Maestro 12/12 flows (review, deposit, first split, taxes export added) on the iOS 27 Simulator |
 | M5 Onboarding, storage, Face ID, Settings | ✅ Done | Onboarding O1–O4c (+ restore, privacy page); SQLCipher database with migrations and change-only saves; Face ID lock (cold start, 5 min away, passcode offer), App Switcher cover (native module); Settings (modules hide everywhere, numbers, accounts, reminders, export/import backup, Delete everything); S4, S9, S10, compact Today (checked on an iPhone SE simulator). 198 tests (was 147). Maestro 16/16 flows + 5/5 Face ID lock flows on the iOS 27 Simulator: restart keeps data, Delete everything removes it, salary end to end, backup round trip incl. new phone and missing key |
 | M6 Real bank data, background refresh, notifications | ✅ Done (files path; bank sync waits for the M7 decision) | S11 import: CSV (columns guessed, confirmed ones remembered per bank) and OFX/QFX, dedupe, balance from the file, result summary; "Open in Annum" for .csv/.ofx/.qfx; rules and keyword guesses applied; expected income recognised (deposit to split); recurring bills proposed → Bills screen; "Add one by hand"; local reminders scheduled from a tested plan, with deep links. 234 tests (was 198). Maestro: main 16 + lock 5 + files 5 flows on the iOS 27 Simulator |
-| M7 Bank connection (Plaid Trial), polish, accessibility, TestFlight | ⏸ Waiting on the Before M7 steps (H3) | Provider decided (H2); docs updated from Teller to Plaid. No M7 code yet |
+| M7 Bank connection (Plaid Trial), polish, accessibility, TestFlight | 🚧 In progress (branch `m7`) | Spike passed (SPIKES.md §3); Worker + app code built and tested (312 Jest; 26 Maestro regression flows pass). Waiting on `wrangler login` to deploy the Worker (H3) |
 | M8 Widgets | — | |
 
 ## Baseline (M0.5, 2026-09-25)
@@ -39,7 +38,7 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 | --- | --- | --- | --- |
 | H1 | M2+ visual checks | 40 screen PNGs in `docs/screens/` (git-ignored), **or** a link to the Figma file/branch that has the Screens, component, Tab Bar and Widgets pages. The connected Figma account only sees "Cover" and "Brand — Logo" in the Annum file. | Open |
 | H2 | M7 | **Decided (Andy, 2026-09-26): Plaid Trial, with file import as the backup.** Guardrails: shared "N of 10 left" count + confirmation before every new connection; repairs only via update mode; bank tokens in the encrypted backup; Delete everything warns; Plaid secret and Worker key only in Cloudflare secrets; never leave the Trial or add paid products | Decided |
-| H3 | M7 | Plaid and Cloudflare accounts, keys set as Cloudflare secrets — the step-by-step list is under **Before M7** below | Open |
+| H3 | M7 | Plaid and Cloudflare accounts (done 2026-09-27: subdomain `highdesert`, Trial approved, redirect URI added); `npx wrangler login`; keys set as Cloudflare secrets (`PLAID_CLIENT_ID`, `PLAID_SECRET_SANDBOX`) | Waiting on login + secrets |
 | H4 | M7 | Which banks to test (kept private; placeholders only in the repo) + go-ahead to use real accounts | Pending H2 |
 | H5 | M7 | App Store Connect: create app record (Annum, `com.highdesert.annum`), invite the second user as a team user for internal TestFlight; optional API key (.p8 outside the repo) | Open |
 | H6 | M8 | App Group `group.com.highdesert.annum` — likely registered automatically by Xcode; manual clicks only if that fails | Open |
@@ -67,7 +66,7 @@ Never paste a key into a chat, an email, or a file in this repo. During M7 you'l
 
 **Apple:** nothing to click. The universal link (for OAuth banks) needs the Associated Domains capability, which automatic signing adds during the build.
 
-**During M7, in Terminal (I'll give the exact commands):** `wrangler secret put PLAID_CLIENT_ID` and `wrangler secret put PLAID_SECRET` (the Sandbox secret first; the Production one when you say go), then `npm run worker:rotate-key` once to make the first access key and pair both phones by scanning its QR code.
+**During M7, in Terminal (I'll give the exact commands):** `npx wrangler secret put PLAID_CLIENT_ID` and `npx wrangler secret put PLAID_SECRET_SANDBOX` (in the `worker` folder); `PLAID_SECRET_PRODUCTION` only when you say go for real banks. Then `npm run worker:rotate-key` to make the access key and pair both phones by scanning its QR code.
 
 ## If a phone is lost (or a backup file leaks)
 

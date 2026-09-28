@@ -12,6 +12,8 @@ xcrun simctl spawn "$SIM" defaults write com.highdesert.annum EXDevMenuIsOnboard
 QR=--no-qr
 [ "$2" = "--qr" ] && QR=
 maestro --device "$SIM" test "$ROOT/maestro/bank/open-app.yaml" || exit 1
+# Pair from a closed app (the usual case on a phone): the link starts Annum.
+xcrun simctl terminate "$SIM" com.highdesert.annum 2>/dev/null
 node "$ROOT/worker/scripts/rotate-key.mjs" --simulator "$SIM" $QR || exit 1
 for flow in 0-pair 1-connect-during-setup 2-settings-and-reconnect 3-delete-warns; do
   maestro --device "$SIM" test "$ROOT/maestro/bank/$flow.yaml" || exit 1

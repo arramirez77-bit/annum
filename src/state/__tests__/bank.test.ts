@@ -57,8 +57,10 @@ interface FakePlaid {
   calls: string[];
   loginRequired: boolean;
   down: boolean;
+  /** How many more first syncs come back empty (Plaid still preparing the data). */
+  notReady: number;
 }
-const plaid: FakePlaid = { calls: [], loginRequired: false, down: false };
+const plaid: FakePlaid = { calls: [], loginRequired: false, down: false, notReady: 0 };
 const kv = new Map<string, string>();
 const workerEnv: Env = {
   PLAID_CLIENT_ID: 'client',
@@ -142,6 +144,10 @@ function fakePlaid(url: string, init: RequestInit): Promise<Response> {
         },
       });
     case 'transactions/sync':
+      if (!body.cursor && plaid.notReady > 0) {
+        plaid.notReady--;
+        return ok({ added: [], modified: [], removed: [], next_cursor: '', has_more: false });
+      }
       return ok(
         body.cursor
           ? {
@@ -194,6 +200,7 @@ beforeEach(() => {
   plaid.calls = [];
   plaid.loginRequired = false;
   plaid.down = false;
+  plaid.notReady = 0;
   mockPhoneKey = 'k'.repeat(43);
   link.mockReset();
   link.mockResolvedValue({
@@ -349,6 +356,21 @@ describe('connecting during setup', () => {
     expect(await connectNewBank({ skipLink: true })).toMatchObject({ kind: 'connected' });
     expect(link).not.toHaveBeenCalled();
     expect(plaid.calls).toContain('sandbox/public_token/create');
+  });
+});
+
+describe('a brand-new connection', () => {
+  it('asks again when Plaid has nothing yet, instead of waiting 6 hours', async () => {
+    realWith([]);
+    plaid.notReady = 2; // the first two syncs come back empty
+    const r = await connectNewBank();
+    expect(r).toMatchObject({ kind: 'connected', transactions: 0 });
+    // The retries run (with no waiting in tests) until transactions arrive.
+    await new Promise<void>((resolve) => setImmediate(() => resolve()));
+    await syncAll();
+    expect(s().connections[0]).toMatchObject({ cursor: 'c1' });
+    expect(s().connections[0].lastSynced).toBeDefined();
+    expect(s().data.transactions.length).toBeGreaterThan(0);
   });
 });
 
