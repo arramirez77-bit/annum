@@ -192,7 +192,7 @@ This repository is **public**. The app handles personal finances, so the repo ho
 | --- | --- |
 | Local development values | `.env` on your Mac (git-ignored); copy `.env.example`, which lists the names only |
 | Worker access key | Made by `npm run worker:rotate-key`: stored as a Cloudflare secret and, on each phone, in the Keychain (scanned from a QR code). Never in the app bundle, backups, files, or this repo |
-| Plaid client ID + secrets | Cloudflare secrets only: `wrangler secret put PLAID_CLIENT_ID`, `PLAID_SECRET_SANDBOX`, and (only on the go-ahead for real banks) `PLAID_SECRET_PRODUCTION`. Never in the app, never in this repo. See `worker/README.md` |
+| Plaid client ID + secrets | Cloudflare secrets only: `npm run worker:set-plaid-keys` (client ID + Sandbox secret, checked with Plaid first), and (only on the go-ahead for real banks) `wrangler secret put PLAID_SECRET_PRODUCTION`. Never in the app, never in this repo. See `worker/README.md` |
 | Values needed by app builds | EAS environment variables (`eas env:create`) |
 | Database key | The iPhone Keychain, per person, created at runtime |
 | Plaid access tokens (one per bank login) | Inside the encrypted database on each phone, so an Annum backup (itself encrypted with your passphrase) can carry them to a new phone without using new bank connections |

@@ -10,7 +10,8 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
   - The Worker code calls `https://sandbox.plaid.com` with `client_id` = `PLAID_CLIENT_ID` and `secret` = `PLAID_SECRET_SANDBOX` (trimmed) in the JSON body (`worker/src/handler.ts`, `HOSTS` / `secretFor` / `plaid()`).
   - The stored values have the right shape (Spikes → "Check the Worker's Plaid keys": client ID 24 hex, Sandbox secret 30 hex, no hidden characters).
   - **`npx wrangler versions list` shows no "Secret Change" after 2026-09-28 03:05 UTC**: Andy's last re-entry of both keys (after 03:09 UTC) never reached the `annum` Worker. The Worker still has the client ID from 02:53 and the Sandbox secret from 03:02 UTC.
-  - **Next:** Andy runs, in `~/Desktop/Dev/Git/annum/worker`, `npx wrangler secret put PLAID_CLIENT_ID` then `npx wrangler secret put PLAID_SECRET_SANDBOX` (answer yes to replace), then I confirm two new "Secret Change" versions in `npx wrangler versions list` and rerun `SIM=<udid> scripts/maestro.sh maestro/bank/1-connect-during-setup.yaml`. If it still fails with new versions present: add a key fingerprint (first 6 of SHA-256) to the status diagnose so Andy can compare with `printf %s "$KEY" | shasum -a 256 | cut -c1-6` locally, without either side revealing the key.
+  - **2026-09-28 (later):** still no new "Secret Change" version. Added `npm run worker:set-plaid-keys`: it asks for both keys at hidden prompts, checks them with Plaid Sandbox (`/institutions/get`, the call Andy's curl used), and only then stores those exact trimmed values in the `worker` folder. Plaid refusing them → nothing changes. Tested: fake keys → `INVALID_API_KEYS`, exit 1, no new version; the hidden prompt works in a real terminal.
+  - **Next:** Andy runs `cd ~/Desktop/Dev/Git/annum && npm run worker:set-plaid-keys`, then I confirm two new "Secret Change" versions in `npx wrangler versions list` and rerun `SIM=<udid> scripts/maestro.sh maestro/bank/1-connect-during-setup.yaml`. If it still fails with new versions present: add a key fingerprint (first 6 of SHA-256) to the status diagnose so Andy can compare with `printf %s "$KEY" | shasum -a 256 | cut -c1-6` locally, without either side revealing the key.
 - **Then:** the rest of `scripts/maestro-bank.sh` (flows 2–3), a Plaid Link UI flow with `user_good`/`pass_good`, H9 (one rebuild on Andy's iPhone: Plaid SDK, background task, Associated Domains, icon), pairing from a *closed* app on the phone (the development build's launcher swallows such links in the Simulator), an OAuth Sandbox bank on the phone, then the EAS production build → TestFlight (Andy signs in to Apple once), then real banks on his go-ahead (production secret). Real banks = TestFlight builds; development builds always use Sandbox.
 - **Andy to confirm:** the two-secret design (decisions log, M7-2). Remove the development-only key-shape check (`diagnose` in the Worker's status route) once the keys work, or keep it; it only reports lengths.
 - **Still owed to Andy:** H1 (Figma screens not visible), H7 (on-device checks).
@@ -44,7 +45,7 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 | --- | --- | --- | --- |
 | H1 | M2+ visual checks | 40 screen PNGs in `docs/screens/` (git-ignored), **or** a link to the Figma file/branch that has the Screens, component, Tab Bar and Widgets pages. The connected Figma account only sees "Cover" and "Brand — Logo" in the Annum file. | Open |
 | H2 | M7 | **Decided (Andy, 2026-09-26): Plaid Trial, with file import as the backup.** Guardrails: shared "N of 10 left" count + confirmation before every new connection; repairs only via update mode; bank tokens in the encrypted backup; Delete everything warns; Plaid secret and Worker key only in Cloudflare secrets; never leave the Trial or add paid products | Decided |
-| H3 | M7 | Plaid and Cloudflare accounts (done 2026-09-27: subdomain `highdesert`, Trial approved, redirect URI added); `npx wrangler login` (done); keys set as Cloudflare secrets (`PLAID_CLIENT_ID`, `PLAID_SECRET_SANDBOX`) | Keys set but Plaid refuses them through the Worker; re-enter (see "Next session starts here") |
+| H3 | M7 | Plaid and Cloudflare accounts (done 2026-09-27: subdomain `highdesert`, Trial approved, redirect URI added); `npx wrangler login` (done); keys set as Cloudflare secrets (`PLAID_CLIENT_ID`, `PLAID_SECRET_SANDBOX`) | Keys set but Plaid refuses them through the Worker; re-enter with `npm run worker:set-plaid-keys` (see "Next session starts here") |
 | H4 | M7 | Which banks to test (kept private; placeholders only in the repo) + go-ahead to use real accounts | Pending H2 |
 | H5 | M7 | App Store Connect: create app record (Annum, `com.highdesert.annum`), invite the second user as a team user for internal TestFlight; optional API key (.p8 outside the repo) | Open |
 | H6 | M8 | App Group `group.com.highdesert.annum` — likely registered automatically by Xcode; manual clicks only if that fails | Open |
@@ -54,7 +55,7 @@ Build log for Annum, one milestone at a time (`docs/06-BUILD-PLAN.md`). Public r
 
 ## Before M7 (Andy's steps on plaid.com and cloudflare.com)
 
-Never paste a key into a chat, an email, or a file in this repo. During M7 you'll paste each one into a Terminal prompt from `wrangler secret put`, which hides it.
+Never paste a key into a chat, an email, or a file in this repo. During M7 you'll paste each one into a Terminal prompt that hides it.
 
 **Cloudflare (about 5 minutes)**
 1. Sign up at dash.cloudflare.com/sign-up on the **Free** plan. Verify your email. Don't add a payment method or choose Workers Paid.
@@ -72,7 +73,7 @@ Never paste a key into a chat, an email, or a file in this repo. During M7 you'l
 
 **Apple:** nothing to click. The universal link (for OAuth banks) needs the Associated Domains capability, which automatic signing adds during the build.
 
-**During M7, in Terminal (I'll give the exact commands):** `npx wrangler secret put PLAID_CLIENT_ID` and `npx wrangler secret put PLAID_SECRET_SANDBOX` (in the `worker` folder); `PLAID_SECRET_PRODUCTION` only when you say go for real banks. Then `npm run worker:rotate-key` to make the access key and pair both phones by scanning its QR code.
+**During M7, in Terminal (I'll give the exact commands):** `npm run worker:set-plaid-keys` (in the `annum` folder; it checks the client ID and Sandbox secret with Plaid before storing them); `PLAID_SECRET_PRODUCTION` only when you say go for real banks. Then `npm run worker:rotate-key` to make the access key and pair both phones by scanning its QR code.
 
 ## If a phone is lost (or a backup file leaks)
 

@@ -27,7 +27,7 @@ The environment comes from each token's prefix (`access-sandbox-…`, `public-pr
 
 ## Secrets
 
-Set from your Mac, in this folder. Wrangler asks for the value and hides it; never paste it anywhere else.
+Set from your Mac. Each prompt hides what you paste; never paste a key anywhere else.
 
 | Secret | Where to find it | When |
 | --- | --- | --- |
@@ -37,16 +37,18 @@ Set from your Mac, in this folder. Wrangler asks for the value and hides it; nev
 | `ANNUM_WORKER_KEY` | Made by `npm run worker:rotate-key` | Never by hand |
 
 ```sh
-cd ~/Desktop/Dev/Git/annum/worker
-npx wrangler secret put PLAID_CLIENT_ID
-npx wrangler secret put PLAID_SECRET_SANDBOX
+cd ~/Desktop/Dev/Git/annum
+npm run worker:set-plaid-keys
 ```
+
+It asks for the client ID and the Sandbox secret, checks them with Plaid Sandbox, and only gives them to the Worker if Plaid accepts them (otherwise nothing changes). The Production secret goes in by hand, only on the go-ahead for real banks: `cd worker && npx wrangler secret put PLAID_SECRET_PRODUCTION`.
 
 ## Commands (from the `annum` folder)
 
 | Command | What it does |
 | --- | --- |
 | `npm run worker:deploy` | Publishes the Worker (after a code change) |
+| `npm run worker:set-plaid-keys` | Checks the client ID and Sandbox secret with Plaid, then stores them on the Worker |
 | `npm run worker:rotate-key` | New access key + QR code for the phones (see `PROGRESS.md`, "If a phone is lost") |
 | `cd worker && npx wrangler kv key get connections-used --binding COUNT --remote` | Read the count |
 | `cd worker && npx wrangler kv key put connections-used 4 --binding COUNT --remote` | Correct the count to match Plaid's Dashboard → Usage (the real number) |
