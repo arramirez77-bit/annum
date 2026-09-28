@@ -87,13 +87,21 @@ export const repairedMessage = (institution: string): Message => ({
   action: 'done',
 });
 
+/**
+ * The laptop command that makes this build's pairing code: development builds take the
+ * development key (test banks only), release builds the phones' key (docs/02 "Two access keys").
+ */
+export const PAIRING_COMMAND = __DEV__
+  ? 'npm run worker:rotate-dev-key'
+  : 'npm run worker:rotate-key';
+
 /** Problems before Link opens. Nothing is used in any of them. */
 export function problemMessage(problem: WorkerProblem | 'unknown'): Message {
   switch (problem) {
     case 'not-paired':
       return {
         title: 'Pair this phone first',
-        body: 'Annum reaches banks through a small private service, and this phone needs its code. On the laptop, run “npm run worker:rotate-key” and scan the code with this iPhone’s Camera.',
+        body: `Annum reaches banks through a small private service, and this phone needs its code. On the laptop, run “${PAIRING_COMMAND}” and scan the code with this iPhone’s Camera.`,
         action: 'pair',
       };
     case 'key-refused':

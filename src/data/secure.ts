@@ -9,7 +9,8 @@ const DB_KEY = 'annum.db.key.v1';
 /** "1" when the Face ID lock is on. Read before the database opens, so it lives here. */
 const LOCK_KEY = 'annum.lock.v1';
 /**
- * The Worker access key this phone scanned (`npm run worker:rotate-key`). This device only, so
+ * The Worker access key this phone scanned (`npm run worker:rotate-key`; development builds:
+ * `worker:rotate-dev-key`). This device only, so
  * it's never in an iCloud backup or an Annum backup file (docs/02 "The Worker").
  */
 const WORKER_KEY = 'annum.worker.key.v1';

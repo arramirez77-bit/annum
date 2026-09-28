@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { isPairingKey, pairWith, useBank, type PairResult } from '@/state/bank';
-import { countLabel } from '@/state/bank-views';
+import { countLabel, PAIRING_COMMAND } from '@/state/bank-views';
 import { takeWaitingKey } from '@/state/pairing';
 import { useAppStore } from '@/state/store';
 import { space } from '@/theme';
@@ -12,12 +12,13 @@ import { Button, GuardrailNote, HeaderButton, ScreenScroll, Text } from '@/ui/co
 type State = 'instructions' | 'checking' | 'invalid' | PairResult;
 
 const STEPS = [
-  'On the laptop, in the annum folder, run “npm run worker:rotate-key”.',
+  `On the laptop, in the annum folder, run “${PAIRING_COMMAND}”.`,
   'Point this iPhone’s Camera at the code and tap “Open in Annum”.',
 ];
 
 /**
- * Pair this phone: opened by the QR code from `npm run worker:rotate-key` (annum://pair?key=…),
+ * Pair this phone: opened by the QR code from `npm run worker:rotate-key` (development builds:
+ * `worker:rotate-dev-key`) (annum://pair?key=…),
  * or from Settings to see how. After Annum is unlocked, checks the key with the Worker and only
  * then saves it in the Keychain (this device only). Bank connections don't change. docs/05.
  */

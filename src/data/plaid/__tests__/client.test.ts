@@ -46,6 +46,23 @@ const problem = async (p: Promise<unknown>) => {
 };
 
 describe('Worker client', () => {
+  it('says which environment it is with the status check (for the development key)', async () => {
+    const bodies: unknown[] = [];
+    const client = workerClient({
+      baseUrl: 'https://worker.example',
+      getKey: async () => 'phone-key',
+      env: 'production',
+      fetch: async (_url, init) => {
+        bodies.push(JSON.parse(String(init.body)));
+        const status = { used: 0, limit: 10, left: 10, sandbox: true, production: true };
+        return new Response(JSON.stringify(status), { status: 200 });
+      },
+    });
+    await client.status();
+    await client.statusWith('scanned-key');
+    expect(bodies).toEqual([{ env: 'production' }, { env: 'production' }]);
+  });
+
   it('sends the access key in a header and tokens only in the body', async () => {
     const { client, calls } = fakeWorker([{ status: 200, body: { accounts: [] } }]);
     await client.accounts('access-sandbox-1');

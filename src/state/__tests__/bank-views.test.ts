@@ -45,6 +45,10 @@ describe('bank words', () => {
     );
   });
 
+  it('names the laptop command for this build (development: test banks only)', () => {
+    expect(problemMessage('not-paired').body).toContain('“npm run worker:rotate-dev-key”');
+  });
+
   it('E4 says nothing was saved or used', () => {
     expect(DIDNT_CONNECT).toEqual({
       title: 'That bank didn’t connect',

@@ -62,6 +62,11 @@ type Fetch = (url: string, init: RequestInit) => Promise<Response>;
 export interface WorkerClientOptions {
   baseUrl: string;
   getKey: () => Promise<string | null>;
+  /**
+   * This build's Plaid environment, sent with the status check: the Worker answers a release
+   * build holding the development key (Sandbox only) with "scan the code".
+   */
+  env?: PlaidEnv;
   fetch?: Fetch;
   /** Give up on a request after this long (the phone may be on a weak signal). */
   timeoutMs?: number;
@@ -77,6 +82,7 @@ const PROBLEMS: Record<string, WorkerProblem> = {
 export function workerClient(options: WorkerClientOptions) {
   const doFetch: Fetch = options.fetch ?? ((url, init) => fetch(url, init));
   const timeoutMs = options.timeoutMs ?? 30_000;
+  const envBody = options.env ? { env: options.env } : {};
 
   /** `withKey`: a scanned key being checked before it's saved (otherwise the saved one). */
   async function call<T>(
@@ -125,10 +131,10 @@ export function workerClient(options: WorkerClientOptions) {
   }
 
   return {
-    status: () => call<WorkerStatus>('status', {}),
+    status: () => call<WorkerStatus>('status', envBody),
 
     /** The count, asked with a scanned key that isn't saved yet: does the Worker accept it? */
-    statusWith: (key: string) => call<WorkerStatus>('status', {}, key),
+    statusWith: (key: string) => call<WorkerStatus>('status', envBody, key),
 
     /** A link token for a new connection. */
     linkToken: (env: PlaidEnv, clientUserId: string) =>

@@ -58,7 +58,11 @@ export const useBank = create<BankUi>(() => ({
   count: null,
 }));
 
-let client: WorkerClient = workerClient({ baseUrl: WORKER_URL, getKey: readWorkerKey });
+let client: WorkerClient = workerClient({
+  baseUrl: WORKER_URL,
+  getKey: readWorkerKey,
+  env: PLAID_ENV,
+});
 let link: (token: string) => Promise<LinkResult> = openPlaidLink;
 let wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
