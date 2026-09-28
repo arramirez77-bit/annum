@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 /**
  * npm run worker:rotate-key — replace the Worker access key and pair phones with it.
+ * npm run worker:rotate-dev-key — the same for the development key (--dev).
  *
- * Makes a new random key, gives it to the Worker as the ANNUM_WORKER_KEY secret (the old key is
- * refused within seconds), and shows it as a QR code (annum://pair?key=…) until Enter is
- * pressed, then clears the screen. The key is never written to a file or printed as text.
- * See PROGRESS.md "If a phone is lost".
+ * Makes a new random key, gives it to the Worker as a secret (the old key is refused within
+ * seconds), and shows it as a QR code (annum://pair?key=…) until Enter is pressed, then clears
+ * the screen. The key is never written to a file or printed as text. See PROGRESS.md "If a
+ * phone is lost".
+ *
+ * Two keys: ANNUM_WORKER_KEY for the phones' TestFlight builds (real banks), and ANNUM_DEV_KEY
+ * (--dev) for development builds and the Simulator, which the Worker lets reach Sandbox only.
+ * Only the development key is ever sent to a Simulator, so the real one stays off this Mac.
  *
  * Options:
- *   --simulator <udid|booted>  also send the pairing link to an iOS Simulator (development)
+ *   --dev                      the development key (Sandbox only) instead of the phones' key
+ *   --simulator <udid|booted>  also send the pairing link to an iOS Simulator (with --dev only)
  *   --no-qr                    don't show the QR code (only with --simulator)
  */
 import { spawn } from 'node:child_process';
@@ -22,11 +28,21 @@ import QRCode from 'qrcode';
 
 const workerDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const args = process.argv.slice(2);
+const dev = args.includes('--dev');
+const secretName = dev ? 'ANNUM_DEV_KEY' : 'ANNUM_WORKER_KEY';
 const simIndex = args.indexOf('--simulator');
 const simulator = simIndex >= 0 ? args[simIndex + 1] : null;
 const showQr = !args.includes('--no-qr');
 if (simIndex >= 0 && !simulator) {
-  console.error('Usage: npm run worker:rotate-key -- --simulator <udid|booted>');
+  console.error('Usage: npm run worker:rotate-dev-key -- --simulator <udid|booted>');
+  process.exit(1);
+}
+if (simulator && !dev) {
+  console.error(
+    'The Simulator takes the development key only, so the one that reaches real banks stays\n' +
+      'off this Mac. Use: npm run worker:rotate-dev-key -- --simulator ' +
+      simulator,
+  );
   process.exit(1);
 }
 if (!showQr && !simulator) {
@@ -49,8 +65,12 @@ function run(command, commandArgs, { input, cwd, quiet } = {}) {
 const key = randomBytes(32).toString('base64url');
 const link = `annum://pair?key=${key}`;
 
-console.log('Making a new access key and giving it to the Worker…');
-const code = await run('npx', ['wrangler', 'secret', 'put', 'ANNUM_WORKER_KEY'], {
+console.log(
+  dev
+    ? 'Making a new development key (test banks only) and giving it to the Worker…'
+    : 'Making a new access key and giving it to the Worker…',
+);
+const code = await run('npx', ['wrangler', 'secret', 'put', secretName], {
   input: key,
   cwd: workerDir,
   quiet: true,
@@ -108,7 +128,11 @@ if (simulator) {
 if (showQr) {
   const qr = await QRCode.toString(link, { type: 'terminal', small: true });
   console.log(qr);
-  console.log('On each iPhone: point the Camera at this code and tap “Open in Annum”.');
+  console.log(
+    dev
+      ? 'On each iPhone running a development build: point the Camera at this code and tap “Open in Annum”.'
+      : 'On each iPhone: point the Camera at this code and tap “Open in Annum”.',
+  );
   console.log('This code is the key: never screenshot, photograph or send it.\n');
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   await new Promise((resolve) =>

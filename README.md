@@ -151,7 +151,7 @@ git push origin --delete ci-check            # tidy up
 
 - **Connect a bank** (Plaid's free Trial): during setup, or Settings → Accounts → **Add a bank**. Annum first says what it costs: *"This uses 1 of your 10 bank connections. 7 left for both phones."* The 10 are for life and shared by both phones; ending one doesn't give it back. You sign in on your bank's own page inside Plaid; Annum never sees your password and can't move money. Annum then updates when you open it (if it's been over 6 hours), when you pull down on Today (live balances), and sometimes in the background.
 - **If a bank asks you to sign in again**, Today says so and Settings → Accounts shows **Reconnect**. That repairs the same connection; it never uses a new one.
-- **Each phone is paired once** with the Worker by scanning a QR code: on the Mac, in the `annum` folder, run `npm run worker:rotate-key` and point each iPhone's Camera at the code, then tap **Open in Annum**. A new code replaces the old one on every phone (see `PROGRESS.md`, "If a phone is lost").
+- **Each phone is paired once** with the Worker by scanning a QR code: on the Mac, in the `annum` folder, run `npm run worker:rotate-key` and point each iPhone's Camera at the code, then tap **Open in Annum**. A new code replaces the old one on every phone (see `PROGRESS.md`, "If a phone is lost"). A phone running a **development build** (before TestFlight) scans the development code instead: `npm run worker:rotate-dev-key` (add `-- --simulator booted` to pair the Simulator in the same step); it reaches test banks only.
 - **Import a file:** on your bank's website, download the account's transactions as **CSV** or **OFX/QFX** (Quicken). In Annum: Money → **Import a file** → Choose file, or open the download from Files or Mail and pick **Annum**. Tell Annum which account it is and the balance today; it adds what's new and skips what it already has. The weekly review offers this first.
 - **By hand:** Settings → Accounts for balances (brokerage, loans), Money → All transactions → **Add one by hand** for a purchase a file doesn't have.
 - **Bills:** Money → Bills. Annum proposes bills it notices in checking; you confirm them.
@@ -192,6 +192,7 @@ This repository is **public**. The app handles personal finances, so the repo ho
 | --- | --- |
 | Local development values | `.env` on your Mac (git-ignored); copy `.env.example`, which lists the names only |
 | Worker access key | Made by `npm run worker:rotate-key`: stored as a Cloudflare secret and, on each phone, in the Keychain (scanned from a QR code). Never in the app bundle, backups, files, or this repo |
+| Worker development key | Made by `npm run worker:rotate-dev-key` for development builds and the Simulator: the Worker lets it reach test banks (Sandbox) only, so the key that reaches real banks never has to be on the Mac |
 | Plaid client ID + secrets | Cloudflare secrets only: `npm run worker:set-plaid-keys` (client ID + Sandbox secret, checked with Plaid first), and (only on the go-ahead for real banks) `wrangler secret put PLAID_SECRET_PRODUCTION`. Never in the app, never in this repo. See `worker/README.md` |
 | Values needed by app builds | EAS environment variables (`eas env:create`) |
 | Database key | The iPhone Keychain, per person, created at runtime |

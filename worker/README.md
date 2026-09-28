@@ -5,7 +5,7 @@ A tiny Cloudflare Worker on the **free plan**. It holds the Plaid keys as Cloudf
 - **Address:** `https://annum.highdesert.workers.dev`
 - **Stores only one number:** bank connections used on the Plaid Trial (Workers KV key `connections-used`), so both phones show the same "7 of 10 left". No bank names, tokens, account numbers, balances or transactions.
 - **Logs nothing:** no `console` calls in the code, Workers Logs off (`observability.enabled: false`), no Logpush.
-- **Phones need the access key** (`X-Annum-Key`), which each phone scans as a QR code. A wrong key gets `401 key-refused`. Both rate limits count all callers together and never record addresses.
+- **Phones need the access key** (`X-Annum-Key`), which each phone scans as a QR code. A wrong key gets `401 key-refused`. Development builds and the Simulator use a separate development key that only reaches Sandbox; used for anything real, it gets `401 key-refused` and Plaid is never called. Both rate limits count all callers together and never record addresses.
 
 ## What it forwards
 
@@ -34,7 +34,8 @@ Set from your Mac. Each prompt hides what you paste; never paste a key anywhere 
 | `PLAID_CLIENT_ID` | Plaid Dashboard → Developers → Keys | Once |
 | `PLAID_SECRET_SANDBOX` | Same page, Sandbox secret | Once |
 | `PLAID_SECRET_PRODUCTION` | Same page, Production secret | Only when you say go for real banks |
-| `ANNUM_WORKER_KEY` | Made by `npm run worker:rotate-key` | Never by hand |
+| `ANNUM_WORKER_KEY` | Made by `npm run worker:rotate-key` (phones' TestFlight builds: real banks and Sandbox) | Never by hand |
+| `ANNUM_DEV_KEY` | Made by `npm run worker:rotate-dev-key` (development builds and the Simulator: **Sandbox only**) | Never by hand |
 
 ```sh
 cd ~/Desktop/Dev/Git/annum
@@ -49,6 +50,7 @@ It asks for the client ID and the Sandbox secret, checks them with Plaid Sandbox
 | --- | --- |
 | `npm run worker:deploy` | Publishes the Worker (after a code change) |
 | `npm run worker:set-plaid-keys` | Checks the client ID and Sandbox secret with Plaid, then stores them on the Worker |
+| `npm run worker:rotate-dev-key` | New development key (test banks only) + QR code for development builds; `-- --simulator booted` also pairs the Simulator |
 | `npm run worker:rotate-key` | New access key + QR code for the phones (see `PROGRESS.md`, "If a phone is lost") |
 | `cd worker && npx wrangler kv key get connections-used --binding COUNT --remote` | Read the count |
 | `cd worker && npx wrangler kv key put connections-used 4 --binding COUNT --remote` | Correct the count to match Plaid's Dashboard → Usage (the real number) |

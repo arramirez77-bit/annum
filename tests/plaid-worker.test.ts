@@ -14,6 +14,7 @@ import {
 } from '../worker/src/handler';
 
 const KEY = 'k'.repeat(43);
+const DEV = 'd'.repeat(43); // made up, like KEY
 const USER = 'phone-1234abcd';
 
 interface Call {
@@ -135,6 +136,51 @@ describe('access key', () => {
     expect(sameKey(KEY, KEY.slice(1))).toBe(false);
     expect(sameKey(KEY, `${KEY}x`)).toBe(false);
     expect(sameKey('', KEY)).toBe(false);
+  });
+});
+
+describe('development key (Sandbox only)', () => {
+  const USER = { client_user_id: 'phone-0123456789' };
+
+  it('reaches Sandbox: count, test connections, link tokens, exchange, synced calls', async () => {
+    const s = setup({ ANNUM_DEV_KEY: DEV, PLAID_SECRET_PRODUCTION: 'prod' }, 3);
+    const ok = async (path: string, body: object) =>
+      expect((await s.post(path, body, DEV)).status).toBe(200);
+    await ok('status', { env: 'sandbox' });
+    await ok('status', {});
+    await ok('link-token', { env: 'sandbox', ...USER });
+    await ok('link-token', { access_token: 'access-sandbox-1', ...USER });
+    await ok('exchange', { public_token: 'public-sandbox-xyz' });
+    await ok('accounts/get', { access_token: 'access-sandbox-1' });
+    await ok('sandbox/connect', {});
+    expect(s.calls.every((c) => c.url.startsWith('https://sandbox.plaid.com/'))).toBe(true);
+  });
+
+  it('never reaches real banks: it gets "scan the code", and Plaid is never asked', async () => {
+    const s = setup({ ANNUM_DEV_KEY: DEV, PLAID_SECRET_PRODUCTION: 'prod' }, 3);
+    for (const [path, body] of [
+      ['status', { env: 'production' }],
+      ['link-token', { env: 'production', ...USER }],
+      ['link-token', { access_token: 'access-production-abc', ...USER }],
+      ['exchange', { public_token: 'public-production-xyz' }],
+      ['accounts/get', { access_token: 'access-production-abc' }],
+      ['transactions/sync', { access_token: 'access-production-abc' }],
+      ['item/remove', { access_token: 'access-production-abc' }],
+    ] as const) {
+      const res = await s.post(path, body, DEV);
+      expect({ path, status: res.status }).toEqual({ path, status: 401 });
+      expect(await res.json()).toEqual({ problem: 'key-refused' });
+    }
+    expect(s.calls).toEqual([]);
+    expect(s.kv.get(COUNT_KEY)).toBe('3');
+  });
+
+  it('is just a wrong key when none is set, and the phones’ key still reaches real banks', async () => {
+    const s = setup({ PLAID_SECRET_PRODUCTION: 'prod' });
+    expect((await s.post('status', {}, DEV)).status).toBe(401);
+    const res = await s.post('link-token', { env: 'production', ...USER });
+    expect(res.status).toBe(200);
+    expect(s.calls[0].url).toBe('https://production.plaid.com/link/token/create');
   });
 });
 

@@ -25,6 +25,11 @@ export interface Env {
   PLAID_SECRET_PRODUCTION?: string;
   /** The access key the phones scanned (`npm run worker:rotate-key`). */
   ANNUM_WORKER_KEY?: string;
+  /**
+   * Development builds and the Simulator (`npm run worker:rotate-dev-key`): Sandbox only, so the
+   * key that can reach real banks never has to sit on the development Mac.
+   */
+  ANNUM_DEV_KEY?: string;
   COUNT: CountStore;
   PHONES_LIMIT?: RateLimit;
   REFUSED_LIMIT?: RateLimit;
@@ -126,6 +131,9 @@ const OAUTH_PAGE = `<!doctype html>
 <title>Annum</title></head>
 <body><p>Your bank is connected to Annum. Open Annum on this iPhone to finish.</p></body></html>`;
 
+/** The development key asked for something real: answered like an old key ("scan the code"). */
+class DevKeyRefused extends Error {}
+
 export async function handle(request: Request, env: Env, fetchPlaid: Fetch): Promise<Response> {
   const url = new URL(request.url);
 
@@ -145,7 +153,10 @@ export async function handle(request: Request, env: Env, fetchPlaid: Fetch): Pro
   const clientId = clean(env.PLAID_CLIENT_ID);
   if (!workerKey || !clientId) return refuse(503, 'not-configured');
   const key = request.headers.get('x-annum-key') ?? '';
-  if (!sameKey(key, workerKey)) {
+  const devKey = clean(env.ANNUM_DEV_KEY);
+  const main = sameKey(key, workerKey);
+  const dev = !main && !!devKey && sameKey(key, devKey);
+  if (!main && !dev) {
     const { success } = (await env.REFUSED_LIMIT?.limit({ key: 'refused' })) ?? { success: true };
     return success ? refuse(401, 'key-refused') : refuse(429, 'slow-down');
   }
@@ -163,6 +174,8 @@ export async function handle(request: Request, env: Env, fetchPlaid: Fetch): Pro
   }
 
   const plaid = async (plaidEnv: PlaidEnv, path: string, payload: Record<string, unknown>) => {
+    // Every Plaid call comes through here, so this is where the development key stops.
+    if (dev && plaidEnv !== 'sandbox') throw new DevKeyRefused();
     const secret = secretFor(env, plaidEnv);
     if (!secret) return { off: true as const };
     const res = await fetchPlaid(`${HOSTS[plaidEnv]}/${path}`, {
@@ -177,101 +190,111 @@ export async function handle(request: Request, env: Env, fetchPlaid: Fetch): Pro
   const off = (plaidEnv: PlaidEnv) => refuse(503, 'environment-off', { env: plaidEnv });
 
   const route = url.pathname.slice('/v1/'.length);
-
-  if (route === 'status') {
-    const used = await readCount(env);
-    return json(200, {
-      used,
-      limit: CONNECTION_LIMIT,
-      left: Math.max(0, CONNECTION_LIMIT - used),
-      sandbox: !!env.PLAID_SECRET_SANDBOX,
-      production: !!env.PLAID_SECRET_PRODUCTION,
-    });
+  try {
+    return await respond();
+  } catch (e) {
+    if (e instanceof DevKeyRefused) return refuse(401, 'key-refused');
+    throw e;
   }
 
-  if (route === 'link-token') {
-    const accessToken = body.access_token;
-    const userId = body.client_user_id;
-    if (typeof userId !== 'string' || !/^[A-Za-z0-9-]{8,64}$/.test(userId)) {
-      return refuse(400, 'bad-request');
-    }
-    const common = {
-      client_name: 'Annum',
-      country_codes: ['US'],
-      language: 'en',
-      user: { client_user_id: userId },
-      redirect_uri: REDIRECT_URI,
-    };
-    if (accessToken !== undefined) {
-      // Update mode: repairs a connection in place. Always allowed, even with none left.
-      const plaidEnv = envOfToken(accessToken);
-      if (!plaidEnv) return refuse(400, 'bad-request');
-      const r = await plaid(plaidEnv, 'link/token/create', {
-        ...common,
-        access_token: accessToken,
+  async function respond(): Promise<Response> {
+    if (route === 'status') {
+      // A release build says it's after real banks: the development key isn't for it.
+      if (dev && body.env === 'production') throw new DevKeyRefused();
+      const used = await readCount(env);
+      return json(200, {
+        used,
+        limit: CONNECTION_LIMIT,
+        left: Math.max(0, CONNECTION_LIMIT - used),
+        sandbox: !!env.PLAID_SECRET_SANDBOX,
+        production: !!env.PLAID_SECRET_PRODUCTION,
       });
+    }
+
+    if (route === 'link-token') {
+      const accessToken = body.access_token;
+      const userId = body.client_user_id;
+      if (typeof userId !== 'string' || !/^[A-Za-z0-9-]{8,64}$/.test(userId)) {
+        return refuse(400, 'bad-request');
+      }
+      const common = {
+        client_name: 'Annum',
+        country_codes: ['US'],
+        language: 'en',
+        user: { client_user_id: userId },
+        redirect_uri: REDIRECT_URI,
+      };
+      if (accessToken !== undefined) {
+        // Update mode: repairs a connection in place. Always allowed, even with none left.
+        const plaidEnv = envOfToken(accessToken);
+        if (!plaidEnv) return refuse(400, 'bad-request');
+        const r = await plaid(plaidEnv, 'link/token/create', {
+          ...common,
+          access_token: accessToken,
+        });
+        return r.off ? off(plaidEnv) : relay(r.res);
+      }
+      const plaidEnv = body.env;
+      if (plaidEnv !== 'sandbox' && plaidEnv !== 'production') return refuse(400, 'bad-request');
+      if (plaidEnv === 'production') {
+        const used = await readCount(env);
+        if (used >= CONNECTION_LIMIT) return refuse(409, 'limit-reached', { used });
+      }
+      const r = await plaid(plaidEnv, 'link/token/create', { ...common, ...NEW_CONNECTION });
       return r.off ? off(plaidEnv) : relay(r.res);
     }
-    const plaidEnv = body.env;
-    if (plaidEnv !== 'sandbox' && plaidEnv !== 'production') return refuse(400, 'bad-request');
-    if (plaidEnv === 'production') {
-      const used = await readCount(env);
-      if (used >= CONNECTION_LIMIT) return refuse(409, 'limit-reached', { used });
-    }
-    const r = await plaid(plaidEnv, 'link/token/create', { ...common, ...NEW_CONNECTION });
-    return r.off ? off(plaidEnv) : relay(r.res);
-  }
 
-  if (route === 'exchange') {
-    // Never refused for the limit: by now the bank login exists at Plaid.
-    const plaidEnv = envOfToken(body.public_token);
-    if (!plaidEnv) return refuse(400, 'bad-request');
-    const r = await plaid(plaidEnv, 'item/public_token/exchange', {
-      public_token: body.public_token,
-    });
-    if (r.off) return off(plaidEnv);
-    if (!r.res.ok) return relay(r.res);
-    const out = (await r.res.json()) as { access_token: string; item_id: string };
-    // The access token must reach the phone whatever happens to the count (it's a courtesy
-    // number; Plaid's Dashboard is the real one): a KV hiccup here would lose the connection.
-    let used = 0;
-    try {
-      used = await readCount(env);
-      if (plaidEnv === 'production') {
-        used += 1;
-        await env.COUNT.put(COUNT_KEY, String(used));
+    if (route === 'exchange') {
+      // Never refused for the limit: by now the bank login exists at Plaid.
+      const plaidEnv = envOfToken(body.public_token);
+      if (!plaidEnv) return refuse(400, 'bad-request');
+      const r = await plaid(plaidEnv, 'item/public_token/exchange', {
+        public_token: body.public_token,
+      });
+      if (r.off) return off(plaidEnv);
+      if (!r.res.ok) return relay(r.res);
+      const out = (await r.res.json()) as { access_token: string; item_id: string };
+      // The access token must reach the phone whatever happens to the count (it's a courtesy
+      // number; Plaid's Dashboard is the real one): a KV hiccup here would lose the connection.
+      let used = 0;
+      try {
+        used = await readCount(env);
+        if (plaidEnv === 'production') {
+          used += 1;
+          await env.COUNT.put(COUNT_KEY, String(used));
+        }
+      } catch {
+        // Keep going: the phone gets its token; the count can be corrected from the Dashboard.
       }
-    } catch {
-      // Keep going: the phone gets its token; the count can be corrected from the Dashboard.
+      return json(200, { access_token: out.access_token, item_id: out.item_id, used });
     }
-    return json(200, { access_token: out.access_token, item_id: out.item_id, used });
-  }
 
-  if (route === 'sandbox/connect') {
-    // Tests: a Sandbox connection without the Link screens. Real banks never come this way.
-    const r = await plaid('sandbox', 'sandbox/public_token/create', {
-      institution_id: SANDBOX_INSTITUTION,
-      initial_products: NEW_CONNECTION.products,
-      options: {
-        override_username: SANDBOX_USER,
-        override_password: 'pass_good',
-        transactions: NEW_CONNECTION.transactions,
-      },
-    });
-    return r.off ? off('sandbox') : relay(r.res);
-  }
+    if (route === 'sandbox/connect') {
+      // Tests: a Sandbox connection without the Link screens. Real banks never come this way.
+      const r = await plaid('sandbox', 'sandbox/public_token/create', {
+        institution_id: SANDBOX_INSTITUTION,
+        initial_products: NEW_CONNECTION.products,
+        options: {
+          override_username: SANDBOX_USER,
+          override_password: 'pass_good',
+          transactions: NEW_CONNECTION.transactions,
+        },
+      });
+      return r.off ? off('sandbox') : relay(r.res);
+    }
 
-  // Own keys only: `/v1/constructor` or `/v1/__proto__` must not find Object's built-ins.
-  const forward = Object.hasOwn(FORWARD, route) ? FORWARD[route] : undefined;
-  if (forward) {
-    const plaidEnv = envOfToken(body.access_token);
-    if (!plaidEnv) return refuse(400, 'bad-request');
-    if (forward.sandboxOnly && plaidEnv !== 'sandbox') return refuse(403, 'sandbox-only');
-    const payload: Record<string, unknown> = { access_token: body.access_token };
-    for (const field of forward.fields) if (field in body) payload[field] = body[field];
-    const r = await plaid(plaidEnv, route, payload);
-    return r.off ? off(plaidEnv) : relay(r.res);
-  }
+    // Own keys only: `/v1/constructor` or `/v1/__proto__` must not find Object's built-ins.
+    const forward = Object.hasOwn(FORWARD, route) ? FORWARD[route] : undefined;
+    if (forward) {
+      const plaidEnv = envOfToken(body.access_token);
+      if (!plaidEnv) return refuse(400, 'bad-request');
+      if (forward.sandboxOnly && plaidEnv !== 'sandbox') return refuse(403, 'sandbox-only');
+      const payload: Record<string, unknown> = { access_token: body.access_token };
+      for (const field of forward.fields) if (field in body) payload[field] = body[field];
+      const r = await plaid(plaidEnv, route, payload);
+      return r.off ? off(plaidEnv) : relay(r.res);
+    }
 
-  return refuse(404, 'not-found');
+    return refuse(404, 'not-found');
+  }
 }

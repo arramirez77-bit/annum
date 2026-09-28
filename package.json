@@ -16,6 +16,7 @@
     "prepare": "git config core.hooksPath .githooks || true",
     "worker:deploy": "npm --prefix worker run deploy",
     "worker:rotate-key": "node worker/scripts/rotate-key.mjs",
+    "worker:rotate-dev-key": "node worker/scripts/rotate-key.mjs --dev",
     "worker:set-plaid-keys": "node worker/scripts/set-plaid-keys.mjs"
   },
   "dependencies": {
