@@ -38,6 +38,7 @@ describe('Today, per scenario', () => {
         bucket: 'tax',
         value: '$3,000',
         subtitle: 'Next quarterly date Jan 15',
+        route: '/money/taxes',
       },
       { id: 'what-if', title: 'What would this do?', bucket: 'none', route: '/what-if' },
     ]);

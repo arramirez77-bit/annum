@@ -50,7 +50,7 @@ Deep links from notifications: `annum://review/1`, `annum://deposit/{id}`, `annu
 ### 01 Today (`/`)
 - **Header**: "Sep 23 · Updated 7:02 AM" (or "Updated Sep 20" when stale) · StatusPill · settings symbol → `/settings`. The update time is the trust signal — always visible.
 - **Hero**: "You can spend" / `$ATS` (Hero, counts up) / "until your next invoice on {date}. About ${perDay} a day." Salary: "until payday on {date}." Estimate/stale: "You can spend about".
-- **Sheet facts** (LedgerRow light): Runway (bucket dot, months, "Up X this week · ${target} target"), Tax reserve (freelance only, next quarterly date), "What would this do?" row → `/what-if`. Mixed lists use BucketDot `none` so titles align.
+- **Sheet facts** (LedgerRow light): Runway (bucket dot, months, "Up X this week · ${target} target"), Tax reserve (freelance only, next quarterly date; tap → S2 Taxes), "What would this do?" row → `/what-if`. Mixed lists use BucketDot `none` so titles align.
 - **Button**: Field "Start weekly review" (on-track) · Caution "See what I can move" (heads-up) · "Do my first weekly review" (estimate).
 - **States**: on-track (green field), heads-up (umber, cross-fade 600ms, cause sentence e.g. the Contoso Card statement), estimate (pill "Estimate"), stale (light heads-up GuardrailNote on the sheet), late invoice (umber, "{source} invoice is N days late", per-day stretched, button "See my options"), salary (no tax row).
 - Light TabBar floats over the sheet.

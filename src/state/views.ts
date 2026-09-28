@@ -116,7 +116,12 @@ export interface TodayRow {
   subtitle?: string;
   value?: string;
   bucket: BucketKey | 'none';
-  route?: '/what-if' | '/income/new' | '/settings/number/spend' | '/settings/number/pay';
+  route?:
+    | '/what-if'
+    | '/income/new'
+    | '/settings/number/spend'
+    | '/settings/number/pay'
+    | '/money/taxes';
 }
 
 export interface TodayView {
@@ -193,6 +198,8 @@ export function buildTodayView(data: AppData, now: Date): TodayView {
       subtitle: data.taxYear
         ? `Next quarterly date ${formatShortDate(data.taxYear.nextQuarterlyDue)}`
         : undefined,
+      // Opens S2 Taxes (Andy, 2026-09-28).
+      route: '/money/taxes',
     });
   }
   if (ats.nextIncome.kind === 'none') {

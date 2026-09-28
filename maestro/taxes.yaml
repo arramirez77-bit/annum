@@ -1,4 +1,5 @@
-# M4: Taxes totals and the accountant CSV export (share sheet opens).
+# M4: Taxes totals and the accountant CSV export (share sheet opens). M7: Today's Tax reserve
+# row opens Taxes too.
 appId: com.highdesert.annum
 name: Taxes export
 ---
@@ -6,6 +7,16 @@ name: Taxes export
     file: common/open-scenario.yaml
     env:
       SCENARIO: on-track
+- scrollUntilVisible:
+    element:
+      id: 'today-row-tax'
+    direction: DOWN
+- tapOn:
+    id: 'today-row-tax'
+- extendedWaitUntil:
+    visible: "You've tagged \\$3,800 in work expenses across 21 items this year\\."
+    timeout: 5000
+- runFlow: common/go-back.yaml
 - tapOn: 'Money'
 - scrollUntilVisible:
     element:
