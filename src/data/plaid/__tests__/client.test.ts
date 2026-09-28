@@ -140,4 +140,22 @@ describe('Worker client', () => {
     ]);
     expect(await client.liabilities('access-sandbox-1')).toEqual([]);
   });
+
+  it('skips card statements whatever Plaid says about them, except "sign in again"', async () => {
+    for (const [type, code] of [
+      ['ITEM_ERROR', 'ADDITIONAL_CONSENT_REQUIRED'],
+      ['INVALID_REQUEST', 'INVALID_PRODUCT'],
+      ['RATE_LIMIT_EXCEEDED', 'RATE_LIMIT'],
+      ['API_ERROR', 'INTERNAL_SERVER_ERROR'],
+    ]) {
+      const { client } = fakeWorker([
+        { status: 400, body: { error_type: type, error_code: code } },
+      ]);
+      expect(await client.liabilities('access-sandbox-1')).toEqual([]);
+    }
+    const { client } = fakeWorker([
+      { status: 400, body: { error_type: 'ITEM_ERROR', error_code: 'ITEM_LOGIN_REQUIRED' } },
+    ]);
+    expect(await problem(client.liabilities('access-sandbox-1'))).toBe('plaid');
+  });
 });

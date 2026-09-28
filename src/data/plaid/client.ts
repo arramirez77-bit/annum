@@ -7,6 +7,7 @@ import type { BankChanges } from '@/domain';
 
 import {
   mapTransaction,
+  problemOf,
   type PlaidAccount,
   type PlaidCreditLiability,
   type PlaidError,
@@ -84,16 +85,19 @@ export function workerClient(options: WorkerClientOptions) {
   const timeoutMs = options.timeoutMs ?? 30_000;
   const envBody = options.env ? { env: options.env } : {};
 
-  /** `withKey`: a scanned key being checked before it's saved (otherwise the saved one). */
+  /**
+   * `key`: a scanned key being checked before it's saved (otherwise the saved one). `timeoutMs`:
+   * longer for the token exchange, whose answer can't be asked for twice.
+   */
   async function call<T>(
     route: string,
     body: Record<string, unknown>,
-    withKey?: string,
+    over: { key?: string; timeoutMs?: number } = {},
   ): Promise<T> {
-    const key = withKey ?? (await options.getKey());
+    const key = over.key ?? (await options.getKey());
     if (!key) throw new WorkerError('not-paired');
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const timer = setTimeout(() => controller.abort(), over.timeoutMs ?? timeoutMs);
     let res: Response;
     try {
       res = await doFetch(`${options.baseUrl}/v1/${route}`, {
@@ -134,7 +138,7 @@ export function workerClient(options: WorkerClientOptions) {
     status: () => call<WorkerStatus>('status', envBody),
 
     /** The count, asked with a scanned key that isn't saved yet: does the Worker accept it? */
-    statusWith: (key: string) => call<WorkerStatus>('status', envBody, key),
+    statusWith: (key: string) => call<WorkerStatus>('status', envBody, { key }),
 
     /** A link token for a new connection. */
     linkToken: (env: PlaidEnv, clientUserId: string) =>
@@ -150,9 +154,12 @@ export function workerClient(options: WorkerClientOptions) {
       }).then((r) => r.link_token),
 
     exchange: (publicToken: string) =>
-      call<{ access_token: string; item_id: string; used: number }>('exchange', {
-        public_token: publicToken,
-      }),
+      call<{ access_token: string; item_id: string; used: number }>(
+        'exchange',
+        { public_token: publicToken },
+        // Plaid only exchanges a public token once: wait longer rather than lose the answer.
+        { timeoutMs: Math.max(timeoutMs, 90_000) },
+      ),
 
     /** Development builds: a Sandbox connection without Link's screens (tests). */
     sandboxConnect: () =>
@@ -176,12 +183,11 @@ export function workerClient(options: WorkerClientOptions) {
         );
         return r.liabilities.credit ?? [];
       } catch (e) {
-        if (e instanceof WorkerError && e.problem === 'plaid') {
-          const code = e.plaid?.error_code ?? '';
-          if (
-            ['PRODUCTS_NOT_SUPPORTED', 'NO_LIABILITY_ACCOUNTS', 'PRODUCT_NOT_READY'].includes(code)
-          )
-            return [];
+        // Card statements are extra: whatever Plaid says about them (not supported, not ready,
+        // more consent needed, busy) skips them this time instead of stopping the sync. Signing
+        // in again still goes through, so Reconnect shows.
+        if (e instanceof WorkerError && e.plaid && problemOf(e.plaid) !== 'needs-reauth') {
+          return [];
         }
         throw e;
       }

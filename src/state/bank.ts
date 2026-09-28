@@ -65,16 +65,20 @@ let client: WorkerClient = workerClient({
 });
 let link: (token: string) => Promise<LinkResult> = openPlaidLink;
 let wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+/** The pause before trying an unfinished connection again in the background. */
+let later = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-/** Tests: a fake Worker, a fake Link, no waiting. */
+/** Tests: a fake Worker, a fake Link, no waiting (`later`: when background retries run). */
 export function setBankTestDoubles(doubles: {
   client?: WorkerClient;
   link?: (token: string) => Promise<LinkResult>;
   wait?: (ms: number) => Promise<void>;
+  later?: (ms: number) => Promise<void>;
 }): void {
   if (doubles.client) client = doubles.client;
   if (doubles.link) link = doubles.link;
   if (doubles.wait) wait = doubles.wait;
+  if (doubles.later) later = doubles.later;
 }
 
 const app = () => useAppStore.getState();
@@ -176,7 +180,22 @@ export async function connectNewBank(
     createdAt: localDateTime(new Date()),
   };
   await keep(pending);
-  return finishExchange(pending);
+  const outcome = await finishExchange(pending);
+  // Offline right after Link: keep trying for a few minutes (setup doesn't sync by itself, and
+  // Plaid's public token only lasts 30 minutes).
+  if (outcome.kind === 'finish-later') void finishLater(pending.itemId);
+  return outcome;
+}
+
+const FINISH_LATER_MS = [10_000, 30_000, 90_000, 240_000];
+
+async function finishLater(itemId: string): Promise<void> {
+  for (const delay of FINISH_LATER_MS) {
+    await later(delay);
+    const c = app().connections.find((x) => x.itemId === itemId && x.status === 'exchanging');
+    if (!c) return;
+    if ((await finishExchange(c)).kind !== 'finish-later') return;
+  }
 }
 
 /** Pending connections being exchanged right now: one exchange at a time for each. */
@@ -242,6 +261,12 @@ async function exchangeOnce(pending: BankConnection): Promise<ConnectOutcome> {
     transactions: synced?.transactions ?? 0,
   };
 }
+
+/** The connection is still in the store as this sync found it (same token, same cursor). */
+const unchanged = (c: BankConnection): boolean =>
+  app().connections.some(
+    (x) => x.itemId === c.itemId && x.accessToken === c.accessToken && x.cursor === c.cursor,
+  );
 
 /** Plaid is still sending this connection's history (see `historyDone`). */
 const historyComing = (c: BankConnection): boolean =>
@@ -311,6 +336,9 @@ async function syncConnection(
       .filter((a): a is Omit<Account, 'id'> => a !== null);
     const changes = await client.sync(token, connection.cursor);
     reached();
+    // Delete everything, a restore or another sync may have changed this connection while the
+    // bank answered: then these results belong to data that's gone, and aren't put back.
+    if (!unchanged(connection)) return null;
 
     const s = app();
     if (s.phase === 'onboarding') {
@@ -348,7 +376,8 @@ async function syncConnection(
       noted(e) === 'plaid' &&
       e instanceof WorkerError &&
       e.plaid &&
-      problemOf(e.plaid) === 'needs-reauth'
+      problemOf(e.plaid) === 'needs-reauth' &&
+      unchanged(connection)
     ) {
       app().saveConnection({ ...connection, status: 'needs-reauth' });
     }

@@ -69,6 +69,8 @@ interface FakePlaid {
   exchangeErrors: { status: number; error_type: string; error_code: string }[];
   /** While set, exchanges wait for it (to test two at once). */
   exchangeGate: Promise<void> | null;
+  /** While set, transactions/sync waits for it (to change things while a sync is out). */
+  syncGate: Promise<void> | null;
 }
 const plaid: FakePlaid = {
   calls: [],
@@ -80,6 +82,7 @@ const plaid: FakePlaid = {
   twoStage: false,
   exchangeErrors: [],
   exchangeGate: null,
+  syncGate: null,
 };
 const kv = new Map<string, string>();
 const workerEnv: Env = {
@@ -172,6 +175,11 @@ function fakePlaid(url: string, init: RequestInit): Promise<Response> {
         },
       });
     case 'transactions/sync':
+      if (plaid.syncGate) {
+        const gate = plaid.syncGate;
+        plaid.syncGate = null;
+        return gate.then(() => fakePlaid(url, init));
+      }
       if (!body.cursor && plaid.notReady > 0) {
         plaid.notReady--;
         return ok({ added: [], modified: [], removed: [], next_cursor: '', has_more: false });
@@ -233,7 +241,9 @@ const worker = workerClient({
 });
 
 const link = jest.fn();
-setBankTestDoubles({ client: worker, link, wait: async () => undefined });
+/** Background retries (finish a connection later) don't run unless a test lets them. */
+const never = () => new Promise<void>(() => undefined);
+setBankTestDoubles({ client: worker, link, wait: async () => undefined, later: never });
 
 const s = () => useAppStore.getState();
 const consoleSpies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) =>
@@ -254,6 +264,8 @@ beforeEach(() => {
   plaid.twoStage = false;
   plaid.exchangeErrors = [];
   plaid.exchangeGate = null;
+  plaid.syncGate = null;
+  setBankTestDoubles({ later: never });
   mockPhoneKey = 'k'.repeat(43);
   link.mockReset();
   link.mockResolvedValue({
@@ -423,6 +435,23 @@ describe('connecting during setup', () => {
     expect(s().connections).toMatchObject([{ itemId: 'item-1', status: 'ok' }]);
   });
 
+  it('during setup, keeps trying to finish a connection that went offline after Link', async () => {
+    link.mockImplementation(async () => {
+      plaid.down = true;
+      return { kind: 'success', publicToken: 'public-sandbox-1', institution: 'Bank A' };
+    });
+    setBankTestDoubles({
+      later: async () => {
+        plaid.down = false; // back online by the first retry
+      },
+    });
+    expect(await connectNewBank()).toEqual({ kind: 'finish-later', institution: 'Bank A' });
+    for (let i = 0; i < 50 && s().connections[0]?.status !== 'ok'; i++) {
+      await new Promise<void>((resolve) => setImmediate(() => resolve()));
+    }
+    expect(s().connections).toMatchObject([{ itemId: 'item-1', status: 'ok' }]);
+  });
+
   it('lets go of an unfinished connection after the 30 minutes Plaid allows', async () => {
     const stale: BankConnection = {
       itemId: 'pending-x',
@@ -526,6 +555,36 @@ describe('syncing', () => {
     expect(plaid.calls).toEqual([]);
     await syncAll({ force: true, live: true });
     expect(plaid.calls).toContain('accounts/balance/get');
+  });
+
+  it('drops a sync that comes back after Delete everything', async () => {
+    realWith([connected]);
+    let open: () => void = () => undefined;
+    plaid.syncGate = new Promise<void>((resolve) => (open = resolve));
+    const sync = syncAll({ force: true });
+    for (let i = 0; i < 20 && !plaid.calls.includes('transactions/sync'); i++) {
+      await new Promise<void>((resolve) => setImmediate(() => resolve()));
+    }
+    s().removeConnection('item-1'); // Delete everything / Restore while the bank answers
+    open();
+    await sync;
+    expect(s().connections).toEqual([]);
+    expect(s().data.transactions).toEqual([]);
+  });
+
+  it('drops a sync whose connection changed meanwhile (a restore brought an older cursor)', async () => {
+    realWith([connected]);
+    let open: () => void = () => undefined;
+    plaid.syncGate = new Promise<void>((resolve) => (open = resolve));
+    const sync = syncAll({ force: true });
+    for (let i = 0; i < 20 && !plaid.calls.includes('transactions/sync'); i++) {
+      await new Promise<void>((resolve) => setImmediate(() => resolve()));
+    }
+    s().saveConnection({ ...connected, cursor: 'c0' });
+    open();
+    await sync;
+    expect(s().connections[0].cursor).toBe('c0');
+    expect(s().data.transactions).toEqual([]);
   });
 
   it('marks a connection that needs signing in again, and skips it until repaired', async () => {

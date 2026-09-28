@@ -67,11 +67,22 @@ export const setLockEnabled = (on: boolean): Promise<void> =>
     ? SecureStore.setItemAsync(LOCK_KEY, '1', storeOptions({}))
     : SecureStore.deleteItemAsync(LOCK_KEY);
 
-export const readWorkerKey = (): Promise<string | null> =>
-  SecureStore.getItemAsync(WORKER_KEY, storeOptions({}));
+/**
+ * The access key, kept in memory once read: background refresh runs while the phone is locked,
+ * when the Keychain item ("when unlocked") can't be read. Never logged, never written elsewhere.
+ */
+let workerKey: string | null | undefined;
 
-export const saveWorkerKey = (key: string): Promise<void> =>
-  SecureStore.setItemAsync(WORKER_KEY, key, storeOptions({}));
+export async function readWorkerKey(): Promise<string | null> {
+  if (workerKey !== undefined) return workerKey;
+  workerKey = await SecureStore.getItemAsync(WORKER_KEY, storeOptions({}));
+  return workerKey;
+}
+
+export async function saveWorkerKey(key: string): Promise<void> {
+  await SecureStore.setItemAsync(WORKER_KEY, key, storeOptions({}));
+  workerKey = key;
+}
 
 export async function getOrCreatePlaidUserId(): Promise<string> {
   const existing = await SecureStore.getItemAsync(PLAID_USER, storeOptions({}));
@@ -89,6 +100,9 @@ export async function deleteAllSecrets(options: { keepPairing?: boolean } = {}):
   await SecureStore.deleteItemAsync(DB_KEY);
   await SecureStore.deleteItemAsync(LOCK_KEY);
   // Development "start over" keeps the pairing so test runs don't need a new code each time.
-  if (!options.keepPairing) await SecureStore.deleteItemAsync(WORKER_KEY);
+  if (!options.keepPairing) {
+    workerKey = undefined;
+    await SecureStore.deleteItemAsync(WORKER_KEY);
+  }
   await SecureStore.deleteItemAsync(PLAID_USER);
 }
