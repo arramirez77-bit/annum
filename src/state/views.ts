@@ -117,11 +117,7 @@ export interface TodayRow {
   value?: string;
   bucket: BucketKey | 'none';
   route?:
-    | '/what-if'
-    | '/income/new'
-    | '/settings/number/spend'
-    | '/settings/number/pay'
-    | '/money/taxes';
+    '/what-if' | '/income/new' | '/settings/number/spend' | '/settings/number/pay' | '/money/taxes';
 }
 
 export interface TodayView {
