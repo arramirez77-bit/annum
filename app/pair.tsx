@@ -62,7 +62,7 @@ export default function Pair() {
     <>
       <Stack.Screen
         options={{
-          title: 'Pair this phone',
+          title: '',
           headerLeft: () => <HeaderButton label="Close" onPress={close} testID="pair-close" />,
         }}
       />
