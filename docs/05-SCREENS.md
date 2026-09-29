@@ -1,6 +1,6 @@
 # 05 — Screens and routes
 
-Screen IDs match the Figma frame names and the PNG filenames in `docs/screens/`. Figma copy is the source for wording; **numbers always come from the domain engine**, never from the mocks. The mocks show the same fictional sample data as `fixtures/seed.json`.
+Screen IDs match the Figma frame names and the PNG filenames in `docs/screens/`. Figma copy is the source for wording; **numbers always come from the domain engine**, never from the mocks. **Every screen and state is built from a Figma frame; code never creates one** (CLAUDE.md, "Design comes from Figma, always"). Anything this file describes without a frame (marked "no frame") waits for Andy's design before it changes. The mocks show the same fictional sample data as `fixtures/seed.json`.
 
 ## Route map (Expo Router files)
 

@@ -1,6 +1,6 @@
 # Annum — instructions for Claude Code
 
-You are building **Annum**, a calm personal-finance **native iPhone app** built with **Expo (React Native + TypeScript)**, for one freelancer and, separately, his wife. Design is finished; your job is to build it faithfully and make every number real.
+You are building **Annum**, a calm personal-finance **native iPhone app** built with **Expo (React Native + TypeScript)**, for one freelancer and, separately, his wife. Andy designs every screen in Figma; your job is to build exactly what the frames show and make every number real. **Code never designs** (see "Design comes from Figma, always").
 
 Read these before writing code, in order:
 
@@ -12,6 +12,17 @@ Read these before writing code, in order:
 6. `docs/06-BUILD-PLAN.md` — milestones. **Build one milestone at a time, in order.**
 
 Visual reference: PNG exports of every screen go in `docs/screens/` (filenames match screen IDs like `01`, `O1`, `E1`). They are git-ignored and stay on Andy's Mac, because the design is private. Figma source: Figma file (private, ask Andy) — screens on the **Screens** page, components on the component pages.
+
+## Design comes from Figma, always
+
+Andy designs in Figma. Code builds what the frames show and never creates a design of its own.
+
+- **No frame, no screen.** Never create a screen, sheet, state (empty, loading, offline, error, success…), layout, or new UI piece that has no Figma frame, not even a "temporary", "simple" or placeholder one. Copy comes from the frames too.
+- **When something needs a design, stop and ask for it.** A new feature, a state the frames don't show, a missing step in a flow, a layout that doesn't work on the SE or at large text sizes: tell Andy which screen, which state, and why, in plain words. Leave a `TODO(design): …` comment where it goes and wait for the frame. Don't build a stand-in meanwhile.
+- **Build from the frame, with what exists.** Use the existing components and `src/theme` tokens. If a frame needs a component or token that doesn't exist yet, build it to match the frame; if the frame is unclear, ask.
+- **Don't design in Figma either** unless Andy asks. Read Figma to build from it (Screens page, node `57:8`).
+- **What code still decides without a frame:** logic and every number (from `src/domain/`), accessibility (VoiceOver labels, Dynamic Type, 44pt targets, Reduce Motion), and native iOS UI the system draws (alerts, share sheet, keyboard, the system back button, Face ID prompt).
+- **Screens built before this rule without a frame** are listed in `PROGRESS.md` ("Screens without a Figma frame"). They stay as built until Andy designs them; don't add to them or build new ones like them.
 
 ## Stack (decided — don't change without asking)
 
@@ -37,7 +48,7 @@ Before adding any package, check it against the current Expo SDK docs and prefer
 2. **No hardcoded colors, sizes, radii, or durations.** Import from `src/theme`. If a value is missing, propose a token; don't invent one.
 3. **Money is integer cents.** Never floats. Format at the edge with `Intl.NumberFormat`.
 4. **Dates are local calendar dates** (`YYYY-MM-DD`). Beware off-by-one on "days until" and timezone changes.
-5. **Every screen handles its states**: empty, syncing, stale, offline, error, success (see `docs/05-SCREENS.md`).
+5. **Every screen handles its states**: empty, syncing, stale, offline, error, success (see `docs/05-SCREENS.md`), each built from its Figma frame. A state without a frame is a design request for Andy, not something to invent.
 6. **Copy follows the voice rules.** Never "error," "failed," "warning," or red for money states. Numbers live inside sentences.
 7. **Privacy & security:** no analytics or crash SDKs that send financial data, no network calls except the Annum Worker and Plaid Link, secrets only in the Keychain or the encrypted database (the Plaid secret only in Cloudflare secrets; the Worker access key only in Cloudflare secrets and each phone's Keychain), database encrypted, no logging of balances, transactions, or Plaid tokens.
 8. **Accessibility:** system font (SF Pro) with **Dynamic Type**, VoiceOver labels on every control, 44×44pt targets, WCAG AA contrast (tokens already pass), Reduce Motion respected.
@@ -49,12 +60,13 @@ Before adding any package, check it against the current Expo SDK docs and prefer
 - Start each milestone by restating its goal and acceptance criteria from `docs/06-BUILD-PLAN.md`, then list the files you'll touch.
 - Build in small verified steps. Run tests and check the result on Andy's iPhone (dev build) or the iOS Simulator before moving on.
 - Never mark a milestone done without running it and giving evidence (test output, Maestro result, or what you verified on device).
-- If the docs conflict or a decision is missing, stop and ask Andy one clear question with your recommended default.
+- If the docs conflict or a decision is missing, stop and ask Andy one clear question with your recommended default. If a design is missing, ask for the Figma frame instead of proposing a layout in code.
 - Andy designs; he doesn't write code. Explain decisions in plain language and make setup steps copy-pasteable. Tell him exactly when he needs to tap something on his phone or in the Apple Developer site.
 
 ## Definition of done (every milestone)
 
 - [ ] Runs on device or simulator; tests pass; output verified, not assumed
+- [ ] Every screen and state on screen comes from a Figma frame; nothing was designed in code
 - [ ] Unhappy paths handled (empty, error, slow, offline, stale)
 - [ ] No hardcoded secrets or values where tokens exist
 - [ ] AA contrast, VoiceOver labels, Dynamic Type, ≥44pt targets, Reduce Motion
