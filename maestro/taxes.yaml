@@ -14,7 +14,7 @@ name: Taxes export
 - tapOn:
     id: 'today-row-tax'
 - extendedWaitUntil:
-    visible: "You've tagged \\$3,800 in work expenses across 21 items this year\\."
+    visible: '\$3,800 in work expenses tagged this year\. Your accountant gets this list, sorted\.'
     timeout: 5000
 - runFlow: common/go-back.yaml
 - tapOn: 'Money'
@@ -25,10 +25,10 @@ name: Taxes export
 - tapOn:
     id: 'open-taxes'
 - extendedWaitUntil:
-    visible: "You've tagged \\$3,800 in work expenses across 21 items this year\\."
+    visible: '\$3,800 in work expenses tagged this year\. Your accountant gets this list, sorted\.'
     timeout: 5000
 - assertVisible: 'Equipment, \$2,000, 3 items'
-- assertVisible: 'Tax reserve, \$3,000, Next quarterly date Jan 15'
+- assertVisible: 'Taxes, \$3,000, Next quarterly payment Jan 15'
 - tapOn:
     id: 'export-csv'
 - extendedWaitUntil:

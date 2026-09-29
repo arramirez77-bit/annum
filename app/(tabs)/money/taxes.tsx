@@ -1,12 +1,11 @@
 import { Redirect, Stack } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { taxApplies } from '@/domain';
 import { buildTaxesView } from '@/state/review-views';
 import { useAppStore } from '@/state/store';
-import { color, layout, space } from '@/theme';
-import { Button, GuardrailNote, LedgerRow, Text } from '@/ui/components';
+import { Button, GuardrailNote, LedgerRow, ScreenScroll, Text } from '@/ui/components';
 import { pushedHeader } from '@/ui/navigation';
 
 // S2 Taxes (hidden when the Tax module is off). docs/05.
@@ -34,14 +33,13 @@ export default function TaxesScreen() {
 
   return (
     <>
-      <Stack.Screen options={pushedHeader(v.title, 'Money')} />
-      <ScrollView
-        style={{ backgroundColor: color.bgBase }}
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: layout.screenMargin, gap: space[20] }}
-        testID="taxes"
-      >
-        <Text variant="sentence" testID="taxes-sentence">
+      <Stack.Screen options={pushedHeader('', 'Money')} />
+      {/* S2 (Figma 64:716). */}
+      <ScreenScroll testID="taxes">
+        <Text variant="title1" accessibilityRole="header">
+          {v.title}
+        </Text>
+        <Text variant="callout" tone="secondary" testID="taxes-sentence">
           {v.sentence}
         </Text>
         <View>
@@ -54,33 +52,33 @@ export default function TaxesScreen() {
               value={c.value}
             />
           ))}
-          <LedgerRow
-            surface="dark"
-            bucket="tax"
-            title={v.reserve.title}
-            subtitle={v.reserve.subtitle}
-            value={v.reserve.value}
-            last
-          />
         </View>
+        <Text variant="subhead" tone="secondary" accessibilityRole="header">
+          Set aside
+        </Text>
+        <LedgerRow
+          surface="dark"
+          bucket="tax"
+          title={v.reserve.title}
+          subtitle={v.reserve.subtitle}
+          value={v.reserve.value}
+        />
         {problem ? <GuardrailNote tone="heads-up">{problem}</GuardrailNote> : null}
-        <View style={{ gap: space[8] }}>
-          <Button
-            variant="primary"
-            label={v.primary}
-            disabled={busy}
-            onPress={() => run('csv')}
-            testID="export-csv"
-          />
-          <Button
-            variant="quiet"
-            label={v.quiet}
-            disabled={busy}
-            onPress={() => run('pdf')}
-            testID="export-pdf"
-          />
-        </View>
-      </ScrollView>
+        <Button
+          variant="primary"
+          label={v.primary}
+          disabled={busy}
+          onPress={() => run('csv')}
+          testID="export-csv"
+        />
+        <Button
+          variant="quiet"
+          label={v.quiet}
+          disabled={busy}
+          onPress={() => run('pdf')}
+          testID="export-pdf"
+        />
+      </ScreenScroll>
     </>
   );
 }

@@ -19,6 +19,7 @@ import {
   newAppData,
   ruleFromCorrection,
   toTag,
+  normalizeMerchant,
   upsertRule,
   weekStartSnapshot,
   withDerived,
@@ -126,6 +127,8 @@ export interface AppState extends Persisted {
   ) => void;
   /** S9 "Always treat {merchant} this way". */
   alwaysTreat: (transactionId: string) => CategoryRule | undefined;
+  /** S9: turn "Always treat {merchant} this way" off again (removes that merchant's rule). */
+  forgetRule: (transactionId: string) => void;
   /** S10 and onboarding: accounts entered by hand. */
   setBalance: (accountId: string, balance: Cents) => void;
   /** Add the account, or replace the one with the same id. */
@@ -373,6 +376,12 @@ export const useAppStore = create<AppState>((set, get) => {
       );
       set({ rules: upsertRule(get().rules, rule) });
       return rule;
+    },
+    forgetRule: (id) => {
+      const t = get().data.transactions.find((x) => x.id === id);
+      if (!t) return;
+      const merchant = normalizeMerchant(t.merchant);
+      set({ rules: get().rules.filter((r) => r.merchant !== merchant) });
     },
 
     setBalance: (id, balance) =>

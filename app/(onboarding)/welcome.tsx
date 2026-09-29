@@ -1,19 +1,13 @@
 import { router } from 'expo-router';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { BucketKey } from '@/domain';
-import { color, layout, size, space } from '@/theme';
-import { BucketDot, Button, Mark, Text, Wordmark } from '@/ui/components';
+import { color, layout, opacity, size, space, symbols } from '@/theme';
+import { Button, Icon, Mark, Text, Wordmark } from '@/ui/components';
 import { DevEntry } from '@/ui/flows/DevEntry';
 
-const PROMISES: { bucket: BucketKey; line: string }[] = [
-  { bucket: 'free', line: 'One number: what you can spend today, in a sentence.' },
-  { bucket: 'runway', line: 'Your cushion, measured in months.' },
-  { bucket: 'tax', line: 'Money for taxes set aside as it lands.' },
-];
-
-// O1 Welcome. docs/05.
+// O1 Welcome (Figma 62:422): the lockup centered, then Get started, Restore from a backup, and
+// the privacy link. docs/05.
 export default function Welcome() {
   const insets = useSafeAreaInsets();
   return (
@@ -21,34 +15,28 @@ export default function Welcome() {
       style={{
         flex: 1,
         backgroundColor: color.bgBase,
-        paddingTop: insets.top + space[48],
-        paddingBottom: insets.bottom + space[16],
+        alignItems: 'center',
+        gap: space[12],
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
         paddingHorizontal: layout.screenMargin,
-        justifyContent: 'space-between',
       }}
       testID="welcome"
     >
-      <View style={{ gap: space[32] }}>
-        <View style={{ gap: space[16] }}>
-          <DevEntry>
-            <Mark size={size.markLockup} />
-          </DevEntry>
-          <Wordmark />
-          <Text variant="sentence">Money, by the year.</Text>
-        </View>
-        <View style={{ gap: space[16] }}>
-          {PROMISES.map((p) => (
-            <View
-              key={p.bucket}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: space[12] }}
-            >
-              <BucketDot bucket={p.bucket} />
-              <Text style={{ flex: 1 }}>{p.line}</Text>
-            </View>
-          ))}
+      <View style={{ flex: 1 }} />
+      <View style={{ alignItems: 'center', gap: space[24], alignSelf: 'stretch' }}>
+        <DevEntry>
+          <Mark size={size.markWelcome} />
+        </DevEntry>
+        <View style={{ alignItems: 'center', gap: space[8] }}>
+          <Wordmark size="display" />
+          <Text variant="sentence" tone="secondary" align="center">
+            Money, by the year.
+          </Text>
         </View>
       </View>
-      <View style={{ gap: space[8] }}>
+      <View style={{ flex: 1 }} />
+      <View style={{ alignSelf: 'stretch', gap: space[12] }}>
         <Button
           variant="primary"
           label="Get started"
@@ -57,20 +45,33 @@ export default function Welcome() {
         />
         <Button
           variant="quiet"
-          label="How your data stays private"
-          onPress={() => router.push('/privacy')}
-          testID="welcome-privacy"
-        />
-        <Button
-          variant="quiet"
           label="Restore from a backup"
           onPress={() => router.push('/restore')}
           testID="welcome-restore"
         />
-        <Text variant="footnote" tone="secondary" align="center">
-          About 3 minutes. Every step can be skipped.
-        </Text>
       </View>
+      <Pressable
+        onPress={() => router.push('/privacy')}
+        accessibilityRole="link"
+        accessibilityLabel="How your data stays private"
+        testID="welcome-privacy"
+        style={({ pressed }) => [
+          {
+            minHeight: layout.touchTarget,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: space[4],
+            alignSelf: 'stretch',
+          },
+          pressed && { opacity: opacity.pressed },
+        ]}
+      >
+        <Icon name={symbols.lock} size="caption" tint={color.textSecondary} />
+        <Text variant="footnote" tone="secondary">
+          How your data stays private
+        </Text>
+      </Pressable>
     </View>
   );
 }

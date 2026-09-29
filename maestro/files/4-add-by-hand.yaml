@@ -36,6 +36,6 @@ name: 'Files 4: add a transaction by hand'
 - tapOn:
     id: 'txn-add'
 - extendedWaitUntil:
-    visible: 'Farmers Market, −\$12\.00, Groceries · .*'
+    visible: 'Farmers Market, \$12\.00, Groceries · .*'
     timeout: 5000
 - runFlow: ../common/start-over.yaml

@@ -45,6 +45,12 @@ name: Bank 4 · Plaid Link with a test login
 - inputText: 'user_good'
 - tapOn: 'Password'
 - inputText: 'pass_good'
+# Close the keyboard first, as in flow 2: its toolbar can catch the Submit tap.
+- runFlow:
+    when:
+      visible: 'Done'
+    commands:
+      - tapOn: 'Done'
 - tapOn: 'Submit'
 - extendedWaitUntil:
     visible: 'Your accounts'

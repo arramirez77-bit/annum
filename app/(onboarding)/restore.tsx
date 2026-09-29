@@ -5,6 +5,9 @@ import { RestoreForm } from '@/ui/flows/RestoreForm';
 export default function Restore() {
   return (
     <ScreenScroll testID="onboarding-restore">
+      <Text variant="title1" accessibilityRole="header">
+        Restore from a backup
+      </Text>
       <Text tone="secondary">
         Choose the Annum backup file you exported from your other phone, then type the passphrase
         you gave it.

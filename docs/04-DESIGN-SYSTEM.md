@@ -20,7 +20,7 @@ Tokens: `src-starter/theme.ts` → copy to `src/theme/index.ts`. Components impo
 | --- | --- | --- |
 | **BucketDot** | bucket: tax · bills · runway · invest · free · none | 12pt circle; `none` is an invisible spacer so titles align in mixed lists |
 | **BucketBar** | segments `{bucket, amount}[]` | 16pt tall, 3pt gaps, radius sm; proportional widths; zero buckets hidden; widths animate (Reanimated, 250ms) |
-| **Button** | primary · field · caution · secondary · destructive · quiet; disabled | 50pt, full width, radius full, Body Medium. Primary on dark, Field on the light sheet, Caution on heads-up Today. One per screen. Pressed state = 0.8 opacity. |
+| **Button** | primary · field · caution · secondary · destructive · quiet · quietDestructive; disabled | 50pt, full width, radius full, Body Medium. Primary on dark, Field on the light sheet, Caution on heads-up Today. One per screen. Destructive (Figma 66:1713) = bgRaised fill, `statusDestructive` text (4.9:1); quietDestructive = the same text, no fill (S10). Pressed 0.8 opacity, disabled 0.4. |
 | **Chip** | category · tax; selected | 36pt visual with `hitSlop` to 44pt. Tax: outline `bucket.tax`; selected = filled + `checkmark` symbol. Selection haptic. |
 | **Toggle** | on | Native `Switch` with `trackColor` on = `statusOk` |
 | **StatusPill** | on-track · heads-up · estimate | overlaySubtle fill, 7pt dot, Caption. Long-press opens the scenario switcher (demo mode) |
@@ -28,12 +28,17 @@ Tokens: `src-starter/theme.ts` → copy to `src/theme/index.ts`. Components impo
 | **StepIndicator** | step, total | 22×4 segments; filled textPrimary, rest overlayMuted; `accessibilityLabel="Step N of M"` |
 | **GuardrailNote** | tone: info · heads-up; surface: dark · light | radius md, 12/16 padding, 8pt dot; dark text on light surfaces |
 | **BucketRow** | card · split | dot + name + one-line note + amount; split puts the amount in an editable chip (numeric keypad) |
-| **LedgerRow** | light · dark; bucket? | hairline bottom border; title + subtitle left, value right; optional BucketDot |
+| **LedgerRow** | light · dark; bucket?; chevron | Figma 56:21. Hairline bottom border, 16pt vertical padding, items centered; Body Medium title + Footnote subtitle left, Headline value right; optional BucketDot. Tappable rows show a chevron unless the screen leaves it out (S1) |
 | **TransactionCard** | untagged · tagged · tax | merchant, date · card, amount; chips (2 suggestions + Tax last) |
 | **AmountInput** | empty · focused · filled | label above, "$" + Title 2 value, `keyboardType="number-pad"`, formats with separators, live helper sentence |
 | **OptionCard** | selected | whole card pressable; radio on the right |
 | **SegmentedControl** | 3 options | 44pt, raised track, selected = actionPrimary fill (or native segmented control if it matches) |
-| **SettingsRow** | toggle · value · chevron · destructive | inside a grouped container (bgSurface, radius lg) |
+| **SettingsRow** | toggle · value · chevron · destructive | Figma 61:493. 12/16 padding, 8pt gap, full-width hairline between rows, inside a SettingsGroup (bgSurface, radius lg). The group's Footnote title sits 20pt above it, at the screen margin (S3) |
+| **AccountSourceCard** | bank · files · by hand; action | Figma 117:1729. bgSurface, radius lg. Source row: 32pt tile (`size.sourceTile`, overlaySelected, radius sm) + Subhead title + Footnote line, min 60pt (`layout.sourceRow`); becomes a button with a Reconnect value when the bank asks to sign in again. Account rows indented under the text (tile width + 12), top hairline, Body name + Footnote line, Body Medium value, chevron |
+| **AddAccountCard** | — | Figma 117:1769. Same card, `tintOk` tile with `plus` in statusOk, Body Medium "Add an account"; opens S12 |
+| **OptionRow** | first | Figma 117:1870. For the light S12 sheet: 40pt tile (`size.optionTile`, overlaySelectedOnLight, `radius.tile` 10) with a 20pt glyph, Body Medium + Footnote (onLight tones), chevron; 14pt padding and gap; hairline `borderOnLight` above every row but the first |
+| **CloseButton** | light · dark | Figma 117:1954. 32pt circle (`size.closeButton`) in a 44pt tap area, `xmark` 15pt Medium; VoiceOver "Close" |
+| **TextField** | large | label above, Body text in a raised 50pt field; `large` = Title 2 text with 16pt padding (S8 "Type DELETE to confirm") |
 | **TopBar** | pushed · flow · modal | Prefer native header: pushed = back chevron + parent title; flow = Back · StepIndicator · Skip/Finish later; modal = Cancel |
 | **Sheet** | — | Native form sheet (Expo Router `presentation: 'formSheet'`) with grabber and detents |
 

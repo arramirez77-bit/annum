@@ -10,6 +10,8 @@ import {
   formatMonthsChange,
   formatShortDate,
   formatSignedCents,
+  formatLedgerCents,
+  formatDayLabel,
   formatWeekdayDate,
   loadScenario,
   mergeOverride,
@@ -172,8 +174,17 @@ describe('formatting', () => {
     expect(formatDollars(-40000)).toBe('−$400');
     expect(formatCents(-8412)).toBe('−$84.12');
     expect(formatSignedCents(500000)).toBe('+$5,000.00');
+    expect(formatLedgerCents(-2000)).toBe('$20.00');
+    expect(formatLedgerCents(500000)).toBe('+$5,000.00');
     expect(formatCompactThousands(1500000)).toBe('$15k');
     expect(formatCompactThousands(1250000)).toBe('$12.5k');
+  });
+
+  test('day headers', () => {
+    expect(formatDayLabel('2026-09-23', '2026-09-23')).toBe('Today');
+    expect(formatDayLabel('2026-09-22', '2026-09-23')).toBe('Yesterday');
+    expect(formatDayLabel('2026-09-21', '2026-09-23')).toBe('Monday');
+    expect(formatDayLabel('2026-09-16', '2026-09-23')).toBe('Sep 16');
   });
 
   test('changes and months', () => {

@@ -153,6 +153,25 @@ export function problemMessage(problem: WorkerProblem | 'unknown'): Message {
 export const countLabel = (count: WorkerStatus | null): string =>
   count ? `${count.left} of ${count.limit} left` : 'Not checked yet';
 
+/**
+ * "8 of 10 bank logins left." under Settings' accounts (long) and the Add an account sheet.
+ * Development builds connect Sandbox banks, which don't use one (Andy, 2026-09-28).
+ */
+export function loginsLeft(
+  count: WorkerStatus | null,
+  sandbox: boolean,
+  long = false,
+): string | undefined {
+  if (!count) return undefined;
+  return [
+    `${count.left} of ${count.limit} bank logins left.`,
+    long ? 'Refreshing a bank you already connected doesn’t use one.' : undefined,
+    sandbox ? 'Test banks don’t count.' : undefined,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
 export interface ConnectionRow {
   id: string;
   title: string;

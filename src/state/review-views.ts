@@ -4,6 +4,7 @@
  */
 import {
   availableToSpend,
+  normalizeMerchant,
   billsDueNext30,
   BUCKET_KEYS,
   CATEGORIES,
@@ -14,7 +15,8 @@ import {
   formatMonths,
   formatMonthsChange,
   formatShortDate,
-  formatSignedCents,
+  formatDayLabel,
+  formatLedgerCents,
   formatWeekdayDate,
   nextReviewDate,
   notableCategory,
@@ -31,6 +33,7 @@ import {
   unsplitPreview,
   weekReport,
   weeklyChanges,
+  type CategoryRule,
   weeklyTransfer,
   type AppData,
   type BucketKey,
@@ -359,10 +362,18 @@ export function buildSetupView(data: AppData, taxRate: number, targetMonths: num
 
 export type TransactionFilter = 'all' | 'untagged' | 'tax';
 
-export function buildTransactionsView(data: AppData, filter: TransactionFilter) {
+export function buildTransactionsView(
+  data: AppData,
+  filter: TransactionFilter,
+  accountId?: string,
+) {
   const accounts = new Map(data.accounts.map((a) => [a.id, a.name]));
   const taxes = taxApplies(data);
-  const shown = data.transactions
+  const inScope = accountId
+    ? data.transactions.filter((t) => t.accountId === accountId)
+    : data.transactions;
+  const untagged = inScope.filter((t) => !t.reviewed).length;
+  const shown = inScope
     .filter((t) => filter === 'all' || (filter === 'tax' ? t.tax : !t.reviewed))
     .sort((a, b) => b.date.localeCompare(a.date) || a.merchant.localeCompare(b.merchant));
   const groups: {
@@ -371,32 +382,40 @@ export function buildTransactionsView(data: AppData, filter: TransactionFilter) 
     rows: { id: string; title: string; subtitle: string; value: string }[];
   }[] = [];
   for (const t of shown) {
-    const label = formatShortDate(t.date);
     let group = groups.find((g) => g.date === t.date);
     if (!group) {
-      group = { date: t.date, label, rows: [] };
+      group = { date: t.date, label: formatDayLabel(t.date, data.today), rows: [] };
       groups.push(group);
     }
-    const category = t.category ?? t.suggestedCategory ?? 'Uncategorized';
     group.rows.push({
       id: t.id,
       title: t.merchant,
-      subtitle: [category, taxes && t.tax ? 'Tax' : undefined, accounts.get(t.accountId)]
+      subtitle: [
+        t.category ?? t.suggestedCategory ?? 'Needs a tag',
+        taxes && t.tax ? 'Work expense' : undefined,
+        accountId ? undefined : accounts.get(t.accountId),
+      ]
         .filter(Boolean)
         .join(' · '),
-      value: formatSignedCents(t.amount),
+      value: formatLedgerCents(t.amount),
     });
   }
   return {
+    title: (accountId && accounts.get(accountId)) || 'Transactions',
     filters: [
       { value: 'all' as const, label: 'All' },
-      { value: 'untagged' as const, label: 'Needs a look' },
-      ...(taxes ? [{ value: 'tax' as const, label: 'Tax' }] : []),
+      {
+        value: 'untagged' as const,
+        label: untagged ? `Needs a tag · ${untagged}` : 'Needs a tag',
+      },
+      ...(taxes ? [{ value: 'tax' as const, label: 'Work expense' }] : []),
     ],
     groups,
     empty:
-      data.transactions.length === 0
-        ? 'No transactions yet. They appear once a bank is connected or a file from your bank is imported.'
+      inScope.length === 0
+        ? accountId
+          ? 'No transactions from this account yet.'
+          : 'No transactions yet. They show up after your first sync, usually within an hour of connecting a bank.'
         : shown.length === 0
           ? 'Nothing matches this filter.'
           : undefined,
@@ -411,30 +430,34 @@ export function buildTaxesView(data: AppData) {
   return {
     title: `Taxes · ${year}`,
     year,
-    sentence: `You've tagged ${formatDollars(summary.total)} in work expenses across ${summary.items} items this year.`,
+    sentence: `${formatDollars(summary.total)} in work expenses tagged this year. Your accountant gets this list, sorted.`,
     categories: summary.categories.map((c) => ({
       title: c.name,
       subtitle: `${c.items} ${c.items === 1 ? 'item' : 'items'}`,
       value: formatDollars(c.total),
     })),
     reserve: {
-      title: 'Tax reserve',
+      title: 'Taxes',
       subtitle: data.taxYear
-        ? `Next quarterly date ${formatShortDate(data.taxYear.nextQuarterlyDue)}`
+        ? `Next quarterly payment ${formatShortDate(data.taxYear.nextQuarterlyDue)}`
         : undefined,
       value: formatDollars(data.buckets.tax),
     },
     taggedTransactions: data.transactions
       .filter((t) => t.tax)
       .map((t) => `${t.merchant} ${formatCents(t.amount)} (${taxCategoryOf(t)})`),
-    primary: 'Export for my accountant',
-    quiet: 'Export as PDF',
+    primary: 'Share with my accountant',
+    quiet: 'Save as PDF',
   };
 }
 
 // S9 Transaction detail --------------------------------------------------------
 
-export function buildTransactionDetail(data: AppData, id: string) {
+export function buildTransactionDetail(
+  data: AppData,
+  id: string,
+  rules: readonly CategoryRule[] = [],
+) {
   const t = data.transactions.find((x) => x.id === id);
   if (!t) return undefined;
   const account = data.accounts.find((a) => a.id === t.accountId)?.name;
@@ -446,7 +469,7 @@ export function buildTransactionDetail(data: AppData, id: string) {
   return {
     id: t.id,
     merchant: t.merchant,
-    amount: formatSignedCents(t.amount),
+    amount: formatLedgerCents(t.amount),
     meta: [formatShortDate(t.date), account, t.pending ? 'Pending' : undefined]
       .filter(Boolean)
       .join(' · '),
@@ -457,6 +480,13 @@ export function buildTransactionDetail(data: AppData, id: string) {
     taxCategory,
     taxCategories: [...new Set([...TAX_CATEGORIES, taxCategory])],
     ruleLabel: `Always treat ${t.merchant} this way`,
+    /** A rule already covers this merchant (the switch is on). */
+    ruleOn: rules.some((r) => r.merchant === normalizeMerchant(t.merchant)),
+    /** S9 footnote: where a work expense shows up, and that changes save as you go. */
+    note:
+      t.tax && taxApplies(data)
+        ? `In your ${data.today.slice(0, 4)} tax list. Changes save as you go.`
+        : 'Changes save as you go.',
     ruleDone: `Saved. Future ${t.merchant} charges get ${category}${t.tax && taxApplies(data) ? ', tagged as a work expense' : ''}.`,
   };
 }

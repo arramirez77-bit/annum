@@ -75,24 +75,30 @@ export default function RootLayout() {
           <Stack.Screen name="deposit/[id]/index" options={formSheet([1])} />
           <Stack.Screen name="deposit/[id]/setup" options={formSheet('fitToContents')} />
           <Stack.Screen name="income/new" options={modalScreen} />
-          <Stack.Screen name="settings/index" options={pushedHeader('Settings', 'Today')} />
+          <Stack.Screen name="settings/index" options={pushedHeader('', 'Today')} />
           <Stack.Screen name="settings/number/[key]" options={formSheet([0.6, 1])} />
-          <Stack.Screen name="settings/reminders" options={pushedHeader('Reminders', 'Settings')} />
+          <Stack.Screen name="settings/reminders" options={pushedHeader('', 'Settings')} />
           <Stack.Screen name="settings/export" options={formSheet([0.7, 1])} />
-          <Stack.Screen
-            name="settings/import"
-            options={pushedHeader('Import backup', 'Settings')}
-          />
+          <Stack.Screen name="settings/import" options={pushedHeader('', 'Settings')} />
           <Stack.Screen name="settings/delete" options={modalScreen} />
-          <Stack.Screen name="bills" options={pushedHeader('Bills', 'Back')} />
+          <Stack.Screen
+            name="add-account"
+            options={{
+              ...formSheet('fitToContents'),
+              contentStyle: { backgroundColor: color.bgSheet },
+            }}
+          />
+          <Stack.Screen name="bills" options={pushedHeader('', 'Back')} />
           <Stack.Screen name="bill/[id]" options={formSheet([0.8, 1])} />
           <Stack.Screen name="transaction/new" options={modalScreen} />
+          <Stack.Screen name="transaction/[id]" />
+          <Stack.Screen name="account/[id]/index" />
         </Stack.Protected>
         <Stack.Protected guard={phase === 'onboarding'}>
           <Stack.Screen name="(onboarding)" />
         </Stack.Protected>
         <Stack.Screen name="account/[id]/balance" options={formSheet('fitToContents')} />
-        <Stack.Screen name="import" options={pushedHeader('Import a file', 'Back')} />
+        <Stack.Screen name="import" options={pushedHeader('', 'Back')} />
         <Stack.Screen name="bank/connect" options={formSheet([0.7, 1])} />
         <Stack.Screen name="pair" options={modalScreen} />
       </Stack>

@@ -24,6 +24,8 @@ name: Component gallery
     element:
       id: 'split-tax-amount'
     direction: DOWN
+    # The gallery is long: about 3 s per swipe.
+    timeout: 45000
 - tapOn:
     id: 'split-tax-amount'
 - eraseText: 10
@@ -46,6 +48,8 @@ name: Component gallery
     element:
       id: 'chip-tax'
     direction: UP
+    # Centered, so the tap can't land on the floating header.
+    centerElement: true
 - tapOn:
     id: 'chip-tax'
 # iOS exposes the checkbox state as its accessibility value (what VoiceOver reads).

@@ -56,13 +56,22 @@ export function Mark({ size, surface = 'dark', decorative = false }: MarkProps) 
   );
 }
 
-/** "annum" — SF Pro Semibold, lowercase, −2% tracking. Never all caps. */
-export function Wordmark({ surface = 'dark' }: { surface?: 'dark' | 'light' }) {
+/**
+ * "annum" — SF Pro Semibold, lowercase. Never all caps. Title 1 by default (−2% tracking);
+ * Display on O1 Welcome, with the Display style's own tracking (Figma 62:430).
+ */
+export function Wordmark({
+  surface = 'dark',
+  size = 'title1',
+}: {
+  surface?: 'dark' | 'light';
+  size?: 'title1' | 'display';
+}) {
   return (
     <Text
-      variant="title1"
+      variant={size}
       tone={surface === 'dark' ? 'primary' : 'onLight'}
-      style={{ letterSpacing: typeScale.title1.fontSize * -0.02 }}
+      style={size === 'title1' ? { letterSpacing: typeScale.title1.fontSize * -0.02 } : undefined}
       accessibilityRole="header"
     >
       annum

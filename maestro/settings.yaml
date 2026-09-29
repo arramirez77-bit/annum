@@ -48,6 +48,6 @@ name: Settings, modules, transaction detail
     id: 'detail-category-Dining'
 - assertVisible: 'Saved\.'
 - tapOn:
-    id: 'detail-rule'
+    id: 'detail-rule-switch'
 - assertVisible: 'Saved\. Future Corner Market charges get Dining\.'
 - takeScreenshot: m5-transaction

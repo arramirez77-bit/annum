@@ -27,6 +27,9 @@ export default function ReminderSettings() {
 
   return (
     <ScreenScroll testID="reminder-settings">
+      <Text variant="title1" accessibilityRole="header">
+        Reminders
+      </Text>
       {note ? <GuardrailNote tone="heads-up">{note}</GuardrailNote> : null}
       <SettingsGroup>
         <SettingsRow

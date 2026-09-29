@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { BucketKey } from '@/domain';
-import { color, opacity, size, space, symbols, type } from '@/theme';
+import { color, opacity, space, symbols } from '@/theme';
 
 import { BucketDot } from './BucketDot';
 import { Icon } from './Icon';
@@ -16,6 +16,8 @@ interface LedgerRowProps {
   /** Bucket dot; use 'none' in mixed lists so titles align. */
   bucket?: BucketKey | 'none';
   onPress?: () => void;
+  /** Tappable rows show a chevron unless the design leaves it out (S1 Transactions). */
+  chevron?: boolean;
   /** Drop the hairline under the last row. */
   last?: boolean;
   testID?: string;
@@ -29,6 +31,7 @@ export function LedgerRow({
   surface,
   bucket,
   onPress,
+  chevron = true,
   last = false,
   testID,
 }: LedgerRowProps) {
@@ -37,20 +40,16 @@ export function LedgerRow({
     <View
       style={{
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         gap: space[12],
         paddingVertical: space[16],
         borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
         borderBottomColor: light ? color.borderOnLight : color.borderSubtle,
       }}
     >
-      {bucket && (
-        <View style={{ marginTop: (type.headline.lineHeight - size.bucketDot) / 2 }}>
-          <BucketDot bucket={bucket} />
-        </View>
-      )}
+      {bucket && <BucketDot bucket={bucket} />}
       <View style={{ flex: 1, gap: space[2] }}>
-        <Text variant="headline" tone={light ? 'onLight' : 'primary'}>
+        <Text variant="bodyMedium" tone={light ? 'onLight' : 'primary'}>
           {title}
         </Text>
         {subtitle ? (
@@ -64,13 +63,11 @@ export function LedgerRow({
           {value}
         </Text>
       ) : null}
-      {onPress && (
-        <View style={{ alignSelf: 'center' }}>
-          <Icon
-            name={symbols.forward}
-            tint={light ? color.textOnLightSecondary : color.textSecondary}
-          />
-        </View>
+      {onPress && chevron && (
+        <Icon
+          name={symbols.forward}
+          tint={light ? color.textOnLightSecondary : color.textSecondary}
+        />
       )}
     </View>
   );

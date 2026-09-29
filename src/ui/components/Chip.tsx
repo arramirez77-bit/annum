@@ -36,7 +36,7 @@ export function Chip({ kind, label, selected, onPress, testID }: ChipProps) {
       }}
       hitSlop={{ top: TOUCH_SLOP, bottom: TOUCH_SLOP }}
       accessibilityRole={isTax ? 'checkbox' : 'radio'}
-      accessibilityLabel={isTax ? `${label}, work expense` : label}
+      accessibilityLabel={isTax && !/work expense/i.test(label) ? `${label}, work expense` : label}
       accessibilityState={isTax ? { checked: selected } : { selected }}
       style={({ pressed }) => [
         {

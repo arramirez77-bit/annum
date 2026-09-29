@@ -60,7 +60,7 @@ export const color = {
 
 export type BucketKey = keyof typeof color.bucket;
 
-export const space = { 2: 2, 4: 4, 8: 8, 12: 12, 16: 16, 20: 20, 24: 24, 28: 28, 32: 32, 40: 40, 48: 48, 72: 72 } as const;
+export const space = { 2: 2, 4: 4, 8: 8, 12: 12, 14: 14, 16: 16, 20: 20, 24: 24, 28: 28, 32: 32, 40: 40, 48: 48, 72: 72 } as const; // 14: Figma Money total → bar, S12 option rows
 
 export const layout = {
   screenMargin: 24,
@@ -73,9 +73,11 @@ export const layout = {
   todaySheetBottom: 112,        // Today sheet bottom padding: clears the floating tab bar (Figma 01)
   todaySheetBottomCompact: 100, // the same on the small screen (Figma 01c)
   compactHeight: 700,     // screens shorter than this use the compact Today (01c)
+  sourceRow: 60,          // S3 account source and account rows, min height (Figma 117:1732)
 } as const;
 
-export const radius = { sm: 8, md: 14, lg: 16, sheet: 28, full: 999 } as const;
+/** tile: S12 option tiles (Figma 117:1871). */
+export const radius = { sm: 8, tile: 10, md: 14, lg: 16, sheet: 28, full: 999 } as const;
 
 /** Component sizes from docs/04 (added in M2). */
 export const size = {
@@ -88,13 +90,22 @@ export const size = {
   stepHeight: 4,
   markMin: 16,       // Annum mark minimum size
   markLockup: 72,    // mark beside the wordmark (Figma lockup)
+  markWelcome: 112,  // O1 Welcome lockup (Figma 62:423)
+  markLock: 80,      // S5 Locked / E6 (Figma 65:805)
   radio: 22,         // OptionCard radio symbol
+  featureIcon: 53,   // large SF Symbol above a screen title (O4b lock, Figma 52.8)
   icon: 17,          // SF Symbol beside Body text
   iconSmall: 13,     // SF Symbol beside Caption text
   hairline: 1,       // input and outline borders (hairlines use StyleSheet.hairlineWidth)
   fieldHeight: 50,   // text inputs: same height as a button (proposed, M5)
   profileButton: 40, // Profile Button circle (Figma 117:1581); tap area stays layout.touchTarget
   profileGlyph: 18,  // person.fill inside the Profile Button (Medium weight)
+  sourceTile: 32,    // S3 account source tile (Figma 117:1730)
+  optionTile: 40,    // S12 option tile (Figma 117:1871)
+  optionGlyph: 20,   // SF Symbol inside an option tile (Figma 117:1872)
+  closeButton: 32,   // sheet Close circle; tap area stays layout.touchTarget (Figma 117:1867)
+  closeGlyph: 15,    // xmark inside it (Figma 117:1868)
+  stepNumber: 28,    // S11 numbered step circle (Figma 99:1334)
 } as const;
 
 /** Dynamic Type caps (maxFontSizeMultiplier): Hero/Display 1.3, everything else 2.0. */
@@ -156,6 +167,11 @@ export const symbols = {
   tabReview: 'list.bullet',
   tabMoney: 'tray.2',
   tabMoneySelected: 'tray.2.fill',
+  bank: 'building.columns',
+  byHand: 'pencil',
+  importFile: 'square.and.arrow.down',
+  accessCode: 'qrcode',
+  add: 'plus',
   radioOff: 'circle',
   radioOn: 'checkmark.circle.fill',
 } as const;

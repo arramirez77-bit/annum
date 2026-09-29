@@ -68,7 +68,7 @@ export default function EditBalance() {
 
   return (
     <ScreenScroll surface="surface" testID="edit-balance">
-      <Text variant="title2" accessibilityRole="header">
+      <Text variant="title2" accessibilityRole="header" align={existing ? 'center' : undefined}>
         {existing ? existing.name : 'Add an account'}
       </Text>
       {!existing ? (
@@ -101,7 +101,7 @@ export default function EditBalance() {
         onChangeCents={setBalance}
         helper={
           existing?.enteredOn
-            ? `Last updated ${existing.enteredOn === today ? 'today' : formatShortDate(existing.enteredOn)}`
+            ? `Last updated ${existing.enteredOn === today ? 'today' : formatShortDate(existing.enteredOn)}. Accounts you add by hand only change when you update them.`
             : undefined
         }
         testID="balance-amount"
@@ -119,10 +119,15 @@ export default function EditBalance() {
         </>
       ) : null}
       <View style={{ gap: space[8] }}>
-        <Button variant="primary" label="Save" onPress={save} testID="balance-save" />
+        <Button
+          variant="primary"
+          label={existing ? 'Update balance' : 'Save'}
+          onPress={save}
+          testID="balance-save"
+        />
         {existing ? (
           <Button
-            variant="quiet"
+            variant="quietDestructive"
             label="Stop tracking this account"
             onPress={stop}
             testID="balance-stop"

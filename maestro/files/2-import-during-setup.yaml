@@ -10,7 +10,7 @@ name: 'Files 2: import during setup'
     id: 'onboarding-skip'
 - tapOn:
     id: 'connect-import'
-- assertVisible: 'Import a file from your bank'
+- assertVisible: 'Import from your bank'
 - runFlow:
     file: ../common/open-bank-file.yaml
     env:

@@ -4,7 +4,9 @@ import { color, layout, opacity, radius, space } from '@/theme';
 
 import { Text, type TextTone } from './Text';
 
-export type ButtonVariant = 'primary' | 'field' | 'caution' | 'secondary' | 'destructive' | 'quiet';
+/** quietDestructive: red text, no fill (S10 "Stop tracking this account"); delete/reset only. */
+export type ButtonVariant =
+  'primary' | 'field' | 'caution' | 'secondary' | 'destructive' | 'quiet' | 'quietDestructive';
 
 interface ButtonProps {
   variant: ButtonVariant;
@@ -23,8 +25,10 @@ const fills: Record<ButtonVariant, { dark: string; light: string }> = {
   field: { dark: color.actionField, light: color.actionField },
   caution: { dark: color.actionCaution, light: color.actionCaution },
   secondary: { dark: color.bgRaised, light: color.overlaySelectedOnLight },
-  destructive: { dark: color.statusDestructive, light: color.statusDestructive },
+  // Figma 66:1713: a raised pill with red text (4.9:1 on bgRaised).
+  destructive: { dark: color.bgRaised, light: color.overlaySelectedOnLight },
   quiet: { dark: 'transparent', light: 'transparent' },
+  quietDestructive: { dark: 'transparent', light: 'transparent' },
 };
 
 const tones: Record<ButtonVariant, { dark: TextTone; light: TextTone }> = {
@@ -32,8 +36,9 @@ const tones: Record<ButtonVariant, { dark: TextTone; light: TextTone }> = {
   field: { dark: 'primary', light: 'primary' },
   caution: { dark: 'primary', light: 'primary' },
   secondary: { dark: 'primary', light: 'onLight' },
-  destructive: { dark: 'inverse', light: 'inverse' },
+  destructive: { dark: 'destructive', light: 'destructive' },
   quiet: { dark: 'secondary', light: 'onLightSecondary' },
+  quietDestructive: { dark: 'destructive', light: 'destructive' },
 };
 
 /** 50pt, full width, pill-shaped, Body Medium. One primary action per screen. Pressed = 0.8 opacity. */

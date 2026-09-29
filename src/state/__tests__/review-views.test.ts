@@ -174,16 +174,18 @@ describe('Deposit split views', () => {
 describe('Transactions and Taxes', () => {
   test('S1: grouped by day, newest first, with filters', () => {
     const v = buildTransactionsView(data(), 'all');
+    expect(v.title).toBe('Transactions');
     expect(v.groups.map((g) => [g.label, g.rows.map((r) => r.title)])).toEqual([
-      ['Sep 22', ['Corner Market', 'Fuel Stop']],
-      ['Sep 21', ['Green Bowl', 'Litware', 'Northwind Studio']],
+      ['Yesterday', ['Corner Market', 'Fuel Stop']],
+      ['Monday', ['Green Bowl', 'Litware', 'Northwind Studio']],
     ]);
     expect(v.groups[1].rows[1]).toEqual({
       id: 't1',
       title: 'Litware',
-      subtitle: 'Software · Tax · Contoso Card',
-      value: '−$20.00',
+      subtitle: 'Software · Work expense · Contoso Card',
+      value: '$20.00',
     });
+    expect(v.filters.map((f) => f.label)).toEqual(['All', 'Needs a tag · 3', 'Work expense']);
     expect(
       buildTransactionsView(data(), 'tax').groups.flatMap((g) => g.rows.map((r) => r.title)),
     ).toEqual(['Litware']);
@@ -192,15 +194,30 @@ describe('Transactions and Taxes', () => {
     ).toEqual(['Corner Market', 'Fuel Stop', 'Litware']);
   });
 
+  test('S1 for one account: its transactions only, no account name on rows', () => {
+    const d = data();
+    const account = d.transactions[0].accountId;
+    const v = buildTransactionsView(d, 'all', account);
+    expect(v.title).toBe(d.accounts.find((a) => a.id === account)?.name);
+    const rows = v.groups.flatMap((g) => g.rows);
+    expect(rows.length).toBe(d.transactions.filter((t) => t.accountId === account).length);
+    expect(rows.every((r) => !r.subtitle.includes(v.title))).toBe(true);
+    expect(buildTransactionsView({ ...d, transactions: [] }, 'all', account).empty).toBe(
+      'No transactions from this account yet.',
+    );
+  });
+
   test('E5: no transactions yet', () => {
     expect(buildTransactionsView({ ...data(), transactions: [] }, 'all').empty).toBe(
-      'No transactions yet. They appear once a bank is connected or a file from your bank is imported.',
+      'No transactions yet. They show up after your first sync, usually within an hour of connecting a bank.',
     );
   });
 
   test('S2: tagged total sentence, categories with item counts, Tax reserve', () => {
     const v = buildTaxesView(data());
-    expect(v.sentence).toBe("You've tagged $3,800 in work expenses across 21 items this year.");
+    expect(v.sentence).toBe(
+      '$3,800 in work expenses tagged this year. Your accountant gets this list, sorted.',
+    );
     expect(v.categories).toEqual([
       { title: 'Equipment', subtitle: '3 items', value: '$2,000' },
       { title: 'Software', subtitle: '12 items', value: '$1,000' },
@@ -208,8 +225,8 @@ describe('Transactions and Taxes', () => {
       { title: 'Travel', subtitle: '2 items', value: '$300' },
     ]);
     expect(v.reserve).toEqual({
-      title: 'Tax reserve',
-      subtitle: 'Next quarterly date Jan 15',
+      title: 'Taxes',
+      subtitle: 'Next quarterly payment Jan 15',
       value: '$3,000',
     });
   });

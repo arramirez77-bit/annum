@@ -17,6 +17,8 @@ interface TextFieldProps {
   autoFocus?: boolean;
   returnKeyType?: TextInputProps['returnKeyType'];
   onSubmitEditing?: () => void;
+  /** Title 2 text in a 16pt-padded field, like AmountInput (S8's DELETE, Figma 71:1095). */
+  large?: boolean;
   testID?: string;
 }
 
@@ -32,6 +34,7 @@ export function TextField({
   autoFocus,
   returnKeyType = 'done',
   onSubmitEditing,
+  large = false,
   testID,
 }: TextFieldProps) {
   const [focused, setFocused] = useState(false);
@@ -62,12 +65,12 @@ export function TextField({
         accessibilityLabel={label}
         accessibilityHint={helper}
         style={[
-          type.body,
+          large ? type.title2 : type.body,
           {
             color: color.textPrimary,
             minHeight: size.fieldHeight,
             paddingHorizontal: space[16],
-            paddingVertical: space[12],
+            paddingVertical: large ? space[16] : space[12],
             borderRadius: radius.md,
             backgroundColor: color.bgRaised,
             borderWidth: size.hairline,

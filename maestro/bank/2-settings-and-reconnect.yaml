@@ -16,8 +16,14 @@ name: Bank 2 · settings and reconnect
     element:
       id: 'settings-bank-count'
     direction: DOWN
-- assertVisible: 'Bank connections, [0-9]+ of 10 left'
-- assertVisible: 'First Platypus Bank \(test\).*Updated.*'
+- assertVisible: '[0-9]+ of 10 bank logins left\. Refreshing a bank you already connected doesn’t use one\..*'
+# The bank's card sits above its accounts (the Sandbox bank has seven).
+- scrollUntilVisible:
+    element:
+      id: 'settings-bank-0'
+    direction: UP
+    centerElement: true
+- assertVisible: 'First Platypus Bank \(test\), Connected · synced .*'
 - takeScreenshot: m7-settings
 - runFlow: ../common/go-back.yaml
 # Development: make the Sandbox bank ask to sign in again.
@@ -94,5 +100,9 @@ name: Bank 2 · settings and reconnect
     element:
       id: 'settings-bank-0'
     direction: DOWN
-- assertVisible: 'First Platypus Bank \(test\), Updated .*'
-- assertVisible: 'Bank connections, [0-9]+ of 10 left'
+- assertVisible: 'First Platypus Bank \(test\), Connected · synced .*'
+- scrollUntilVisible:
+    element:
+      id: 'settings-bank-count'
+    direction: DOWN
+- assertVisible: '[0-9]+ of 10 bank logins left\. Refreshing a bank you already connected doesn’t use one\..*'

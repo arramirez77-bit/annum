@@ -1,7 +1,7 @@
 import { demoScenario, type ScenarioName } from '@/data/demo';
 
 import { clockFor, useAppStore } from '../store';
-import { buildMoneyView, buildTodayView, buildWhatIfView } from '../views';
+import { buildMoneyView, buildTodayView, buildWhatIfView, incomeHelper } from '../views';
 
 const today = (name: ScenarioName) => {
   const data = demoScenario(name);
@@ -142,6 +142,15 @@ describe('Money', () => {
     expect(v.previewNote).toBe(
       'A first split would set aside Tax $4,500 · Bills $2,000 · Runway $12,600, leaving Free $0.',
     );
+  });
+});
+
+describe('Add expected income (S4)', () => {
+  test('says what is left after the Tax bucket, only with the Tax module', () => {
+    const data = demoScenario('on-track'); // 30% to Tax
+    expect(incomeHelper(data, 500000)).toBe('After taxes, about $3,500 of this is yours to plan.');
+    expect(incomeHelper(data, null)).toBeUndefined();
+    expect(incomeHelper(demoScenario('salary'), 500000)).toBeUndefined();
   });
 });
 

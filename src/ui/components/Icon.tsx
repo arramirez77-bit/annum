@@ -8,7 +8,7 @@ export type SymbolName = (typeof symbols)[keyof typeof symbols];
 interface IconProps {
   name: SymbolName;
   /** Match the text beside it: 'body' (17) or 'caption' (13); 'profile' (18) is the Profile Button glyph. */
-  size?: 'body' | 'caption' | 'radio' | 'profile';
+  size?: 'body' | 'caption' | 'radio' | 'profile' | 'feature' | 'option' | 'close';
   tint?: ColorValue;
   /** Regular by default; Medium where the design asks (Profile Button). */
   weight?: 'regular' | 'medium';
@@ -19,6 +19,9 @@ const PX = {
   caption: sizes.iconSmall,
   radio: sizes.radio,
   profile: sizes.profileGlyph,
+  feature: sizes.featureIcon,
+  option: sizes.optionGlyph,
+  close: sizes.closeGlyph,
 } as const;
 
 /** SF Symbols only, sized to the adjacent text, colored with text tokens. Decorative by default. */

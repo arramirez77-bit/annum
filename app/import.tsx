@@ -33,9 +33,9 @@ import {
 } from '@/ui/components';
 
 const STEPS = [
-  'On your bank’s website, download the account’s transactions as CSV or OFX (Quicken).',
-  'Choose the file here, or open it in Annum from Files or Mail.',
-  'Annum adds what’s new and skips anything it already has.',
+  { title: 'Download transactions', detail: 'On your bank’s website, choose CSV or OFX' },
+  { title: 'Choose the file', detail: 'Or share it to Annum from Files or Mail' },
+  { title: 'Check what we found', detail: 'Annum skips anything you already imported' },
 ];
 
 const UNREADABLE =
@@ -43,24 +43,35 @@ const UNREADABLE =
 
 type Loaded = { name: string; file: BankFile };
 
+/** The three steps (Figma 99:1332). */
 function Numbered() {
   return (
-    <View style={{ gap: space[12] }}>
+    <View style={{ gap: space[16] }}>
       {STEPS.map((step, i) => (
-        <View key={step} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space[12] }}>
+        <View
+          key={step.title}
+          accessible
+          accessibilityLabel={`Step ${i + 1}: ${step.title}. ${step.detail}.`}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: space[12] }}
+        >
           <View
             style={{
-              width: size.radio,
-              height: size.radio,
+              width: size.stepNumber,
+              height: size.stepNumber,
               borderRadius: radius.full,
               backgroundColor: color.bgRaised,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text variant="caption">{i + 1}</Text>
+            <Text variant="subhead">{i + 1}</Text>
           </View>
-          <Text style={{ flex: 1 }}>{step}</Text>
+          <View style={{ flex: 1, gap: space[2] }}>
+            <Text>{step.title}</Text>
+            <Text variant="footnote" tone="secondary">
+              {step.detail}
+            </Text>
+          </View>
         </View>
       ))}
     </View>
@@ -300,19 +311,27 @@ export default function ImportFile() {
   // Start ----------------------------------------------------------------------
   if (!file) {
     return (
-      <ScreenScroll testID="import">
-        <Text variant="title2" accessibilityRole="header">
-          Import a file from your bank
+      <ScreenScroll testID="import" fill>
+        <Text variant="title1" accessibilityRole="header">
+          Import from your bank
+        </Text>
+        <Text variant="callout" tone="secondary">
+          For banks that don’t connect. Works with the CSV or OFX file most banks let you download.
         </Text>
         <Numbered />
         {last ? (
-          <LedgerRow
-            surface="dark"
-            title={last.title}
-            subtitle={last.subtitle}
-            last
-            testID="import-last"
-          />
+          <>
+            <Text variant="footnote" tone="secondary" accessibilityRole="header">
+              Last import
+            </Text>
+            <LedgerRow
+              surface="dark"
+              title={last.title}
+              subtitle={last.subtitle}
+              value={last.value}
+              testID="import-last"
+            />
+          </>
         ) : null}
         {problem ? (
           <GuardrailNote tone="heads-up" testID="import-problem">
@@ -326,20 +345,19 @@ export default function ImportFile() {
             since your last import. Save it to Files, or email it to yourself.
           </GuardrailNote>
         ) : null}
-        <View style={{ gap: space[8] }}>
-          <Button
-            variant="primary"
-            label="Choose file"
-            onPress={() => void choose()}
-            testID="import-choose"
-          />
-          <Button
-            variant="quiet"
-            label={howTo ? 'Hide the steps' : 'How to download from my bank'}
-            onPress={() => setHowTo((v) => !v)}
-            testID="import-howto"
-          />
-        </View>
+        <View style={{ flex: 1 }} />
+        <Button
+          variant="primary"
+          label="Choose file"
+          onPress={() => void choose()}
+          testID="import-choose"
+        />
+        <Button
+          variant="quiet"
+          label={howTo ? 'Hide the steps' : 'How to download from your bank'}
+          onPress={() => setHowTo((v) => !v)}
+          testID="import-howto"
+        />
       </ScreenScroll>
     );
   }

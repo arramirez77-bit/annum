@@ -1,4 +1,4 @@
-# M7: Delete everything with "Also end my bank connections at Plaid" on. Annum ends each
+# M7: Delete everything with "End my bank logins at Plaid too" on. Annum ends each
 # connection at Plaid first and deletes only if every one ended (otherwise it says so and keeps
 # everything), so reaching Welcome means Plaid ended it. This also removes the Worker access key,
 # like a real Delete everything: run it last (scripts/maestro-bank.sh pairs again at the start).
@@ -24,7 +24,7 @@ name: Bank 7 · delete everything and end connections at Plaid
     direction: DOWN
 - tapOn:
     id: 'delete-end-at-plaid-switch'
-- assertVisible: 'Ended connections still count against the 10, and a backup can’t bring them back\.'
+- assertVisible: 'Ended logins still count against your 10, and a backup can’t bring them back\.'
 - scrollUntilVisible:
     element:
       id: 'delete-confirm-field'

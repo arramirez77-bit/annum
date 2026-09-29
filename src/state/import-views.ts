@@ -20,12 +20,21 @@ const range = (from?: string, to?: string) =>
       : `${formatShortDate(from)} – ${formatShortDate(to)}`
     : '';
 
-/** The last-import row: "Woodgrove checking · Sep 1 – Sep 25", "39 new · 3 already here". */
+/** The last-import row (Figma S11): "Woodgrove checking", "Aug 1 to Sep 22 · 214 new, 12 skipped", "Added". */
 export function lastImportRow(last: LastImport | null) {
   if (!last) return undefined;
+  const dates =
+    last.from && last.to
+      ? last.from === last.to
+        ? formatShortDate(last.from)
+        : `${formatShortDate(last.from)} to ${formatShortDate(last.to)}`
+      : undefined;
   return {
-    title: [last.account, range(last.from, last.to)].filter(Boolean).join(' · '),
-    subtitle: `Imported ${formatShortDate(last.on)} · ${last.added} new${last.duplicates ? ` · ${last.duplicates} already here` : ''}`,
+    title: last.account,
+    subtitle: [dates, `${last.added} new${last.duplicates ? `, ${last.duplicates} skipped` : ''}`]
+      .filter(Boolean)
+      .join(' · '),
+    value: 'Added',
   };
 }
 

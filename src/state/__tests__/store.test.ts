@@ -125,6 +125,8 @@ describe('M5: history, accounts, modules', () => {
       taxCategory: 'Meals',
     });
     expect(s().rules).toHaveLength(1);
+    s().forgetRule('t2');
+    expect(s().rules).toHaveLength(0);
   });
 
   test('paycheck from Settings: set, then remove', () => {

@@ -36,13 +36,16 @@ export default function AddTransaction() {
     <>
       <Stack.Screen
         options={{
-          title: 'Add a transaction',
+          title: '',
           headerLeft: () => (
             <HeaderButton label="Cancel" onPress={() => router.back()} testID="txn-cancel" />
           ),
         }}
       />
       <ScreenScroll testID="add-transaction">
+        <Text variant="title2" accessibilityRole="header">
+          Add a transaction
+        </Text>
         <AmountInput
           label="Amount"
           valueCents={amount}

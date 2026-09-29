@@ -99,5 +99,5 @@ name: Weekly review
 - tapOn:
     id: 'open-taxes'
 - extendedWaitUntil:
-    visible: "You've tagged \\$3,850 in work expenses across 22 items this year\\."
+    visible: '\$3,850 in work expenses tagged this year\. Your accountant gets this list, sorted\.'
     timeout: 5000

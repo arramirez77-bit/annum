@@ -26,6 +26,9 @@ const SECTIONS: { title: string; body: string }[] = [
 export default function Privacy() {
   return (
     <ScreenScroll testID="privacy">
+      <Text variant="title1" accessibilityRole="header">
+        How your data stays private
+      </Text>
       {SECTIONS.map((s) => (
         <View key={s.title} style={{ gap: space[4] }}>
           <Text variant="headline" accessibilityRole="header">

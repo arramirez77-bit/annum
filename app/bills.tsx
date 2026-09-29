@@ -16,6 +16,9 @@ export default function Bills() {
 
   return (
     <ScreenScroll testID="bills">
+      <Text variant="title1" accessibilityRole="header">
+        Bills
+      </Text>
       <Text tone="secondary">{v.note}</Text>
       {v.empty ? <GuardrailNote tone="info">{v.empty}</GuardrailNote> : null}
       {v.proposals.length ? (

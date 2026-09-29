@@ -321,6 +321,16 @@ export interface WhatIfView {
   waitUntil?: string;
 }
 
+/**
+ * S4 helper under the amount: what's left after the Tax bucket takes its share (the same rule
+ * as a deposit's split). None without the Tax module, or before an amount is typed.
+ */
+export function incomeHelper(data: AppData, amount: Cents | null): string | undefined {
+  if (!amount || !taxApplies(data)) return undefined;
+  const afterTax = amount - Math.round(amount * data.settings.taxRate);
+  return `After taxes, about ${formatDollars(afterTax)} of this is yours to plan.`;
+}
+
 export function buildWhatIfView(data: AppData, purchase: Cents | null): WhatIfView {
   const ats = availableToSpend(data);
   const result = whatIf(data, purchase ?? 0);

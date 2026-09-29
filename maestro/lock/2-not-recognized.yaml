@@ -22,7 +22,7 @@ name: 'Lock 2: cold start is locked; Face ID not recognized'
           point: '50%, 59%'
 - assertVisible:
     id: 'lock-screen'
-- assertVisible: 'Your money stays on this phone\.'
+- assertVisible: 'Your numbers stay on this phone\.'
 - assertVisible: 'Unlock with Face ID'
 - assertNotVisible: 'You can spend.*'
 - takeScreenshot: m5-lock-e6

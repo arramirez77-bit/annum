@@ -4,7 +4,14 @@ import { newAppData } from '@/domain';
 
 import { accountRow } from '../account-views';
 import { buildTransactionDetail, buildTransactionsView } from '../review-views';
-import { buildSettingsView, targetMonths, weeklyReminderLabel } from '../settings-views';
+import { loginsLeft } from '../bank-views';
+import {
+  accountSources,
+  buildDeleteView,
+  buildSettingsView,
+  targetMonths,
+  weeklyReminderLabel,
+} from '../settings-views';
 import { buildTodayView, compactSentence } from '../views';
 
 const seed = demoSeed();
@@ -36,7 +43,77 @@ describe('S3 Settings values', () => {
 
   test('weekly review reminder: off, or day and time', () => {
     expect(weeklyReminderLabel(null)).toBe('Off');
-    expect(weeklyReminderLabel(REMINDERS_ON.weekly)).toBe('Sunday 10:00 AM');
+    expect(weeklyReminderLabel(REMINDERS_ON.weekly)).toBe('Sun 10 AM');
+    expect(weeklyReminderLabel({ ...REMINDERS_ON.weekly!, minute: 30 })).toBe('Sun 10:30 AM');
+  });
+
+  test('S3 accounts: one card per bank, then files, then by hand', () => {
+    const now = new Date('2026-09-23T09:00:00');
+    const d = {
+      ...seed,
+      savingsUnsplit: false,
+      accounts: [
+        ...seed.accounts.map((a) => (a.source === 'plaid' ? { ...a, itemId: 'item-1' } : a)),
+        {
+          id: 'f1',
+          name: 'Checking ···1234',
+          type: 'checking' as const,
+          balance: 10000,
+          source: 'import' as const,
+          lastSynced: '2026-09-20T08:00:00',
+          status: 'ok' as const,
+        },
+      ],
+    };
+    const bank = {
+      itemId: 'item-1',
+      institution: 'Woodgrove',
+      env: 'production' as const,
+      status: 'ok' as const,
+      cursor: null,
+      createdAt: '2026-09-01T08:00:00',
+      lastSynced: '2026-09-23T07:02:00',
+    };
+    const sources = accountSources(d, [bank], now);
+    expect(sources.map((s) => [s.kind, s.title, s.subtitle])).toEqual([
+      ['bank', 'Woodgrove', 'Connected · synced 7:02 AM'],
+      ['files', 'From files', 'Updated when you import a file'],
+      ['hand', 'Entered by hand', 'You update these balances'],
+    ]);
+    expect(sources[0].accounts).toEqual([
+      { id: 'chk', title: 'Woodgrove checking', value: '$2,000', opens: 'transactions' },
+      {
+        id: 'sav',
+        title: 'Savings',
+        subtitle: 'Split into buckets',
+        value: '$19,100',
+        opens: 'transactions',
+      },
+      {
+        id: 'card',
+        title: 'Contoso Card',
+        subtitle: 'Credit card · due Sep 28',
+        value: '$500',
+        opens: 'transactions',
+      },
+    ]);
+    expect(sources[1].accounts[0]).toMatchObject({
+      subtitle: 'Imported Sep 20',
+      opens: 'transactions',
+    });
+    expect(sources[2].accounts.map((a) => a.opens)).toEqual(['balance', 'balance']);
+    // A bank asking to sign in again offers Reconnect.
+    const broken = accountSources(d, [{ ...bank, status: 'needs-reauth' as const }], now)[0];
+    expect(broken).toMatchObject({ subtitle: 'Needs you to sign in again', reconnect: 'item-1' });
+  });
+
+  test('bank logins left: long in Settings, short on the sheet, test banks in development', () => {
+    const count = { used: 2, limit: 10, left: 8, sandbox: true, production: false };
+    expect(loginsLeft(count, false, true)).toBe(
+      '8 of 10 bank logins left. Refreshing a bank you already connected doesn’t use one.',
+    );
+    expect(loginsLeft(count, true)).toBe('8 of 10 bank logins left. Test banks don’t count.');
+    expect(loginsLeft(null, false)).toBeUndefined();
   });
 
   test('accounts: synced, by hand, owed', () => {
@@ -142,10 +219,43 @@ describe('S9 transaction detail', () => {
     const v = buildTransactionDetail(seed, 't2');
     expect(v?.categories[0]).toBe('Groceries');
     expect(v?.ruleLabel).toBe('Always treat Corner Market this way');
-    expect(v?.amount).toBe('−$80.00');
+    expect(v?.amount).toBe('$80.00');
+  });
+
+  test('the rule switch follows the saved rules; the note mentions the tax list', () => {
+    expect(buildTransactionDetail(seed, 't2')?.ruleOn).toBe(false);
+    const rule = { merchant: 'corner market', category: 'Dining' as const, tax: false };
+    expect(buildTransactionDetail(seed, 't2', [rule])?.ruleOn).toBe(true);
+    expect(buildTransactionDetail(seed, 't2')?.note).toBe('Changes save as you go.');
+    const tagged = seed.transactions.find((t) => t.tax);
+    if (tagged) {
+      expect(buildTransactionDetail(seed, tagged.id)?.note).toBe(
+        'In your 2026 tax list. Changes save as you go.',
+      );
+    }
   });
 
   test('a missing transaction has no detail', () => {
     expect(buildTransactionDetail(seed, 'nope')).toBeUndefined();
+  });
+});
+
+describe('S8 Delete everything', () => {
+  test('what goes, with counts; the bank line follows the switch', () => {
+    const v = buildDeleteView(seed, 1, false);
+    expect(v.rows.map((r) => [r.title, r.value, r.subtitle])).toEqual([
+      ['Accounts and balances', '5', 'Bank logins stay open at Plaid'],
+      [
+        'Transactions and tags',
+        String(seed.transactions.length),
+        `Including ${seed.transactions.filter((t) => t.tax).length} work expense`,
+      ],
+      ['Buckets and settings', 'All', 'Tax percentage, Runway target, and your habits'],
+    ]);
+    expect(v.bankLine).toBe(
+      'Your bank logins stay open at Plaid, so a backup can bring them back without using any of your 10.',
+    );
+    expect(buildDeleteView(seed, 1, true).bankLine).toMatch(/^Ended logins still count/);
+    expect(buildDeleteView(seed, 0, false).rows[0].subtitle).toBeUndefined();
   });
 });

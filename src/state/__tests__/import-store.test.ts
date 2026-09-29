@@ -67,8 +67,9 @@ describe('importing into Annum', () => {
     expect(chk).toMatchObject({ balance: 430500, source: 'import' });
     expect(s().prefs.importMappings[file.key]).toEqual(file.mapping);
     expect(lastImportRow(s().prefs.lastImport)).toEqual({
-      title: 'Woodgrove checking · Jul 25 – Sep 25',
-      subtitle: 'Imported Sep 23 · 6 new · 1 already here',
+      title: 'Woodgrove checking',
+      subtitle: 'Jul 25 to Sep 25 · 6 new, 1 skipped',
+      value: 'Added',
     });
     const onlyImported = { ...s().data, accounts: s().data.accounts.filter((a) => a.id === 'chk') };
     expect(updatedLabel(onlyImported, new Date())).toMatch(/^Imported /);

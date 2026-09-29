@@ -42,18 +42,20 @@ export default function FaceId() {
   };
 
   return (
-    <ScreenScroll testID="onboarding-face-id">
-      <View style={{ gap: space[16] }}>
-        <Icon name={symbols.lock} size="radio" tint={color.textPrimary} />
-        <Text variant="title2" accessibilityRole="header">
-          Keep it private with {name}
+    // O4b (Figma 98:1195).
+    <ScreenScroll testID="onboarding-face-id" fill>
+      <Icon name={symbols.lock} size="feature" tint={color.textPrimary} />
+      <Text variant="title2" accessibilityRole="header">
+        Keep it private with {name}
+      </Text>
+      <Text variant="callout" tone="secondary">
+        Annum opens with {name}, like your banking apps. Your data is encrypted on this phone.
+      </Text>
+      {name !== 'your passcode' ? (
+        <Text variant="footnote" tone="secondary">
+          If {name} doesn’t recognize you, your iPhone passcode works too.
         </Text>
-        <Text tone="secondary">
-          Annum asks for {name} when it opens and after 5 minutes away. If{' '}
-          {name === 'your passcode' ? 'that' : name} doesn’t recognize you, your iPhone passcode
-          works too.
-        </Text>
-      </View>
+      ) : null}
       {capability === 'none' ? (
         <GuardrailNote tone="heads-up">
           This iPhone has no Face ID or passcode set up, so there’s nothing to lock with. You can
@@ -61,6 +63,7 @@ export default function FaceId() {
         </GuardrailNote>
       ) : null}
       {problem ? <GuardrailNote tone="heads-up">{problem}</GuardrailNote> : null}
+      <View style={{ flex: 1 }} />
       <View style={{ gap: space[8] }}>
         <Button
           variant="primary"

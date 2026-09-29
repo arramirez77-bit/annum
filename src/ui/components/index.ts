@@ -1,10 +1,12 @@
 /** Design system components — docs/04-DESIGN-SYSTEM.md. Theme tokens only. */
+export { AccountSourceCard, AddAccountCard, type SourceAccount } from './AccountSource';
 export { AmountInput, formatDollarDigits, parseDollarsToCents } from './AmountInput';
 export { BucketBar, type BarSegment } from './BucketBar';
 export { BucketDot } from './BucketDot';
 export { BucketRow } from './BucketRow';
 export { Button, type ButtonVariant } from './Button';
 export { Chip } from './Chip';
+export { CloseButton } from './CloseButton';
 export { DateField, TimeField } from './DateField';
 export { DeltaCard } from './DeltaCard';
 export { GuardrailNote } from './GuardrailNote';
@@ -14,6 +16,7 @@ export { KeyboardDoneBar } from './KeyboardDoneBar';
 export { LedgerRow } from './LedgerRow';
 export { Mark, Wordmark } from './Mark';
 export { OptionCard } from './OptionCard';
+export { OptionRow } from './OptionRow';
 export { ProfileButton } from './ProfileButton';
 export { ScreenPlaceholder } from './ScreenPlaceholder';
 export { ScreenScroll } from './ScreenScroll';

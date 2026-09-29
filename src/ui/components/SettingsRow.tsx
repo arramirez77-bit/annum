@@ -7,16 +7,14 @@ import { Icon } from './Icon';
 import { Text } from './Text';
 import { Toggle } from './Toggle';
 
-/** Grouped container (surface, large radius) with an optional section title. */
+/** Grouped container (surface, large radius) with an optional section title (Figma S3 64:765). */
 export function SettingsGroup({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <View style={{ gap: space[8] }}>
+    <View style={{ gap: layout.titleGap }}>
       {title ? (
-        <View style={{ paddingHorizontal: space[16] }}>
-          <Text variant="footnote" tone="secondary" accessibilityRole="header">
-            {title}
-          </Text>
-        </View>
+        <Text variant="footnote" tone="secondary" accessibilityRole="header">
+          {title}
+        </Text>
       ) : null}
       <View
         style={{ borderRadius: radius.lg, backgroundColor: color.bgSurface, overflow: 'hidden' }}
@@ -43,19 +41,13 @@ export function SettingsRow(props: SettingsRowProps) {
   const rowStyle = {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    gap: space[12],
+    gap: space[8],
     minHeight: layout.touchTarget,
-    paddingVertical: space[8],
+    paddingVertical: space[12],
     paddingHorizontal: space[16],
   };
   const separator = !last && (
-    <View
-      style={{
-        marginLeft: space[16],
-        height: StyleSheet.hairlineWidth,
-        backgroundColor: color.borderSubtle,
-      }}
-    />
+    <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: color.borderSubtle }} />
   );
 
   if (props.variant === 'toggle') {
@@ -78,14 +70,15 @@ export function SettingsRow(props: SettingsRowProps) {
   }
 
   const onPress = props.onPress;
-  const trailing = props.variant === 'value' ? <Text tone="secondary">{props.value}</Text> : null;
+  const value = props.variant === 'value' ? props.value : undefined;
+  const trailing = value ? <Text tone="secondary">{value}</Text> : null;
   return (
     <View testID={testID}>
       <Pressable
         onPress={onPress}
         disabled={!onPress}
         accessibilityRole={onPress ? 'button' : undefined}
-        accessibilityLabel={props.variant === 'value' ? `${label}, ${props.value}` : label}
+        accessibilityLabel={value ? `${label}, ${value}` : label}
         style={({ pressed }) => [rowStyle, pressed && { opacity: opacity.pressed }]}
       >
         <View style={{ flex: 1 }}>

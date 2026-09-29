@@ -1,4 +1,5 @@
 /** Display formatting at the edge (Intl.NumberFormat). Pure; no rounding of the underlying cents. */
+import { daysBetween } from './dates';
 import type { Cents, ISODate } from './types';
 
 const wholeDollars = new Intl.NumberFormat('en-US', {
@@ -39,6 +40,10 @@ export const formatCents = (cents: Cents): string =>
 export const formatSignedCents = (cents: Cents): string =>
   cents > 0 ? `+${formatCents(cents)}` : formatCents(cents);
 
+/** "$80.00" spent / "+$5,000.00" received — ledger rows and S9 (Figma S1, S9). */
+export const formatLedgerCents = (cents: Cents): string =>
+  cents > 0 ? `+${formatCents(cents)}` : formatCents(-cents);
+
 /** "$15k", "$12.5k" — compact thousands for targets. */
 export function formatCompactThousands(cents: Cents): string {
   const k = Math.round(cents / 10_000) / 10; // thousands, one decimal
@@ -67,3 +72,12 @@ const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'U
 
 /** "Wednesday" (a local calendar date's weekday). */
 export const formatWeekday = (d: ISODate): string => weekday.format(new Date(`${d}T00:00:00Z`));
+
+/** "Today" / "Yesterday" / "Monday" (this past week) / "Sep 14" — S1 day headers. */
+export function formatDayLabel(d: ISODate, today: ISODate): string {
+  const days = daysBetween(d, today);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days > 1 && days < 7) return formatWeekday(d);
+  return formatShortDate(d);
+}

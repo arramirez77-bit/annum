@@ -1,10 +1,11 @@
 import { router, Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { View } from 'react-native';
 
-import { checkCount, endConnectionsAtPlaid, useBank } from '@/state/bank';
-import { countLabel, notEndedNote } from '@/state/bank-views';
+import { endConnectionsAtPlaid } from '@/state/bank';
+import { notEndedNote } from '@/state/bank-views';
 import { deleteEverything } from '@/state/session';
+import { buildDeleteView } from '@/state/settings-views';
 import { useAppStore } from '@/state/store';
 import { space } from '@/theme';
 import {
@@ -19,84 +20,85 @@ import {
   TextField,
 } from '@/ui/components';
 
-const GOES = [
-  'Balances, transactions and buckets',
-  'Your numbers, rules and weekly reviews',
-  'Reminders',
-  'The key that unlocks your data',
-];
-const BANK_GOES = ['Bank connections on this phone', 'This phone’s access code'];
-
 // S8 Delete everything (modal). docs/05, docs/02 "Delete everything".
 export default function DeleteEverything() {
+  const data = useAppStore((s) => s.data);
   const demo = useAppStore((s) => s.mode === 'demo');
   const banks = useAppStore((s) => s.connections.filter((c) => c.status !== 'exchanging').length);
-  const count = useBank((s) => s.count);
   const [typed, setTyped] = useState('');
   const [busy, setBusy] = useState(false);
   const [endAtPlaid, setEndAtPlaid] = useState(false);
   const [notEnded, setNotEnded] = useState(0);
-  const goes = banks ? [...GOES, ...BANK_GOES] : GOES;
-  useEffect(() => {
-    if (banks && !demo) void checkCount();
-  }, [banks, demo]);
+  const v = buildDeleteView(data, demo ? 0 : banks, endAtPlaid);
   return (
     <>
       <Stack.Screen
         options={{
-          title: 'Delete everything',
+          title: '',
           headerLeft: () => (
             <HeaderButton label="Cancel" onPress={() => router.back()} testID="delete-cancel" />
           ),
         }}
       />
+      {/* S8 (Figma 71:1066). */}
       <ScreenScroll testID="delete-everything">
-        <Text tone="secondary">This removes from this phone:</Text>
+        <Text variant="title2" accessibilityRole="header">
+          Delete everything?
+        </Text>
         <View>
-          {goes.map((g, i) => (
-            <LedgerRow key={g} surface="dark" title={g} last={i === goes.length - 1} />
+          {v.rows.map((r) => (
+            <LedgerRow
+              key={r.title}
+              surface="dark"
+              title={r.title}
+              subtitle={r.subtitle}
+              value={r.value}
+            />
           ))}
         </View>
-        <GuardrailNote tone="heads-up">
-          {demo
-            ? 'You’re looking at demo data, which isn’t saved. Pick “Use my data” in Scenarios first.'
-            : 'This can’t be undone. If you might want this data later, export it first.'}
-        </GuardrailNote>
         {banks && !demo ? (
-          <>
-            <GuardrailNote tone="heads-up" testID="delete-banks-note">
-              {`Reconnecting banks later uses new connections — ${countLabel(count)} for both phones. A backup brings these connections back without using any.`}
-            </GuardrailNote>
+          <View style={{ gap: space[8] }}>
             <SettingsGroup>
               <SettingsRow
                 variant="toggle"
-                label="Also end my bank connections at Plaid"
+                label="End my bank logins at Plaid too"
                 value={endAtPlaid}
                 onValueChange={setEndAtPlaid}
                 testID="delete-end-at-plaid"
                 last
               />
             </SettingsGroup>
-            {endAtPlaid ? (
-              <Text variant="footnote" tone="secondary">
-                Ended connections still count against the 10, and a backup can’t bring them back.
-              </Text>
-            ) : null}
-            {notEnded > 0 ? (
-              <GuardrailNote tone="heads-up" testID="delete-not-ended">
-                {notEndedNote(notEnded)}
-              </GuardrailNote>
-            ) : null}
-          </>
+            <Text
+              variant="footnote"
+              tone="secondary"
+              accessibilityLiveRegion="polite"
+              testID="delete-banks-note"
+            >
+              {v.bankLine}
+            </Text>
+          </View>
         ) : null}
+        {notEnded > 0 ? (
+          <GuardrailNote tone="heads-up" testID="delete-not-ended">
+            {notEndedNote(notEnded)}
+          </GuardrailNote>
+        ) : null}
+        <GuardrailNote tone="heads-up">
+          {demo
+            ? 'You’re looking at demo data, which isn’t saved. Pick “Use my data” in Scenarios first.'
+            : 'This can’t be undone. Export first if you want a copy for your accountant.'}
+        </GuardrailNote>
         <TextField
           label="Type DELETE to confirm"
           value={typed}
           onChangeText={setTyped}
+          placeholder="DELETE"
+          helper="Deletes everything from this phone. Your iCloud backup can’t open it without this phone’s key."
           autoCapitalize="characters"
+          large
           testID="delete-confirm-field"
         />
-        <View style={{ gap: space[8] }}>
+        <View style={{ gap: space[20], marginTop: space[8] }}>
           <Button
             variant="secondary"
             label="Export my data first"

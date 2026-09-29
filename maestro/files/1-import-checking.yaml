@@ -117,5 +117,5 @@ name: 'Files 1: import CSV and OFX, confirm a bill'
 - tapOn:
     id: 'open-settings'
 - scrollUntilVisible:
-    element: 'Contoso Card.*\$570 owed.*'
+    element: 'Contoso Card, \$570.*'
     direction: DOWN

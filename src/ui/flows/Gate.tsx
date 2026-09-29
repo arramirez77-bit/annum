@@ -6,7 +6,7 @@ import { lockCapability, type LockCapability } from '@/services/lock';
 import { backToMyData, boot, deleteEverything, unlock } from '@/state/session';
 import { useAppStore, type Blocked } from '@/state/store';
 import { color, layout, size, space } from '@/theme';
-import { Button, Mark, Text } from '@/ui/components';
+import { Button, Mark, Text, Wordmark } from '@/ui/components';
 import { DevEntry } from '@/ui/flows/DevEntry';
 
 import { RestoreForm } from './RestoreForm';
@@ -70,48 +70,55 @@ function LockScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const retryLabel = capability === 'touch-id' ? 'Try Touch ID again' : 'Try Face ID again';
   return (
+    // S5 Locked / E6 Face ID failed (Figma 65:804, 71:1037): one centered column.
     <View
       style={{
         flex: 1,
-        paddingTop: insets.top + space[72],
-        paddingBottom: insets.bottom + space[24],
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
         paddingHorizontal: layout.screenMargin,
-        justifyContent: 'space-between',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: space[16],
       }}
       testID="lock-screen"
     >
-      <View style={{ alignItems: 'center', gap: space[24] }}>
-        <DevEntry>
-          <Mark size={size.markLockup} />
-        </DevEntry>
-        <Text variant="title2" align="center" accessibilityRole="header">
-          Your money stays on this phone.
+      <DevEntry>
+        <Mark size={size.markLock} />
+      </DevEntry>
+      <Wordmark />
+      {notRecognized ? (
+        <Text variant="callout" tone="secondary" align="center" testID="lock-not-recognized">
+          {capability === 'touch-id'
+            ? 'Touch ID didn’t recognize you.'
+            : 'Face ID didn’t recognize you.'}
         </Text>
-        {notRecognized ? (
-          <Text tone="secondary" align="center" testID="lock-not-recognized">
-            {capability === 'touch-id'
-              ? 'Touch ID didn’t recognize you.'
-              : 'Face ID didn’t recognize you.'}
-          </Text>
-        ) : null}
-      </View>
-      <View style={{ gap: space[8] }}>
+      ) : (
+        <Text variant="callout" tone="secondary" align="center">
+          Your numbers stay on this phone.
+        </Text>
+      )}
+      <View style={{ height: space[16] }} />
+      <View style={{ alignSelf: 'stretch' }}>
         <Button
-          variant="secondary"
-          label={UNLOCK_LABEL[capability]}
+          variant="primary"
+          label={notRecognized && capability !== 'passcode' ? retryLabel : UNLOCK_LABEL[capability]}
           onPress={() => void tryUnlock(capability === 'passcode')}
           testID="lock-unlock"
         />
-        {(notRecognized || tried) && capability !== 'passcode' ? (
+      </View>
+      {(notRecognized || tried) && capability !== 'passcode' ? (
+        <View style={{ alignSelf: 'stretch' }}>
           <Button
             variant="quiet"
             label="Use passcode"
             onPress={() => void tryUnlock(true)}
             testID="lock-passcode"
           />
-        ) : null}
-      </View>
+        </View>
+      ) : null}
     </View>
   );
 }
