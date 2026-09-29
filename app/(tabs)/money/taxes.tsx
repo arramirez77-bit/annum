@@ -35,7 +35,7 @@ export default function TaxesScreen() {
     <>
       <Stack.Screen options={pushedHeader('', 'Money')} />
       {/* S2 (Figma 64:716). */}
-      <ScreenScroll testID="taxes">
+      <ScreenScroll testID="taxes" fill>
         <Text variant="title1" accessibilityRole="header">
           {v.title}
         </Text>
@@ -64,6 +64,8 @@ export default function TaxesScreen() {
           value={v.reserve.value}
         />
         {problem ? <GuardrailNote tone="heads-up">{problem}</GuardrailNote> : null}
+        {/* No tab bar here (Figma), so the exports sit at the bottom. */}
+        <View style={{ flex: 1 }} />
         <Button
           variant="primary"
           label={v.primary}

@@ -122,7 +122,7 @@ function Balances({ onNext }: { onNext: () => void }) {
   const v = buildBalancesView(data, clockFor({ mode, data }));
   return (
     <StepScroll testID="review-balances">
-      <Title>{v.title}</Title>
+      <Title subtitle={v.subtitle}>{v.title}</Title>
       <View>
         {v.rows.map((r, i) => (
           <LedgerRow
@@ -200,7 +200,7 @@ function Changes({ onNext }: { onNext: () => void }) {
   const v = buildChangesView(data);
   return (
     <StepScroll testID="review-changes">
-      <Title>{v.title}</Title>
+      <Title subtitle={v.subtitle}>{v.title}</Title>
       {v.cards.map((c) => (
         <DeltaCard
           key={c.bucket}
@@ -222,14 +222,15 @@ function Habit({ onNext }: { onNext: () => void }) {
   const setHabit = useAppStore((s) => s.setHabit);
   const [amount, setAmount] = useState<Cents | null>(data.settings.habitTransfer.amount);
   const [cadence, setCadence] = useState<Cadence>(data.settings.habitTransfer.cadence);
-  const v = buildHabitView(data, amount ?? 0);
+  const v = buildHabitView(data);
   return (
     <StepScroll testID="review-habit">
-      <Title>{v.title}</Title>
+      <Title subtitle={v.subtitle}>{v.title}</Title>
       <AmountInput
         label="I usually move"
         valueCents={amount}
         onChangeCents={setAmount}
+        helper={v.helper}
         testID="habit-amount"
       />
       <SegmentedControl
@@ -270,16 +271,21 @@ function Move({ onNext }: { onNext: () => void }) {
   };
   return (
     <StepScroll testID="review-move">
+      <Title subtitle={v.comparison}>{v.title}</Title>
       <View
         accessible
         accessibilityLabel={`Move ${formatDollars(v.amount)} from savings to checking.`}
         style={{ gap: space[4] }}
       >
-        <Text variant="sentence">Move</Text>
+        <Text variant="subhead" tone="secondary">
+          Move
+        </Text>
         <Text variant="display" money testID="move-amount">
           {formatDollars(v.amount)}
         </Text>
-        <Text variant="sentence">from savings to checking.</Text>
+        <Text variant="callout" tone="secondary">
+          from savings to checking.
+        </Text>
       </View>
       {editing ? (
         <AmountInput
@@ -297,22 +303,20 @@ function Move({ onNext }: { onNext: () => void }) {
           testID="move-change"
         />
       )}
-      <Text tone="secondary">{v.comparison}</Text>
       <View>
-        {v.rows.map((r, i) => (
+        {v.rows.map((r) => (
           <LedgerRow
             key={r.title}
             surface="dark"
             title={r.title}
             subtitle={r.subtitle}
             value={r.value}
-            last={i === v.rows.length - 1}
           />
         ))}
       </View>
-      {v.aboveHabit ? <GuardrailNote tone="heads-up">{v.aboveHabit}</GuardrailNote> : null}
+      <GuardrailNote tone="info">{v.note}</GuardrailNote>
       {v.openLabel && v.bank.url ? (
-        <View style={{ gap: space[8] }}>
+        <View style={{ gap: space[20] }}>
           <Button
             variant="primary"
             label={v.openLabel}
@@ -322,10 +326,7 @@ function Move({ onNext }: { onNext: () => void }) {
           <Button variant="secondary" label={v.movedLabel} onPress={moved} testID="move-moved" />
         </View>
       ) : (
-        <View style={{ gap: space[12] }}>
-          {v.howTo ? <Text tone="secondary">{v.howTo}</Text> : null}
-          <Button variant="primary" label={v.movedLabel} onPress={moved} testID="move-moved" />
-        </View>
+        <Button variant="primary" label={v.movedLabel} onPress={moved} testID="move-moved" />
       )}
     </StepScroll>
   );
@@ -349,45 +350,50 @@ function Done() {
   const v = buildDoneView(data, pending);
   return (
     <StepScroll testID="review-done">
-      <Text variant="display" money accessibilityRole="header">
-        {v.title}
-      </Text>
+      <Title subtitle={v.subtitle}>{v.title}</Title>
       <View style={{ gap: space[8] }}>
+        <Text variant="subhead" tone="secondary">
+          {v.spentLabel}
+        </Text>
+        <Text variant="display" money>
+          {v.spent}
+        </Text>
         <SpendBar
           within={v.bar.within}
           over={v.bar.over}
           left={v.bar.left}
           accessibilityLabel={v.barLabel}
         />
-        <Text variant="footnote" tone="secondary">
+        <Text variant="callout" tone="secondary">
           {v.barLabel}
         </Text>
       </View>
       <Section title="Where it went">
-        {v.categories.map((c, i) => (
+        {v.categories.map((c) => (
           <LedgerRow
             key={c.title}
             surface="dark"
             title={c.title}
             subtitle={c.subtitle}
             value={c.value}
-            last={i === v.categories.length - 1}
           />
         ))}
       </Section>
       <Section title="What's left">
-        {v.left.map((r, i) => (
+        {v.left.map((r) => (
           <LedgerRow
             key={r.title}
             surface="dark"
+            bucket={r.bucket}
             title={r.title}
             subtitle={r.subtitle}
             value={r.value}
-            last={i === v.left.length - 1}
           />
         ))}
       </Section>
-      <Text tone="secondary">{v.nextReview}</Text>
+      <Text variant="footnote" tone="secondary" align="center">
+        {v.nextReview}
+      </Text>
       <Button
         variant="primary"
         label={v.primary}

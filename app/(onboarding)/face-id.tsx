@@ -1,11 +1,19 @@
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { authenticate, lockCapability, type LockCapability } from '@/services/lock';
 import { useOnboarding } from '@/state/onboarding';
 import { color, space, symbols } from '@/theme';
-import { Button, GuardrailNote, Icon, ScreenScroll, Text } from '@/ui/components';
+import {
+  Button,
+  GuardrailNote,
+  HeaderButton,
+  Icon,
+  ScreenScroll,
+  StepLabel,
+  Text,
+} from '@/ui/components';
 
 const NAME: Record<LockCapability, string> = {
   'face-id': 'Face ID',
@@ -23,6 +31,10 @@ export default function FaceId() {
     void lockCapability().then(setCapability);
   }, []);
   const name = NAME[capability ?? 'face-id'];
+  const later = () => {
+    setLock(false);
+    router.push('/reminders');
+  };
 
   const turnOn = async () => {
     setProblem(null);
@@ -42,46 +54,46 @@ export default function FaceId() {
   };
 
   return (
-    // O4b (Figma 98:1195).
-    <ScreenScroll testID="onboarding-face-id" fill>
-      <Icon name={symbols.lock} size="feature" tint={color.textPrimary} />
-      <Text variant="title2" accessibilityRole="header">
-        Keep it private with {name}
-      </Text>
-      <Text variant="callout" tone="secondary">
-        Annum opens with {name}, like your banking apps. Your data is encrypted on this phone.
-      </Text>
-      {name !== 'your passcode' ? (
-        <Text variant="footnote" tone="secondary">
-          If {name} doesn’t recognize you, your iPhone passcode works too.
+    // O4b (Step 3 of 4, Figma 98:1195).
+    <>
+      <Stack.Screen
+        options={{
+          headerTitle: () => <StepLabel step={3} total={4} />,
+          headerRight: () => <HeaderButton label="Skip" onPress={later} testID="onboarding-skip" />,
+        }}
+      />
+      <ScreenScroll testID="onboarding-face-id" fill>
+        <Icon name={symbols.lock} size="feature" tint={color.textPrimary} />
+        <Text variant="title2" accessibilityRole="header">
+          Keep it private with {name}
         </Text>
-      ) : null}
-      {capability === 'none' ? (
-        <GuardrailNote tone="heads-up">
-          This iPhone has no Face ID or passcode set up, so there’s nothing to lock with. You can
-          turn the lock on in Settings after setting one up.
-        </GuardrailNote>
-      ) : null}
-      {problem ? <GuardrailNote tone="heads-up">{problem}</GuardrailNote> : null}
-      <View style={{ flex: 1 }} />
-      <View style={{ gap: space[8] }}>
-        <Button
-          variant="primary"
-          label={capability === 'passcode' ? 'Turn on the lock' : `Turn on ${name}`}
-          disabled={capability === 'none' || capability === null}
-          onPress={() => void turnOn()}
-          testID="face-id-on"
-        />
-        <Button
-          variant="quiet"
-          label="Not now"
-          onPress={() => {
-            setLock(false);
-            router.push('/reminders');
-          }}
-          testID="face-id-later"
-        />
-      </View>
-    </ScreenScroll>
+        <Text variant="callout" tone="secondary">
+          Annum opens with {name}, like your banking apps. Your data is encrypted on this phone.
+        </Text>
+        {name !== 'your passcode' ? (
+          <Text variant="footnote" tone="secondary">
+            If {name} doesn’t recognize you, your iPhone passcode works too.
+          </Text>
+        ) : null}
+        {capability === 'none' ? (
+          <GuardrailNote tone="heads-up">
+            This iPhone has no Face ID or passcode set up, so there’s nothing to lock with. You can
+            turn the lock on in Settings after setting one up.
+          </GuardrailNote>
+        ) : null}
+        {problem ? <GuardrailNote tone="heads-up">{problem}</GuardrailNote> : null}
+        <View style={{ flex: 1 }} />
+        <View style={{ gap: space[8] }}>
+          <Button
+            variant="primary"
+            label={capability === 'passcode' ? 'Turn on the lock' : `Turn on ${name}`}
+            disabled={capability === 'none' || capability === null}
+            onPress={() => void turnOn()}
+            testID="face-id-on"
+          />
+          <Button variant="quiet" label="Not now" onPress={later} testID="face-id-later" />
+        </View>
+      </ScreenScroll>
+    </>
   );
 }

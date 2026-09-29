@@ -1,7 +1,5 @@
 /** Account rows (O4 Accounts, S10, Settings). Pure, unit-tested. */
-import { formatDollars, formatShortDate, type Account } from '@/domain';
-
-import { syncedLabel } from './bank-views';
+import { formatDollars, type Account } from '@/domain';
 
 export const ACCOUNT_TYPES: { value: Account['type']; label: string }[] = [
   { value: 'checking', label: 'Checking' },
@@ -13,35 +11,36 @@ export const ACCOUNT_TYPES: { value: Account['type']; label: string }[] = [
 
 export const owes = (a: Account) => a.type === 'card' || a.type === 'loan';
 
-const time = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
-
+/** O4 rows (Figma 62:557): "Checking · connected", "Loan · tap to add balance" (value "Add"). */
 export function accountRow(a: Account) {
+  const type = ACCOUNT_TYPES.find((t) => t.value === a.type)?.label ?? 'Account';
   const byHand = a.source === 'manual';
   const empty = byHand && a.balance === 0;
-  const subtitle = empty
-    ? 'Tap to add balance'
+  const how = empty
+    ? 'tap to add balance'
     : byHand
-      ? a.enteredOn
-        ? `Entered by hand · ${formatShortDate(a.enteredOn)}`
-        : 'Entered by hand'
-      : a.source === 'demo'
-        ? `Sample bank · updated ${a.lastSynced ? time.format(new Date(a.lastSynced)) : ''}`.trim()
-        : a.source === 'import'
-          ? a.lastSynced
-            ? `Imported ${formatShortDate(a.lastSynced.slice(0, 10))}`
-            : 'From a file'
-          : a.lastSynced
-            ? `Updated ${syncedLabel(a.lastSynced, new Date())}`
-            : 'Connected';
+      ? 'entered by hand'
+      : a.source === 'import'
+        ? 'from a file'
+        : 'connected';
   return {
     id: a.id,
     title: a.name,
-    subtitle,
-    value: empty
-      ? undefined
-      : owes(a)
-        ? `${formatDollars(a.balance)} owed`
-        : formatDollars(a.balance),
+    subtitle: `${type} · ${how}`,
+    value: empty ? 'Add' : formatDollars(a.balance),
     editable: byHand || a.source === 'import',
   };
+}
+
+/** "Woodgrove", "Woodgrove and Contoso", "Woodgrove, Contoso and Tailspin". */
+export function joinNames(names: string[]): string {
+  const unique = [...new Set(names)];
+  if (unique.length <= 1) return unique[0] ?? '';
+  return `${unique.slice(0, -1).join(', ')} and ${unique[unique.length - 1]}`;
+}
+
+/** O4 subtitle after a bank connects (Figma 62:557). */
+export function accountsFoundNote(institutions: string[]): string {
+  const from = institutions.length > 0 ? `From ${joinNames(institutions)}. ` : '';
+  return `${from}Investment accounts and loans usually don’t connect, so add those by hand.`;
 }

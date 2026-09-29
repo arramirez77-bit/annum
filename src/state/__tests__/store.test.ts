@@ -120,6 +120,18 @@ describe('S6 invest handoff and S7 waited-on purchase (Phase 3)', () => {
   });
 });
 
+describe('S4 edit (E2 "Change the invoice date")', () => {
+  test('changing a late invoice’s date keeps its id and amount', () => {
+    s().setScenario('late-invoice');
+    const late = s().data.expectedIncome.find((i) => !i.received)!;
+    s().updateExpectedIncome({ ...late, date: '2026-10-24' });
+    expect(s().data.expectedIncome.find((i) => i.id === late.id)).toMatchObject({
+      date: '2026-10-24',
+      amount: late.amount,
+    });
+  });
+});
+
 describe('M5: history, accounts, modules', () => {
   test('finishing a review records it and starts a new week from today', () => {
     s().markTransferMoved(105000);

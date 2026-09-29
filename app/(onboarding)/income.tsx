@@ -12,15 +12,20 @@ import {
   OptionCard,
   ScreenScroll,
   SegmentedControl,
-  StepIndicator,
+  StepLabel,
   Text,
   TextField,
 } from '@/ui/components';
 
 const TYPES: { value: IncomeType; title: string; description: string }[] = [
-  { value: 'freelance', title: 'Freelance', description: 'Invoices that land when they land' },
-  { value: 'salary', title: 'Salary', description: 'A paycheck on a schedule' },
-  { value: 'both', title: 'Both', description: 'A paycheck plus freelance work' },
+  {
+    value: 'freelance',
+    title: 'Freelance',
+    description:
+      'Money comes in from invoices, at different times. You’ll also get a Taxes bucket.',
+  },
+  { value: 'salary', title: 'Salary', description: 'A paycheck with taxes already taken out.' },
+  { value: 'both', title: 'Both', description: 'A paycheck plus freelance work on the side.' },
 ];
 
 const CADENCES: { value: Cadence; label: string }[] = [
@@ -29,7 +34,7 @@ const CADENCES: { value: Cadence; label: string }[] = [
   { value: 'monthly', label: 'Monthly' },
 ];
 
-// O2 Income type (Step 1 of 2) → sets incomeType and modules. docs/05.
+// O2 Income type (Step 1 of 4) → sets incomeType and modules. docs/05.
 export default function Income() {
   const o = useOnboarding();
   const today = localISODate(new Date());
@@ -52,7 +57,7 @@ export default function Income() {
     <>
       <Stack.Screen
         options={{
-          headerTitle: () => <StepIndicator step={1} total={2} />,
+          headerTitle: () => <StepLabel step={1} total={4} />,
           headerRight: () => (
             <HeaderButton
               label="Skip"
@@ -66,9 +71,14 @@ export default function Income() {
         }}
       />
       <ScreenScroll testID="onboarding-income">
-        <Text variant="title2" accessibilityRole="header">
-          How do you get paid?
-        </Text>
+        <View style={{ gap: space[4] }}>
+          <Text variant="title2" accessibilityRole="header">
+            How do you get paid?
+          </Text>
+          <Text variant="callout" tone="secondary">
+            This decides which parts of Annum you’ll see. You can change it later.
+          </Text>
+        </View>
         <View style={{ gap: space[8] }} accessibilityRole="radiogroup">
           {TYPES.map((t) => (
             <OptionCard

@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useEffect } from 'react';
-import { RefreshControl, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   interpolateColor,
@@ -14,12 +14,19 @@ import { formatDollars } from '@/domain';
 import { syncAll, useBank } from '@/state/bank';
 import { todayBankFootnote, todayBankNote } from '@/state/bank-views';
 import { useTodayView } from '@/state/hooks';
+import type { TodayView } from '@/state/views';
 import { useAppStore } from '@/state/store';
-import { color, layout, motion, radius, space } from '@/theme';
+import { color, layout, motion, opacity, radius, space } from '@/theme';
 import { Button, GuardrailNote, LedgerRow, ProfileButton, StatusPill, Text } from '@/ui/components';
 import { useCountUp } from '@/ui/motion';
 
 // 01 Today (+02 heads-up, O5 estimate, E1 stale, E2 late, P2 salary, 01c compact). docs/05.
+/** E1: the stale note reconnects that bank, or opens Import for a file account. */
+const staleHref = (r: NonNullable<TodayView['staleRoute']>): Href =>
+  r.pathname === '/bank/connect'
+    ? { pathname: '/bank/connect', params: { item: r.item } }
+    : r.pathname;
+
 export default function TodayScreen() {
   const v = useTodayView();
   const demo = useAppStore((s) => s.mode === 'demo');
@@ -95,7 +102,11 @@ export default function TodayScreen() {
             <View style={{ flex: 1 }}>
               <Text variant="callout" tone={secondary} testID="today-updated">
                 {/* 01c: the small screen shows only when it was updated. */}
-                {`${compact ? '' : `${v.dateLabel} · `}${syncing && !demo ? 'Updating…' : v.updatedLabel}`}
+                {syncing && !demo
+                  ? `${compact ? '' : `${v.dateLabel} · `}Updating…`
+                  : compact
+                    ? v.updatedLabel
+                    : v.headerLabel}
               </Text>
             </View>
             <StatusPill
@@ -128,13 +139,6 @@ export default function TodayScreen() {
             >
               {compact ? v.compactSentence : v.sentence}
             </Text>
-            {v.cause ? (
-              <View style={{ marginTop: space[8] }}>
-                <Text variant="sentence" tone={secondary} testID="today-cause">
-                  {v.cause}
-                </Text>
-              </View>
-            ) : null}
           </View>
         </Animated.View>
 
@@ -168,9 +172,15 @@ export default function TodayScreen() {
               </GuardrailNote>
             ) : null}
             {v.staleNote ? (
-              <GuardrailNote tone="heads-up" surface="light" testID="stale-note">
-                {v.staleNote}
-              </GuardrailNote>
+              <Pressable
+                onPress={v.staleRoute ? () => router.push(staleHref(v.staleRoute!)) : undefined}
+                accessibilityRole={v.staleRoute ? 'button' : undefined}
+                style={({ pressed }) => pressed && { opacity: opacity.pressed }}
+              >
+                <GuardrailNote tone="heads-up" surface="light" testID="stale-note">
+                  {v.staleNote}
+                </GuardrailNote>
+              </Pressable>
             ) : null}
             <View>
               {v.rows.map((row, i) => (
@@ -196,7 +206,11 @@ export default function TodayScreen() {
               variant={v.button.variant}
               surface="light"
               label={v.button.label}
-              onPress={() => router.navigate('/review')}
+              onPress={() =>
+                v.button.route.pathname === '/income/new'
+                  ? router.push({ pathname: '/income/new', params: { edit: v.button.route.edit } })
+                  : router.navigate('/review')
+              }
               testID="today-button"
             />
           </View>

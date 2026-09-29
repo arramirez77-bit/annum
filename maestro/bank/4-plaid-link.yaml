@@ -1,7 +1,7 @@
 # M7: a Sandbox bank through Plaid Link's own screens (real link token from the Worker), with
 # Plaid's public test login. Checks the balances Annum shows against the ones Plaid publishes for
 # user_good: checking shows what's available ($100, not the $110 current), others the current
-# balance, cards and loans as owed, whole dollars rounded down (IRA $320.76 → $320).
+# balance, each with its type, whole dollars rounded down (IRA $320.76 → $320).
 # Plaid's optional screens (phone number, Trial notice, saving a Plaid account) run only when shown.
 appId: com.highdesert.annum
 name: Bank 4 · Plaid Link with a test login
@@ -80,8 +80,8 @@ name: Bank 4 · Plaid Link with a test login
     visible:
       id: 'onboarding-accounts'
     timeout: 10000
-- assertVisible: 'Plaid Checking, \$100, Updated .*'
-- assertVisible: 'Plaid Saving, \$210, Updated .*'
-- assertVisible: 'Plaid Credit Card, \$410 owed, Updated .*'
-- assertVisible: 'Plaid IRA, \$320, Updated .*'
+- assertVisible: 'Plaid Checking, \$100, Checking · connected'
+- assertVisible: 'Plaid Saving, \$210, Savings · connected'
+- assertVisible: 'Plaid Credit Card, \$410, Credit card · connected'
+- assertVisible: 'Plaid IRA, \$320, .* · connected'
 - takeScreenshot: m7-link-accounts

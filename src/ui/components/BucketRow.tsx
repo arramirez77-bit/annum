@@ -152,7 +152,8 @@ export function BucketRow({
           </Text>
         </View>
       ) : (
-        <Text variant="headline" money>
+        // Card: Invest's amount is quieter (Figma 54:533).
+        <Text variant="headline" money tone={bucket === 'invest' ? 'secondary' : 'primary'}>
           {formatDollars(amount)}
         </Text>
       )}

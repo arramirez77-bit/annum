@@ -5,16 +5,15 @@
  */
 import {
   availableToSpend,
-  billsDueNext30,
   BUCKET_KEYS,
   estimatedRunwayMonths,
   estimatedSpend,
-  formatCompactThousands,
   formatDollars,
   formatMonths,
   formatMonthsChange,
   formatShortDate,
   headsUpCauses,
+  inNextDays,
   runwayMonths,
   savingsBalance,
   staleAccounts,
@@ -31,13 +30,20 @@ import {
   type TodayStatus,
 } from '@/domain';
 
+import { CADENCE_WORD } from './settings-views';
+
 export const BUCKET_NAMES: Record<BucketKey, string> = {
-  tax: 'Tax',
+  tax: 'Taxes',
   bills: 'Bills',
   runway: 'Runway',
   invest: 'Invest',
   free: 'Free',
 };
+
+/** "Contoso Card" → "Contoso" (Figma 02: "Contoso statement"). */
+const cardShortName = (name: string) => name.replace(/\s+card$/i, '');
+/** "Woodgrove checking" → "Woodgrove" (Figma E1). */
+const bankShortName = (name: string) => name.replace(/\s+(checking|savings)$/i, '');
 
 const time = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
 
@@ -102,23 +108,27 @@ export function compactSentence(income: NextIncome, perDay: Cents, days: number)
 export function causeSentence(cause: HeadsUpCause, income: NextIncome): string {
   switch (cause.kind) {
     case 'late-income':
-      return `The ${cause.source ?? 'expected'} invoice is ${cause.daysLate} ${cause.daysLate === 1 ? 'day' : 'days'} late.`;
+      return `The ${cause.source ?? 'expected'} invoice is ${cause.daysLate} ${cause.daysLate === 1 ? 'day' : 'days'} late, so we stretched it.`;
     case 'statement-before-income':
-      return `The ${cause.name} statement (${formatDollars(cause.amount)}) lands before ${incomeWord(income)} does.`;
+      return `The ${cardShortName(cause.name)} statement lands before ${incomeWord(income)} does.`;
     case 'low-per-day':
       return `That's under ${formatDollars(2000)} a day until ${income.kind === 'paycheck' ? 'payday' : 'your next invoice'}.`;
   }
 }
 
 export interface TodayRow {
-  id: 'runway' | 'tax' | 'income' | 'what-if';
+  id: 'runway' | 'tax' | 'income' | 'paycheck' | 'statement' | 'invoice' | 'per-day' | 'what-if';
   title: string;
   subtitle?: string;
   value?: string;
-  bucket: BucketKey | 'none';
+  /** Bucket dot; 'none' keeps titles aligned in a list with dots; omit when no row has one. */
+  bucket?: BucketKey | 'none';
   route?:
     '/what-if' | '/income/new' | '/settings/number/spend' | '/settings/number/pay' | '/money/taxes';
 }
+
+/** Where Today's button goes: the weekly review, or S4 to change a late invoice's date. */
+export type TodayButtonRoute = { pathname: '/review' } | { pathname: '/income/new'; edit: string };
 
 export interface TodayView {
   status: TodayStatus;
@@ -132,15 +142,29 @@ export interface TodayView {
   sentence: string;
   /** 01c: the one-line sentence for short screens. */
   compactSentence: string;
-  cause?: string;
+  /** Header: "Sep 23 · Updated 7:02 AM", or only "Updated Sep 20" when out of date (E1). */
+  headerLabel: string;
   staleNote?: string;
+  /** Tapping the stale note: reconnect that bank, or import its file. */
+  staleRoute?:
+    | { pathname: '/bank/connect'; item: string }
+    | { pathname: '/import' }
+    | { pathname: '/settings' };
   /** Nothing to plan with yet (every step of onboarding skipped). */
   emptyNote?: string;
   rows: TodayRow[];
-  button: { variant: 'field' | 'caution'; label: string };
+  button: { variant: 'field' | 'caution'; label: string; route: TodayButtonRoute };
   /** One sentence VoiceOver reads for the hero. */
   heroLabel: string;
 }
+
+const WHAT_IF: TodayRow = {
+  id: 'what-if',
+  title: 'What would this do?',
+  subtitle: 'Try a purchase before you buy it',
+  bucket: 'none',
+  route: '/what-if',
+};
 
 export function buildTodayView(data: AppData, now: Date): TodayView {
   const status = todayStatus(data);
@@ -151,22 +175,24 @@ export function buildTodayView(data: AppData, now: Date): TodayView {
     ? estimatedSpend(data)
     : { amount: ats.display, perDay: ats.perDay, days: ats.days };
   const causes = status === 'heads-up' ? headsUpCauses(data, ats) : [];
-  const late = causes.some((c) => c.kind === 'late-income');
+  const first = causes[0];
   const about = estimate || stale.length > 0;
   const lead = about ? 'You can spend about' : 'You can spend';
-  const sentence = spendSentence(ats.nextIncome, spend.perDay, spend.days);
-  const cause = causes[0] ? causeSentence(causes[0], ats.nextIncome) : undefined;
+  const until = `until ${formatShortDate(ats.nextIncome.date)}.`;
+  // Heads up (02, E2): the cause is part of the sentence, after the date.
+  const sentence = first
+    ? `${until} ${causeSentence(first, ats.nextIncome)}`
+    : spendSentence(ats.nextIncome, spend.perDay, spend.days);
 
-  const target = formatCompactThousands(data.settings.runwayTarget);
+  const s = data.settings;
+  const months = s.monthlySpend > 0 ? Math.round(s.runwayTarget / s.monthlySpend) : 0;
+  const runwayValue = `${formatMonths(runwayMonths(data))} months`;
   const change = weeklyChanges(data);
-  const runwaySubtitle = estimate
-    ? `Estimated from savings · ${target} target`
-    : change
-      ? `${formatMonthsChange(change.runwayMonths)} this week · ${target} target`
-      : `${target} target`;
-  const noSpend = data.settings.monthlySpend <= 0;
-  const rows: TodayRow[] = [
-    noSpend
+  const runwaySubtitle = change
+    ? `${formatMonthsChange(change.runwayMonths)}${change.runwayMonths !== 0 ? ' months' : ''} this week · target ${months} months`
+    : `Target ${months} months (${formatDollars(s.runwayTarget)})`;
+  const runwayRow: TodayRow =
+    s.monthlySpend <= 0
       ? {
           id: 'runway',
           title: 'Runway',
@@ -175,72 +201,161 @@ export function buildTodayView(data: AppData, now: Date): TodayView {
           subtitle: 'Tell Annum what a month costs you',
           route: '/settings/number/spend',
         }
+      : estimate
+        ? {
+            id: 'runway',
+            title: 'Runway',
+            bucket: 'runway',
+            value: `About ${estimatedRunwayMonths(data)} months`,
+            subtitle: 'Estimated from your accounts',
+          }
+        : {
+            id: 'runway',
+            title: 'Runway',
+            bucket: 'runway',
+            value: runwayValue,
+            subtitle: runwaySubtitle,
+          };
+  const taxRow: TodayRow | undefined = taxApplies(data)
+    ? data.savingsUnsplit
+      ? {
+          id: 'tax',
+          title: 'Taxes',
+          bucket: 'tax',
+          value: 'Not yet',
+          subtitle: 'You’ll set this when your first deposit lands',
+        }
       : {
-          id: 'runway',
-          title: 'Runway',
-          bucket: 'runway',
-          value: estimate
-            ? `~${estimatedRunwayMonths(data)} mo`
-            : `${formatMonths(runwayMonths(data))} mo`,
-          subtitle: runwaySubtitle,
-        },
-  ];
-  if (taxApplies(data)) {
-    rows.push({
-      id: 'tax',
-      title: 'Tax reserve',
-      bucket: 'tax',
-      value: data.savingsUnsplit ? 'Not set aside yet' : formatDollars(data.buckets.tax),
-      subtitle: data.taxYear
-        ? `Next quarterly date ${formatShortDate(data.taxYear.nextQuarterlyDue)}`
-        : undefined,
-      // Opens S2 Taxes (Andy, 2026-09-28).
-      route: '/money/taxes',
-    });
-  }
-  if (ats.nextIncome.kind === 'none') {
-    const salary = data.settings.incomeType === 'salary';
-    rows.push({
-      id: 'income',
-      title: salary ? 'When’s your next payday?' : 'When’s your next invoice?',
-      subtitle: 'Until then, Annum plans 30 days ahead',
-      bucket: 'none',
-      route: salary ? '/settings/number/pay' : '/income/new',
-    });
-  }
-  rows.push({ id: 'what-if', title: 'What would this do?', bucket: 'none', route: '/what-if' });
-
-  const button: TodayView['button'] = estimate
-    ? { variant: 'field', label: 'Do my first weekly review' }
-    : status === 'heads-up'
-      ? { variant: 'caution', label: late ? 'See my options' : 'See what I can move' }
-      : { variant: 'field', label: 'Start weekly review' };
-
-  const staleNote = stale[0]
-    ? stale[0].source === 'import'
-      ? `${stale[0].name} was last imported ${formatShortDate((stale[0].lastSynced ?? '').slice(0, 10))}, so this may be off by a few purchases. Import this week’s file to catch up.`
-      : `${stale[0].name} hasn't synced since ${formatShortDate((stale[0].lastSynced ?? '').slice(0, 10))}, so this may be off by a few purchases.`
+          id: 'tax',
+          title: 'Taxes',
+          bucket: 'tax',
+          value: formatDollars(data.buckets.tax),
+          subtitle: data.taxYear
+            ? `Next payment ${formatShortDate(data.taxYear.nextQuarterlyDue)}`
+            : undefined,
+          // Opens S2 Taxes (Andy, 2026-09-28).
+          route: '/money/taxes',
+        }
     : undefined;
+
+  let rows: TodayRow[];
+  let button: TodayView['button'] = {
+    variant: 'field',
+    label: estimate ? 'Start my first review' : 'Start weekly review',
+    route: { pathname: '/review' },
+  };
+  if (first?.kind === 'late-income') {
+    // E2: the late invoice and what it does to the daily amount.
+    const late = ats.nextIncome;
+    const income = data.expectedIncome.find(
+      (i) => !i.received && i.date === late.dueDate && i.source === late.source,
+    );
+    rows = [
+      {
+        id: 'invoice',
+        title: `${late.source ?? 'Expected'} invoice`,
+        subtitle: `Expected ${formatShortDate(late.dueDate ?? late.date)} · ${late.daysLate} ${late.daysLate === 1 ? 'day' : 'days'} late`,
+        value: late.amount !== undefined ? formatDollars(late.amount) : undefined,
+      },
+      {
+        id: 'per-day',
+        title: 'Per day',
+        subtitle: `Stretched to ${formatShortDate(late.date)}`,
+        value: formatDollars(spend.perDay),
+      },
+      { ...WHAT_IF, bucket: undefined },
+    ];
+    button = income
+      ? {
+          variant: 'caution',
+          label: 'Change the invoice date',
+          route: { pathname: '/income/new', edit: income.id },
+        }
+      : { variant: 'caution', label: 'See my options', route: { pathname: '/review' } };
+  } else if (first?.kind === 'statement-before-income') {
+    // 02: the statement, and Runway staying whole if it's paid from Free.
+    const due = ats.obligations.find((o) => o.kind === 'statement' && o.name === first.name)?.due;
+    rows = [
+      {
+        id: 'statement',
+        title: `${cardShortName(first.name)} statement`,
+        subtitle: `${due ? `Due ${formatShortDate(due)} · ` : ''}paying in full avoids interest`,
+        value: formatDollars(first.amount),
+        bucket: 'none',
+      },
+      {
+        id: 'runway',
+        title: 'Runway stays',
+        subtitle: 'If you pay it from Free, not savings',
+        value: runwayValue,
+        bucket: 'runway',
+      },
+      WHAT_IF,
+    ];
+    button = { variant: 'caution', label: 'See what I can move', route: { pathname: '/review' } };
+  } else {
+    rows = [runwayRow, ...(taxRow ? [taxRow] : [])];
+    const pay = s.paySchedule;
+    if (ats.nextIncome.kind === 'paycheck' && pay) {
+      rows.push({
+        id: 'paycheck',
+        title: 'Next paycheck',
+        subtitle: `${formatShortDate(ats.nextIncome.date)} · ${CADENCE_WORD[pay.cadence]}`,
+        value: formatDollars(pay.amount),
+        bucket: 'none',
+      });
+    }
+    if (ats.nextIncome.kind === 'none') {
+      const salary = s.incomeType === 'salary';
+      rows.push({
+        id: 'income',
+        title: salary ? 'When’s your next payday?' : 'When’s your next invoice?',
+        subtitle: 'Until then, Annum plans 30 days ahead',
+        bucket: 'none',
+        route: salary ? '/settings/number/pay' : '/income/new',
+      });
+    }
+    // E1: out-of-date numbers leave out "What would this do?".
+    if (stale.length === 0) rows.push(WHAT_IF);
+    if (status === 'heads-up') {
+      button = { variant: 'caution', label: 'See what I can move', route: { pathname: '/review' } };
+    }
+  }
+
+  const oldest = stale[0];
+  const staleDay = oldest ? formatShortDate((oldest.lastSynced ?? '').slice(0, 10)) : '';
+  const staleNote = oldest
+    ? oldest.source === 'import'
+      ? `${oldest.name} was last imported ${staleDay}, so this may be off by a few purchases. Import this week’s file to catch up.`
+      : `${bankShortName(oldest.name)} hasn’t synced since ${staleDay}, so this may be off by a few purchases. Tap to reconnect.`
+    : undefined;
+  const staleRoute: TodayView['staleRoute'] = oldest
+    ? oldest.source === 'import'
+      ? { pathname: '/import' }
+      : oldest.source === 'plaid' && oldest.itemId
+        ? { pathname: '/bank/connect', item: oldest.itemId }
+        : { pathname: '/settings' }
+    : undefined;
+  const updated = updatedLabel(data, now);
 
   return {
     status,
     caution: status === 'heads-up',
     dateLabel: formatShortDate(data.today),
-    updatedLabel: updatedLabel(data, now),
+    updatedLabel: updated,
+    headerLabel: stale.length ? updated : `${formatShortDate(data.today)} · ${updated}`,
     lead,
     amount: spend.amount,
     sentence,
-    compactSentence: compactSentence(ats.nextIncome, spend.perDay, spend.days),
-    cause,
+    compactSentence: first ? sentence : compactSentence(ats.nextIncome, spend.perDay, spend.days),
     staleNote,
+    staleRoute,
     emptyNote: data.accounts.every((a) => a.balance === 0)
       ? 'No balances yet, so there’s nothing to count. Add them in Settings → Accounts.'
       : undefined,
     rows,
     button,
-    heroLabel: [`${lead} ${formatDollars(spend.amount)} ${sentence}`, cause]
-      .filter(Boolean)
-      .join(' '),
+    heroLabel: `${lead} ${formatDollars(spend.amount)} ${sentence}`,
   };
 }
 
@@ -263,20 +378,43 @@ export interface MoneyView {
   taxYearLabel?: string;
 }
 
+/** E3 (Figma 70:1119): "A split could look like this: $3,000 for taxes, $2,000 for bills, …" */
+function previewSentence(
+  data: AppData,
+  preview: Record<BucketKey, Cents>,
+  visible: readonly BucketKey[],
+): string {
+  const words: Partial<Record<BucketKey, string>> = {
+    tax: 'for taxes',
+    bills: 'for bills',
+    invest: 'to invest',
+    free: 'to spend',
+  };
+  const parts = visible
+    .filter((k) => k !== 'runway' && preview[k] > 0)
+    .map((k) => `${formatDollars(preview[k])} ${words[k]}`);
+  const months = `That’s about ${formatMonths(runwayMonths(data, preview.runway))} months.`;
+  return parts.length
+    ? `A split could look like this: ${parts.join(', ')}, and the rest in Runway. ${months}`
+    : `A split could put all of it in Runway. ${months}`;
+}
+
 export function buildMoneyView(data: AppData): MoneyView {
   const savings = savingsBalance(data);
-  const target = formatCompactThousands(data.settings.runwayTarget);
-  const runwayFull = data.buckets.runway >= data.settings.runwayTarget;
+  const s = data.settings;
+  const months = s.monthlySpend > 0 ? Math.round(s.runwayTarget / s.monthlySpend) : 0;
+  const billsDue = data.bills.filter(
+    (b) => b.confirmed && inNextDays(b.due, data.today, 30),
+  ).length;
+  // 03 Money (Figma 58:62): one short line per bucket.
   const notes: Record<BucketKey, string> = {
     tax: data.taxYear
-      ? `Set aside for taxes · next quarterly date ${formatShortDate(data.taxYear.nextQuarterlyDue)}`
+      ? `Next payment ${formatShortDate(data.taxYear.nextQuarterlyDue)}`
       : 'Set aside for taxes',
-    bills: `${formatDollars(billsDueNext30(data))} in bills due in the next 30 days`,
-    runway: `${formatMonths(runwayMonths(data))} months · ${target} target`,
-    invest: runwayFull
-      ? 'Runway is full, so this is ready to invest'
-      : `Unlocks once Runway reaches ${target}`,
-    free: 'Yours to spend',
+    bills: billsDue ? `${billsDue} due in 30 days` : 'Nothing due in 30 days',
+    runway: `${formatMonths(runwayMonths(data))} months · target ${months} months`,
+    invest: data.buckets.invest > 0 ? 'Ready to invest' : 'Starts when Runway is full',
+    free: 'Counts toward what you can spend',
   };
   const visible = BUCKET_KEYS.filter(
     (k) => (k !== 'tax' || taxApplies(data)) && (k !== 'invest' || data.settings.modules.invest),
@@ -300,12 +438,7 @@ export function buildMoneyView(data: AppData): MoneyView {
       note: unsplit ? 'Not split yet' : notes[bucket],
       amount: unsplit ? 0 : data.buckets[bucket],
     })),
-    previewNote: preview
-      ? `A first split would set aside ${visible
-          .filter((k) => k !== 'free' && preview[k] > 0)
-          .map((k) => `${BUCKET_NAMES[k]} ${formatDollars(preview[k])}`)
-          .join(' · ')}, leaving Free ${formatDollars(preview.free)}.`
-      : undefined,
+    previewNote: preview ? previewSentence(data, preview, visible) : undefined,
     showTaxes: taxApplies(data),
     taxYearLabel: data.taxYear ? `Taxes · ${data.taxYear.year}` : undefined,
   };
@@ -313,7 +446,14 @@ export function buildMoneyView(data: AppData): MoneyView {
 
 export interface WhatIfView {
   empty: boolean;
-  rows: { id: 'free' | 'per-day' | 'runway'; title: string; value: string; amount?: Cents }[];
+  rows: {
+    id: 'free' | 'per-day' | 'runway' | 'target';
+    title: string;
+    subtitle?: string;
+    value: string;
+    amount?: Cents;
+  }[];
+  helper: string;
   guardrail: boolean;
   note: string;
   primary: string;
@@ -331,46 +471,92 @@ export function incomeHelper(data: AppData, amount: Cents | null): string | unde
   return `After taxes, about ${formatDollars(afterTax)} of this is yours to plan.`;
 }
 
+/** 10 fits · 11 guardrail (Figma 60:416, 60:463). */
 export function buildWhatIfView(data: AppData, purchase: Cents | null): WhatIfView {
   const ats = availableToSpend(data);
   const result = whatIf(data, purchase ?? 0);
   const waitDate = formatShortDate(result.waitUntil);
-  const rows: WhatIfView['rows'] = [
-    { id: 'free', title: 'Free to spend', value: formatDollars(result.ats), amount: result.ats },
-    { id: 'per-day', title: 'Per day', value: formatDollars(result.perDay), amount: result.perDay },
-    { id: 'runway', title: 'Runway', value: `${formatMonths(result.runwayMonths)} mo` },
-  ];
-  if (purchase === null || purchase === 0) {
+  const empty = purchase === null || purchase === 0;
+  const was = (v: Cents) => (empty ? undefined : `Was ${formatDollars(v)}`);
+  const s = data.settings;
+  const months = s.monthlySpend > 0 ? Math.round(s.runwayTarget / s.monthlySpend) : 0;
+  const free = {
+    id: 'free' as const,
+    title: 'Free to spend',
+    subtitle: was(ats.display),
+    value: formatDollars(result.ats),
+    amount: result.ats,
+  };
+  const runway = {
+    id: 'runway' as const,
+    title: 'Runway',
+    subtitle: empty
+      ? undefined
+      : result.guardrail
+        ? 'The rest would come from savings'
+        : 'Unchanged',
+    value: `${formatMonths(result.runwayMonths)} months`,
+  };
+  const base = { helper: 'Nothing is saved. This is only a preview.' };
+  if (result.guardrail && !empty) {
+    const lands =
+      ats.nextIncome.kind === 'paycheck'
+        ? `Payday is ${waitDate}`
+        : `Your ${ats.nextIncome.kind === 'late' ? 'late ' : ''}invoice lands ${waitDate}`;
+    const lead =
+      result.beyondRunway > 0
+        ? `That’s ${formatDollars(result.beyondRunway)} more than Free to spend and all of Runway together.`
+        : data.buckets.runway >= s.runwayTarget
+          ? 'This would put Runway under your target.'
+          : `This would take ${formatDollars(result.shortfall)} out of Runway.`;
     return {
-      empty: true,
-      rows,
-      guardrail: false,
-      note: 'Type an amount to see what it would do.',
-      primary: 'Got it',
-      quiet: 'Try another amount',
-    };
-  }
-  if (result.guardrail) {
-    const wait = `Waiting until ${waitDate}, when ${incomeWord(ats.nextIncome)} arrives, keeps Runway whole.`;
-    return {
+      ...base,
       empty: false,
-      rows,
+      rows: [
+        free,
+        runway,
+        {
+          id: 'target',
+          title: 'Your Runway target',
+          subtitle: formatDollars(s.runwayTarget),
+          value: `${months} months`,
+        },
+      ],
       guardrail: true,
-      note:
-        result.beyondRunway > 0
-          ? `That's ${formatDollars(result.beyondRunway)} more than Free to spend and all of Runway together. ${wait}`
-          : `This would dip ${formatDollars(result.shortfall)} into Runway (${formatMonths(runwayMonths(data))} → ${formatMonths(result.runwayMonths)} months). ${wait}`,
+      note: `${lead} ${lands}, and if you wait until then, your savings stay whole. We’ll ask you again when it lands.`,
       primary: `Wait until ${waitDate}`,
       quiet: 'Buy anyway',
       waitUntil: result.waitUntil,
     };
   }
-  return {
-    empty: false,
-    rows,
-    guardrail: false,
-    note: `That fits. You'd still have about ${formatDollars(result.perDay)} a day until ${waitDate}.`,
-    primary: 'Got it',
-    quiet: 'Try another amount',
-  };
+  const rows: WhatIfView['rows'] = [
+    free,
+    {
+      id: 'per-day',
+      title: `Per day until ${waitDate}`,
+      subtitle: was(ats.perDay),
+      value: formatDollars(result.perDay),
+      amount: result.perDay,
+    },
+    runway,
+  ];
+  return empty
+    ? {
+        ...base,
+        empty: true,
+        rows,
+        guardrail: false,
+        note: 'Type an amount to see what it would do.',
+        primary: 'Got it',
+        quiet: 'Try another amount',
+      }
+    : {
+        ...base,
+        empty: false,
+        rows,
+        guardrail: false,
+        note: 'This fits. It comes out of Free, and your savings stay where they are.',
+        primary: 'Got it',
+        quiet: 'Try another amount',
+      };
 }

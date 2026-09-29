@@ -9,12 +9,13 @@ name: Scenario first-run
     visible: 'You can spend about \$1,300 until your next invoice on Oct 13\. About \$65 a day\.'
     timeout: 5000
 - assertVisible: 'Status: Estimate'
-- assertVisible: 'Runway, ~6 mo, Estimated from savings · \$15k target'
-- assertVisible: 'Do my first weekly review'
+- assertVisible: 'Runway, About 6 months, Estimated from your accounts'
+- assertVisible: 'Taxes, Not yet, You’ll set this when your first deposit lands'
+- assertVisible: 'Start my first review'
 - takeScreenshot: scenario-first-run
 - tapOn: 'Money'
 - extendedWaitUntil:
-    visible: 'A first split would set aside Tax \$4,500 · Bills \$2,000 · Runway \$12,600, leaving Free \$0\.'
+    visible: 'A split could look like this: \$4,500 for taxes, \$2,000 for bills, and the rest in Runway\. That’s about 4\.2 months\.'
     timeout: 5000
 - assertVisible: 'Split my savings now'
 - takeScreenshot: scenario-first-run-money

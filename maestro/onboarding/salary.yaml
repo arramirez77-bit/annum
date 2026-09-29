@@ -17,9 +17,9 @@ name: Salary end to end
     id: 'onboarding-continue'
 - tapOn:
     id: 'connect-sample'
-- assertVisible: 'Accounts found'
-- assertVisible: 'Woodgrove checking.*\$3,800.*Sample bank.*'
-- assertVisible: 'Fabrikam Invest.*Entered by hand.*'
+- assertVisible: '[0-9]+ accounts? connected'
+- assertVisible: 'Woodgrove checking, \$3,800, Checking · connected'
+- assertVisible: 'Fabrikam Invest, .*, Brokerage · entered by hand'
 - scrollUntilVisible:
     element:
       id: 'onboarding-continue'
@@ -37,27 +37,31 @@ name: Salary end to end
       id: 'today'
     timeout: 10000
 - assertVisible: 'You can spend about \$.* until payday on .*'
-- assertNotVisible: 'Tax reserve.*'
+- assertNotVisible: 'Taxes, .*'
 - takeScreenshot: m5-salary-today
 
 # Money: no Tax bucket, no Taxes link.
 - tapOn: 'Money'
 - assertNotVisible:
     id: 'open-taxes'
-- assertNotVisible: 'Tax, .*'
+- assertNotVisible: 'Taxes, .*'
 - tapOn: 'Today'
 
 # The first weekly review, start to finish.
 - tapOn:
     id: 'today-button'
 - extendedWaitUntil:
-    visible: 'Do these balances look right\?'
+    visible: 'Check your balances'
     timeout: 8000
 - assertVisible: 'Step 1 of 6'
+- scrollUntilVisible:
+    element:
+      id: 'review-primary'
+    direction: DOWN
 - tapOn:
     id: 'review-primary'
 - assertVisible: 'Step 2 of 6'
-- assertNotVisible: 'Tax, work expense'
+- assertNotVisible: 'Work expense'
 - scrollUntilVisible:
     element:
       id: 'review-primary'
@@ -86,7 +90,7 @@ name: Salary end to end
 - tapOn:
     id: 'move-moved'
 - extendedWaitUntil:
-    visible: 'You spent \$.*'
+    visible: 'Week reviewed'
     timeout: 5000
 - scrollUntilVisible:
     element:

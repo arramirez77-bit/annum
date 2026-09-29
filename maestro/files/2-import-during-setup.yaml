@@ -1,5 +1,5 @@
 # M6: "Import a file from my bank" during setup: the file's account becomes the first account,
-# with its balance and "Imported …", and setup continues to Today.
+# with its balance and "Checking · from a file", and setup continues to Today.
 appId: com.highdesert.annum
 name: 'Files 2: import during setup'
 ---
@@ -29,7 +29,7 @@ name: 'Files 2: import during setup'
     id: 'import-confirm'
 - tapOn:
     id: 'import-done'
-- assertVisible: 'Woodgrove checking.*\$4,305.*Imported .*'
+- assertVisible: 'Woodgrove checking, \$4,305, Checking · from a file'
 - scrollUntilVisible:
     element:
       id: 'onboarding-continue'

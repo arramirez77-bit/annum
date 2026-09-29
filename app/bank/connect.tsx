@@ -139,6 +139,7 @@ export default function ConnectBank() {
       <Text tone="secondary" testID="connect-body">
         {message.body}
       </Text>
+      {message.note ? <GuardrailNote tone="heads-up">{message.note}</GuardrailNote> : null}
       {__DEV__ && code ? (
         <Text variant="footnote" tone="secondary" testID="connect-code">
           {`Development: Plaid said ${code}.`}

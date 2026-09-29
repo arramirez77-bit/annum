@@ -26,8 +26,8 @@ name: Settings, modules, transaction detail
     visible:
       id: 'today'
     timeout: 5000
-- assertNotVisible: 'Tax reserve.*'
-- assertVisible: 'Runway, 4\.2 mo, Up 0\.2 this week · \$18k target'
+- assertNotVisible: 'Taxes, .*'
+- assertVisible: 'Runway, 4\.2 months, Up 0\.2 months this week · target 6 months'
 # Money: no Tax bucket or Taxes link; transactions have no Tax filter.
 - tapOn: 'Money'
 - assertNotVisible:

@@ -8,12 +8,12 @@ name: Scenario salary
 - extendedWaitUntil:
     visible: 'You can spend \$1,100 until payday on Oct 5\. About \$91 a day\.'
     timeout: 5000
-- assertNotVisible: 'Tax reserve.*'
+- assertNotVisible: 'Taxes, .*'
 - takeScreenshot: scenario-salary
 - tapOn: 'Money'
 - extendedWaitUntil:
     visible: 'Savings, \$7,600'
     timeout: 5000
-- assertNotVisible: 'Tax, .*'
+- assertNotVisible: 'Taxes, .*'
 - assertNotVisible: 'Taxes · 2026'
 - takeScreenshot: scenario-salary-money

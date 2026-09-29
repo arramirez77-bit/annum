@@ -147,6 +147,8 @@ export interface AppState extends Persisted {
   stopTracking: (accountId: string) => void;
   /** S4 Add expected income. */
   addExpectedIncome: (income: ExpectedIncome) => void;
+  /** S4 edit mode (E2 "Change the invoice date"). */
+  updateExpectedIncome: (income: ExpectedIncome) => void;
   /** S3 Settings. */
   setModules: (modules: Partial<Settings['modules']>) => void;
   setNumbers: (
@@ -449,6 +451,12 @@ export const useAppStore = create<AppState>((set, get) => {
 
     addExpectedIncome: (income) =>
       commit({ ...get().data, expectedIncome: [...get().data.expectedIncome, income] }),
+
+    updateExpectedIncome: (income) =>
+      commit({
+        ...get().data,
+        expectedIncome: get().data.expectedIncome.map((i) => (i.id === income.id ? income : i)),
+      }),
 
     setModules: (modules) => settings({ modules: { ...get().data.settings.modules, ...modules } }),
     setNumbers: (numbers) => settings(numbers),

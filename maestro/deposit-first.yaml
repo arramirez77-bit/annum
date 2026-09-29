@@ -25,7 +25,7 @@ name: First split
 - tapOn:
     id: 'deposit-confirm'
 - extendedWaitUntil:
-    visible: 'Tax, \$4,500\. .*'
+    visible: 'Taxes, \$4,500\. .*'
     timeout: 8000
 - assertVisible: 'Runway, \$12,600\. .*'
 - assertNotVisible:

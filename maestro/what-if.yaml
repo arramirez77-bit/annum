@@ -5,26 +5,27 @@ name: What would this do?
     file: common/open-scenario.yaml
     env:
       SCENARIO: on-track
-- tapOn: 'What would this do\?'
+- tapOn: 'What would this do\?.*'
 - extendedWaitUntil:
     visible:
       id: 'what-if-amount'
     timeout: 5000
 - inputText: '200'
 - extendedWaitUntil:
-    visible: 'Free to spend, \$800'
+    visible: 'Free to spend, \$800, Was \$1,000'
     timeout: 3000
-- assertVisible: 'Per day, \$40'
-- assertVisible: 'Runway, 4\.2 mo'
-- assertVisible: "That fits\\. You'd still have about \\$40 a day until Oct 13\\."
+- assertVisible: 'Per day until Oct 13, \$40, Was \$50'
+- assertVisible: 'Runway, 4\.2 months, Unchanged'
+- assertVisible: 'This fits\. It comes out of Free, and your savings stay where they are\.'
 - takeScreenshot: what-if-fits
 - eraseText: 10
 - inputText: '2000'
 - extendedWaitUntil:
-    visible: 'Runway, 3\.9 mo'
+    visible: 'Runway, 3\.9 months, The rest would come from savings'
     timeout: 3000
-- assertVisible: 'Free to spend, \$0'
-- assertVisible: 'Heads up\. This would dip \$1,000 into Runway \(4\.2 → 3\.9 months\)\. Waiting until Oct 13, when your invoice arrives, keeps Runway whole\.'
+- assertVisible: 'Free to spend, \$0, Was \$1,000'
+- assertVisible: 'Your Runway target, 5 months, \$15,000'
+- assertVisible: 'Heads up\. This would take \$1,000 out of Runway\. Your invoice lands Oct 13, and if you wait until then, your savings stay whole\. We’ll ask you again when it lands\.'
 - takeScreenshot: what-if-guardrail
 # Tapping plain text closes the number pad (see deposit.yaml).
 - tapOn: 'If I spend'

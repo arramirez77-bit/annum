@@ -18,13 +18,14 @@ import { ACCOUNT_TYPES, owes } from '@/state/account-views';
 import { buildImportPreview, buildImportResult, lastImportRow } from '@/state/import-views';
 import { useOnboarding } from '@/state/onboarding';
 import { newRecordId, useAppStore, type ImportOutcome } from '@/state/store';
-import { color, radius, size, space } from '@/theme';
+import { space } from '@/theme';
 import {
   AmountInput,
   Button,
   Chip,
   GuardrailNote,
   LedgerRow,
+  NumberedSteps,
   ScreenScroll,
   SettingsGroup,
   SettingsRow,
@@ -42,41 +43,6 @@ const UNREADABLE =
   'Annum couldn’t read that file. It needs to be a CSV or OFX/QFX download from your bank. Nothing was changed.';
 
 type Loaded = { name: string; file: BankFile };
-
-/** The three steps (Figma 99:1332). */
-function Numbered() {
-  return (
-    <View style={{ gap: space[16] }}>
-      {STEPS.map((step, i) => (
-        <View
-          key={step.title}
-          accessible
-          accessibilityLabel={`Step ${i + 1}: ${step.title}. ${step.detail}.`}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: space[12] }}
-        >
-          <View
-            style={{
-              width: size.stepNumber,
-              height: size.stepNumber,
-              borderRadius: radius.full,
-              backgroundColor: color.bgRaised,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text variant="subhead">{i + 1}</Text>
-          </View>
-          <View style={{ flex: 1, gap: space[2] }}>
-            <Text>{step.title}</Text>
-            <Text variant="footnote" tone="secondary">
-              {step.detail}
-            </Text>
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-}
 
 function ColumnPicker({
   label,
@@ -318,7 +284,7 @@ export default function ImportFile() {
         <Text variant="callout" tone="secondary">
           For banks that don’t connect. Works with the CSV or OFX file most banks let you download.
         </Text>
-        <Numbered />
+        <NumberedSteps steps={STEPS} />
         {last ? (
           <>
             <Text variant="footnote" tone="secondary" accessibilityRole="header">

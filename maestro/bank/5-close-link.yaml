@@ -24,7 +24,7 @@ name: Bank 5 · closing Plaid Link
 - extendedWaitUntil:
     visible: 'That bank didn’t connect'
     timeout: 20000
-- assertVisible: 'Nothing was saved and no connection was used\.'
+- assertVisible: 'Nothing was saved, and nothing is wrong with your account\. Some banks need a second try, and a few aren’t supported yet\. No bank login was used\.'
 - assertVisible:
     id: 'connect-retry'
 - assertVisible:

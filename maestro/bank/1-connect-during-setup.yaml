@@ -27,10 +27,10 @@ name: Bank 1 · connect during setup
     visible:
       id: 'onboarding-accounts'
     timeout: 10000
-- assertVisible: 'Accounts found'
+- assertVisible: '[0-9]+ accounts? connected'
 # The Sandbox user (user_transactions_dynamic) has a checking account, a card and five loans.
 - assertVisible: 'Checking, .*'
-- assertVisible: 'Credit card, .* owed.*'
+- assertVisible: 'Credit card, .*, Credit card · connected'
 - takeScreenshot: m7-accounts
 - scrollUntilVisible:
     element:

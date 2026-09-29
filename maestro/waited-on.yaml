@@ -7,14 +7,14 @@ name: Waited-on purchase
     file: common/open-scenario.yaml
     env:
       SCENARIO: on-track
-- tapOn: 'What would this do\?'
+- tapOn: 'What would this do\?.*'
 - extendedWaitUntil:
     visible:
       id: 'what-if-amount'
     timeout: 5000
 - inputText: '2000'
 - extendedWaitUntil:
-    visible: 'Runway, 3\.9 mo'
+    visible: 'Runway, 3\.9 months, The rest would come from savings'
     timeout: 3000
 # Tapping plain text closes the number pad (see deposit.yaml).
 - tapOn: 'If I spend'

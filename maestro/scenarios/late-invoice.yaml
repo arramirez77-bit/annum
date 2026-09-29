@@ -6,8 +6,10 @@ name: Scenario late-invoice
     env:
       SCENARIO: late-invoice
 - extendedWaitUntil:
-    visible: 'You can spend \$175 until Oct 22, when we expect the late invoice\. About \$35 a day\. The Northwind Studio invoice is 4 days late\.'
+    visible: 'You can spend \$175 until Oct 22\. The Northwind Studio invoice is 4 days late, so we stretched it\.'
     timeout: 5000
 - assertVisible: 'Status: Heads up'
-- assertVisible: 'See my options'
+- assertVisible: 'Northwind Studio invoice, \$5,000, Expected Oct 13 · 4 days late'
+- assertVisible: 'Per day, \$35, Stretched to Oct 22'
+- assertVisible: 'Change the invoice date'
 - takeScreenshot: scenario-late-invoice

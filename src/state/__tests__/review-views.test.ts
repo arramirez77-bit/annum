@@ -34,74 +34,86 @@ describe('Weekly Review views', () => {
     ]);
   });
 
-  test('04 balances: every account, manual ones named in the note', () => {
+  test('04 balances (Figma 59:167): synced times, statement due, entered by hand', () => {
     const v = buildBalancesView(data(), now());
+    expect(v.title).toBe('Check your balances');
+    expect(v.subtitle).toBe('Synced this morning at 7:02. Anything that didn’t connect is marked.');
     expect(v.rows.map((r) => [r.title, r.value, r.subtitle.replace(/\s/g, ' ')])).toEqual([
-      ['Woodgrove checking', '$2,000', 'Updated 7:02 AM'],
-      ['Savings', '$19,100', 'Updated 7:02 AM'],
-      ['Contoso Card', '$500 owed', 'Updated 7:02 AM'],
+      ['Woodgrove checking', '$2,000', 'Synced 7:02 AM'],
+      ['Savings', '$19,100', 'Synced 7:02 AM · split into buckets'],
+      ['Contoso Card', '$500', 'Statement due Sep 28'],
       ['Fabrikam Invest', '$10,000', 'Entered by hand'],
-      ['Student loan', '$8,000 owed', 'Entered by hand'],
+      ['Student loan', '$8,000', 'Entered by hand'],
     ]);
     expect(v.manualNote).toBe(
-      'Fabrikam Invest and Student loan are entered by hand, so they show your last update. Tap one to change it.',
+      'Fabrikam Invest and Student loan are entered by hand. Tap one to update it if the balance changed.',
     );
+    expect(v.primary).toBe('Looks right');
   });
 
-  test('05 tag: three new, suggestion pre-selected, Tax chip last', () => {
+  test('05 tag (59:224): what were these, weekday dates, the bank, Work expense last', () => {
     const v = buildTagView(data());
-    expect(v.title).toBe('3 new this week.');
+    expect(v.title).toBe('What were these?');
+    expect(v.subtitle).toBe(
+      '3 new this week. We guessed a category for each one. Fix any that are wrong, and tap Work expense for anything you bought for work.',
+    );
+    expect(v.items.map((i) => [i.merchant, i.dateLabel, i.accountName])).toEqual([
+      ['Litware', 'Mon Sep 21', 'Contoso'],
+      ['Corner Market', 'Tue Sep 22', 'Woodgrove'],
+      ['Fuel Stop', 'Tue Sep 22', 'Contoso'],
+    ]);
     expect(v.items.map((i) => [i.merchant, i.suggestions, i.selected, i.tax])).toEqual([
       ['Litware', ['Software', 'Other'], 'Software', true],
       ['Corner Market', ['Groceries', 'Other'], 'Groceries', false],
       ['Fuel Stop', ['Gas', 'Other'], 'Gas', false],
     ]);
+    expect(v.primary).toBe('Looks right');
   });
 
-  test('06 what changed: Free to spend, Runway, Tax reserve, and the notable category', () => {
+  test('06 your week (60:263): Free to spend, Runway, Taxes, and the dining note', () => {
     const v = buildChangesView(data());
+    expect([v.title, v.subtitle]).toEqual(['Your week', 'What changed since last Sunday.']);
     expect(v.cards).toEqual([
-      {
-        bucket: 'free',
-        title: 'Free to spend',
-        value: '$1,000',
-        line: 'Down $400 — what you spent this week',
-      },
+      { bucket: 'free', title: 'Free to spend', value: '$1,000', line: 'Down $400 this week' },
       { bucket: 'runway', title: 'Runway', value: '4.2 months', line: 'Up 0.2 months' },
-      { bucket: 'tax', title: 'Tax reserve', value: '$3,000', line: 'Next quarterly date Jan 15' },
+      { bucket: 'tax', title: 'Taxes', value: '$3,000', line: 'On track for Jan 15' },
     ]);
-    expect(v.note).toBe('Dining was $150 this week, more than usual (4-week average $100).');
+    expect(v.note).toBe(
+      'You spent $50 more on dining than your 4-week average. That came out of Free, not savings, so there’s nothing to fix.',
+    );
     expect(buildChangesView(data('salary')).cards.map((c) => c.title)).toEqual([
       'Free to spend',
       'Runway',
     ]);
   });
 
-  test('07b habit: previews this week against the usual amount', () => {
-    expect(buildHabitView(data(), 100000).note).toBe(
-      'This week needs $1,050 — $50 more than usual.',
+  test('07b habit (73:1293): what lands this week, and about how much', () => {
+    const v = buildHabitView(data());
+    expect(v.title).toBe('How much do you usually move?');
+    expect(v.note).toBe(
+      'Next, we’ll check it against this week: the Contoso statement and two bills land, so you’ll likely need about $1,050.',
     );
-    expect(buildHabitView(data(), 105000).note).toBe('This week needs $1,050, the same as usual.');
+    expect(v.primary).toBe('Continue');
   });
 
-  test('07 move money: $1,050, the breakdown, why it is above the habit', () => {
+  test('07 move money (60:310): about the same, bills together, weekly spending', () => {
     const v = buildMoveView(data());
+    expect(v.title).toBe('Move money to checking');
     expect(v.amount).toBe(105000);
-    expect(v.comparison).toBe('You usually move $1,000. This week needs $1,050.');
+    expect(v.comparison).toBe('You usually move $1,000. This week needs about the same.');
     expect(v.rows).toEqual([
-      { title: 'Contoso Card statement', subtitle: 'Due Sep 28', value: '$500' },
-      { title: 'Car insurance', subtitle: 'Due Sep 29', value: '$150' },
-      { title: 'Phone', subtitle: 'Due Sep 30', value: '$50' },
-      { title: 'Spending for 7 days', subtitle: '$50 × 7', value: '$350' },
+      {
+        title: 'Bills due this week',
+        subtitle: 'Car insurance, Phone, Contoso statement',
+        value: '$700',
+      },
+      { title: 'Weekly spending', subtitle: 'About $50 a day for a week', value: '$350' },
     ]);
-    expect(v.aboveHabit).toBe(
-      "That's $50 more than usual — the Contoso Card statement ($500) is due Sep 28.",
+    expect(v.note).toBe(
+      'Move it in Woodgrove, then come back. We’ll show it as pending until it arrives.',
     );
-    // Woodgrove is fictional: no link, so the flow offers "I already moved it" with a how-to line.
+    // Woodgrove is fictional: no link, so "I already moved it" is the button.
     expect(v.openLabel).toBeUndefined();
-    expect(v.howTo).toBe(
-      'Move it in Woodgrove\'s app, then come back and tap "I already moved it".',
-    );
   });
 
   test('known banks get an "Open {bank}" link', () => {
@@ -109,19 +121,21 @@ describe('Weekly Review views', () => {
     expect(bankFor('Woodgrove checking')).toEqual({ name: 'Woodgrove' });
   });
 
-  test('08 week reviewed: $400 spent, $29 over, top 3, pending transfer, next Sunday', () => {
+  test('08 week reviewed (60:360): you spent, over the weekly amount, usual lines, what’s left', () => {
     const v = buildDoneView(data(), { amount: 105000, markedOn: '2026-09-23' });
-    expect(v.title).toBe('You spent $400');
+    expect([v.title, v.spentLabel, v.spent]).toEqual(['Week reviewed', 'You spent', '$400']);
     expect(v.bar).toEqual({ within: 37100, over: 2900, left: 0 });
-    expect(v.barLabel).toBe('$29 over your $371 allowance');
+    expect(v.barLabel).toBe(
+      '$29 over your $371 weekly amount. Free covered it, so your savings weren’t touched.',
+    );
     expect(v.categories.map((c) => [c.title, c.value, c.subtitle])).toEqual([
-      ['Dining', '$150', 'more than usual · usually $100'],
-      ['Groceries', '$120', 'about usual · usually $120'],
-      ['Gas', '$40', 'less than usual · usually $60'],
+      ['Dining', '$150', '$50 more than usual'],
+      ['Groceries', '$120', 'About the same as usual'],
+      ['Gas', '$40', '$20 less than usual'],
     ]);
-    expect(v.left.map((r) => [r.title, r.value])).toEqual([
-      ['Free to spend', '$1,000'],
-      ['Moving to checking', '$1,050'],
+    expect(v.left.map((r) => [r.title, r.subtitle, r.value])).toEqual([
+      ['Free to spend', '20 days until your Oct 13 invoice', '$1,000'],
+      ['Move to checking', 'Pending until it shows up in Woodgrove', '$1,050'],
     ]);
     expect(v.nextReview).toBe("Next review Sunday, Sep 27. We'll remind you.");
   });
@@ -136,7 +150,7 @@ describe('Deposit split views', () => {
     expect(v.title).toBe('$10,000 just landed');
     expect(v.subtitle).toBe('Here’s where it goes. Change anything before you confirm.');
     expect(v.rows.map((r) => [r.name, r.amount, r.note])).toEqual([
-      ['Tax', 300000, '30% of every deposit'],
+      ['Taxes', 300000, '30% of every deposit'],
       ['Bills', 0, 'Already covered this month'],
       ['Runway', 240000, 'Reaches your 5-month target'],
       ['Invest', 230000, 'Starts now that Runway is full'],
@@ -154,7 +168,7 @@ describe('Deposit split views', () => {
     expect(v.title).toBe('$19,100 in savings');
     expect(v.subtitle).toBe('Here’s a starting split. Change anything before you confirm.');
     expect(v.rows.map((r) => [r.name, r.amount, r.note])).toEqual([
-      ['Tax', 450000, 'Set aside for Jan 15'],
+      ['Taxes', 450000, 'Set aside for Jan 15'],
       ['Bills', 200000, 'Covers the next 30 days'],
       ['Runway', 1260000, '4.2 months · target 5 months'],
       ['Invest', 0, 'Starts when Runway is full'],

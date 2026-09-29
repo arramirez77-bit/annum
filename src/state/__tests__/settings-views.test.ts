@@ -2,7 +2,7 @@ import { demoScenario, demoSeed } from '@/data/demo';
 import { DEFAULT_PREFS, REMINDERS_ON } from '@/data/repo';
 import { newAppData } from '@/domain';
 
-import { accountRow } from '../account-views';
+import { accountRow, accountsFoundNote, joinNames } from '../account-views';
 import { buildTransactionDetail, buildTransactionsView } from '../review-views';
 import { loginsLeft } from '../bank-views';
 import {
@@ -116,14 +116,18 @@ describe('S3 Settings values', () => {
     expect(loginsLeft(null, false)).toBeUndefined();
   });
 
-  test('accounts: synced, by hand, owed', () => {
+  test('O4 account rows (Figma 62:557): type · how it updates; "Add" when empty', () => {
     const rows = seed.accounts.map(accountRow);
     expect(rows.find((r) => r.id === 'loan')).toMatchObject({
-      value: '$8,000 owed',
-      subtitle: 'Entered by hand',
+      value: '$8,000',
+      subtitle: 'Loan · entered by hand',
       editable: true,
     });
-    expect(rows.find((r) => r.id === 'chk')).toMatchObject({ editable: false, value: '$2,000' });
+    expect(rows.find((r) => r.id === 'chk')).toMatchObject({
+      editable: false,
+      value: '$2,000',
+      subtitle: 'Checking · connected',
+    });
     expect(
       accountRow({
         id: 'x',
@@ -133,7 +137,18 @@ describe('S3 Settings values', () => {
         source: 'manual',
         status: 'ok',
       }),
-    ).toMatchObject({ subtitle: 'Tap to add balance', value: undefined });
+    ).toMatchObject({ subtitle: 'Savings · tap to add balance', value: 'Add' });
+  });
+
+  test('O4 subtitle names the banks that connected', () => {
+    expect(joinNames(['Woodgrove', 'Contoso', 'Woodgrove'])).toBe('Woodgrove and Contoso');
+    expect(joinNames(['A', 'B', 'C'])).toBe('A, B and C');
+    expect(accountsFoundNote(['Woodgrove', 'Contoso'])).toBe(
+      'From Woodgrove and Contoso. Investment accounts and loans usually don’t connect, so add those by hand.',
+    );
+    expect(accountsFoundNote([])).toBe(
+      'Investment accounts and loans usually don’t connect, so add those by hand.',
+    );
   });
 });
 

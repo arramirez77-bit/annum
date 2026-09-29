@@ -12,6 +12,8 @@ import type { Access } from './bank';
 export interface Message {
   title: string;
   body: string;
+  /** A heads-up under the body (E4). */
+  note?: string;
   /** What the primary button does. */
   action?: 'connect' | 'pair' | 'import' | 'retry' | 'done';
 }
@@ -53,10 +55,11 @@ export const repairMessage = (institution: string): Message => ({
   action: 'connect',
 });
 
-/** E4: Link was closed or the bank didn't connect. */
+/** E4 (Figma 71:953): Link was closed or the bank didn't connect. On the Trial, also say no login was used. */
 export const DIDNT_CONNECT: Message = {
   title: 'That bank didn’t connect',
-  body: 'Nothing was saved and no connection was used.',
+  body: 'Nothing was saved, and nothing is wrong with your account. Some banks need a second try, and a few aren’t supported yet. No bank login was used.',
+  note: 'If it keeps happening, import a file from your bank’s website instead. It takes about a minute.',
   action: 'retry',
 };
 

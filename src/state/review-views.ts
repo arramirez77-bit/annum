@@ -18,6 +18,7 @@ import {
   formatDayLabel,
   formatLedgerCents,
   formatWeekdayDate,
+  localISODate,
   nextReviewDate,
   notableCategory,
   proposeSplit,
@@ -40,10 +41,12 @@ import {
   type Cents,
   type Split,
   type Transaction,
+  type Account,
 } from '@/domain';
 
 import type { PendingTransfer } from './store';
-import { BUCKET_NAMES, updatedLabel } from './views';
+import { syncedLabel } from './bank-views';
+import { BUCKET_NAMES } from './views';
 
 export type ReviewStepId = 'balances' | 'tag' | 'changes' | 'habit' | 'move' | 'done';
 
@@ -60,34 +63,75 @@ const listNames = (names: string[]) =>
 
 // 04 Balances ------------------------------------------------------------------
 
+/** "Contoso Card" / "Woodgrove checking" → the bank's short name ("Contoso", "Woodgrove"). */
+const shortBank = (name: string) => name.replace(/\s+(card|checking|savings)$/i, '');
+const clockTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+
+/** Each account's line on 04 (Figma 59:167). */
+function balanceLine(a: Account, data: AppData, now: Date): string {
+  if (a.source === 'manual') {
+    return a.enteredOn
+      ? `Entered by hand · updated ${formatShortDate(a.enteredOn)}`
+      : 'Entered by hand';
+  }
+  if (a.source === 'import') {
+    return a.lastSynced ? `Imported ${formatShortDate(a.lastSynced.slice(0, 10))}` : 'From a file';
+  }
+  if (a.type === 'card' && a.statementDue)
+    return `Statement due ${formatShortDate(a.statementDue)}`;
+  const synced = a.lastSynced ? `Synced ${syncedLabel(a.lastSynced, now)}` : 'Not synced yet';
+  return a.type === 'savings' && !data.savingsUnsplit ? `${synced} · split into buckets` : synced;
+}
+
 export function buildBalancesView(data: AppData, now: Date) {
-  const syncedLabel = updatedLabel(data, now);
   const rows = data.accounts.map((a) => ({
     id: a.id,
     title: a.name,
-    subtitle: a.source === 'manual' ? 'Entered by hand' : syncedLabel,
+    subtitle: balanceLine(a, data, now),
     editable: a.source === 'manual',
-    value:
-      a.type === 'card' || a.type === 'loan'
-        ? `${formatDollars(a.balance)} owed`
-        : formatDollars(a.balance),
+    value: formatDollars(a.balance),
   }));
   const manual = data.accounts.filter((a) => a.source === 'manual').map((a) => a.name);
   const imported = data.accounts.filter((a) => a.source === 'import').map((a) => a.name);
+  const last = data.accounts
+    .filter((a) => (a.source === 'plaid' || a.source === 'demo') && a.lastSynced)
+    .map((a) => a.lastSynced!)
+    .sort()
+    .pop();
+  const lastDay = last?.slice(0, 10);
+  const hour = last ? new Date(last).getHours() : 0;
+  const part = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  const when = !last
+    ? undefined
+    : lastDay === localISODate(now)
+      ? `this ${part} at ${clockTime.format(new Date(last)).replace(/\s?[AP]M$/i, '')}`
+      : `on ${formatShortDate(lastDay!)}`;
   return {
-    title: 'Do these balances look right?',
+    title: 'Check your balances',
+    subtitle: when
+      ? `Synced ${when}. Anything that didn’t connect is marked.`
+      : 'Update any balance that changed.',
     rows,
     importNote: imported.length
       ? `${listNames(imported)} ${imported.length === 1 ? 'comes' : 'come'} from files. Import this week’s download first, so the review sees every purchase.`
       : undefined,
     manualNote: manual.length
-      ? `${listNames(manual)} ${manual.length === 1 ? 'is' : 'are'} entered by hand, so ${manual.length === 1 ? 'it shows' : 'they show'} your last update. Tap one to change it.`
+      ? manual.length === 1
+        ? `${manual[0]} is entered by hand. Tap it to update it if the balance changed.`
+        : `${listNames(manual)} are entered by hand. Tap one to update it if the balance changed.`
       : undefined,
     primary: 'Looks right',
   };
 }
 
 // 05 Tag -----------------------------------------------------------------------
+
+const weekdayShort = new Intl.DateTimeFormat('en-US', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
 
 /** Two category chips per card: the suggestion, then "Other". (Decision: PROGRESS.md.) */
 export const categoryChoices = (t: Transaction): string[] => {
@@ -96,11 +140,11 @@ export const categoryChoices = (t: Transaction): string[] => {
 };
 
 export function buildTagView(data: AppData) {
-  const accounts = new Map(data.accounts.map((a) => [a.id, a.name]));
+  const accounts = new Map(data.accounts.map((a) => [a.id, shortBank(a.name)]));
   const items = toTag(data).map((t) => ({
     id: t.id,
     merchant: t.merchant,
-    dateLabel: formatShortDate(t.date),
+    dateLabel: weekdayShort.format(new Date(`${t.date}T00:00:00Z`)).replace(',', ''),
     accountName: accounts.get(t.accountId) ?? '',
     amount: t.amount,
     suggestions: categoryChoices(t),
@@ -108,15 +152,16 @@ export function buildTagView(data: AppData) {
     tax: t.tax,
   }));
   const n = items.length;
+  const taxes = taxApplies(data);
   return {
-    title: n === 0 ? 'Nothing new to tag this week.' : `${n} new this week.`,
+    title: 'What were these?',
     subtitle:
       n === 0
-        ? 'Every transaction already has a category.'
-        : "We've guessed each category. Change any that are off.",
+        ? 'Nothing new this week. Every transaction already has a category.'
+        : `${n} new this week. We guessed a category for each one. Fix any that are wrong${taxes ? ', and tap Work expense for anything you bought for work' : ''}.`,
     items,
-    showTax: taxApplies(data),
-    primary: 'Looks right · Next',
+    showTax: taxes,
+    primary: 'Looks right',
   };
 }
 
@@ -131,9 +176,7 @@ export function buildChangesView(data: AppData) {
       title: 'Free to spend',
       value: formatDollars(ats.display),
       line: change
-        ? change.freeToSpend < 0
-          ? `${formatDollarChange(change.freeToSpend)} — what you spent this week`
-          : `${formatDollarChange(change.freeToSpend)} since the start of the week`
+        ? `${formatDollarChange(change.freeToSpend)} this week`
         : `About ${formatDollars(ats.perDay)} a day`,
     },
     {
@@ -148,36 +191,54 @@ export function buildChangesView(data: AppData) {
   if (taxApplies(data)) {
     cards.push({
       bucket: 'tax',
-      title: 'Tax reserve',
+      title: 'Taxes',
       value: formatDollars(data.buckets.tax),
       line: data.taxYear
-        ? `Next quarterly date ${formatShortDate(data.taxYear.nextQuarterlyDue)}`
+        ? `On track for ${formatShortDate(data.taxYear.nextQuarterlyDue)}`
         : 'Set aside for taxes',
     });
   }
   const notable = notableCategory(weekReport(data));
+  const diff = notable ? notable.amount - notable.average : 0;
   return {
-    title: 'What changed this week',
+    title: 'Your week',
+    subtitle: 'What changed since last Sunday.',
     cards,
-    note: notable
-      ? `${notable.category} was ${formatDollars(notable.amount)} this week, ${notable.label} (4-week average ${formatDollars(notable.average)}).`
-      : undefined,
+    note:
+      notable && notable.label !== 'about usual' && diff !== 0
+        ? `You spent ${formatDollars(Math.abs(diff))} ${diff > 0 ? 'more' : 'less'} on ${notable.category.toLowerCase()} than your 4-week average.${diff > 0 ? ' That came out of Free, not savings, so there’s nothing to fix.' : ''}`
+        : undefined,
     primary: 'Next',
   };
 }
 
 // 07b Habit (first review only) -------------------------------------------------
 
-export function buildHabitView(data: AppData, habit: Cents) {
+const NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+
+/** "the Contoso statement and two bills" — what lands this week (07b). */
+function whatLands(due: readonly { kind: 'bill' | 'statement'; name: string }[]): string {
+  const statements = due
+    .filter((o) => o.kind === 'statement')
+    .map((o) => `the ${shortBank(o.name)} statement`);
+  const bills = due.filter((o) => o.kind === 'bill').length;
+  const billWords = bills
+    ? `${NUMBER_WORDS[bills] ?? bills} ${bills === 1 ? 'bill' : 'bills'}`
+    : undefined;
+  return listNames([...statements, ...(billWords ? [billWords] : [])]);
+}
+
+export function buildHabitView(data: AppData) {
   const t = weeklyTransfer(data);
-  const diff = t.total - habit;
+  const lands = whatLands(t.due);
   return {
-    title: 'How much do you usually move to checking?',
-    note:
-      diff === 0
-        ? `This week needs ${formatDollars(t.total)}, the same as usual.`
-        : `This week needs ${formatDollars(t.total)} — ${formatDollars(Math.abs(diff))} ${diff > 0 ? 'more' : 'less'} than usual.`,
-    primary: 'Looks right · Next',
+    title: 'How much do you usually move?',
+    subtitle: 'First review only. After this, Annum starts from your habit and suggests changes.',
+    helper: 'From savings to checking.',
+    note: lands
+      ? `Next, we’ll check it against this week: ${lands} ${t.due.length === 1 ? 'lands' : 'land'}, so you’ll likely need about ${formatDollars(t.total)}.`
+      : `Next, we’ll check it against this week. Nothing big is due, so you’ll likely need about ${formatDollars(t.total)}.`,
+    primary: 'Continue',
   };
 }
 
@@ -205,71 +266,91 @@ export function buildMoveView(data: AppData, amountOverride?: Cents) {
   const t = weeklyTransfer(data);
   const amount = amountOverride ?? t.total;
   const perDay = availableToSpend(data).perDay;
+  const names = [
+    ...t.due.filter((o) => o.kind === 'bill').map((o) => o.name),
+    ...t.due.filter((o) => o.kind === 'statement').map((o) => `${shortBank(o.name)} statement`),
+  ];
+  const billsTotal = t.due.reduce((s, o) => s + o.amount, 0);
   const rows = [
-    ...t.due.map((o) => ({
-      title: o.kind === 'statement' ? `${o.name} statement` : o.name,
-      subtitle: `Due ${formatShortDate(o.due)}`,
-      value: formatDollars(o.amount),
-    })),
+    ...(t.due.length
+      ? [
+          {
+            title: 'Bills due this week',
+            subtitle: names.join(', '),
+            value: formatDollars(billsTotal),
+          },
+        ]
+      : []),
     {
-      title: 'Spending for 7 days',
-      subtitle: `${formatDollars(perDay)} × 7`,
+      title: 'Weekly spending',
+      subtitle: `About ${formatDollars(perDay)} a day for a week`,
       value: formatDollars(t.spending),
     },
   ];
-  const biggest = [...t.due].sort((a, b) => b.amount - a.amount)[0];
   const checking = data.accounts.find((a) => a.type === 'checking');
   const bank = bankFor(checking?.name ?? 'your bank');
+  const close = t.habit > 0 && Math.abs(t.difference) <= t.habit * 0.1;
   return {
+    title: 'Move money to checking',
     amount,
-    comparison: `You usually move ${formatDollars(t.habit)}. This week needs ${formatDollars(t.total)}.`,
+    comparison: close
+      ? `You usually move ${formatDollars(t.habit)}. This week needs about the same.`
+      : `You usually move ${formatDollars(t.habit)}. This week needs ${formatDollars(Math.abs(t.difference))} ${t.difference > 0 ? 'more' : 'less'}.`,
     rows,
-    aboveHabit:
-      t.difference > 0
-        ? `That's ${formatDollars(t.difference)} more than usual${
-            biggest
-              ? ` — the ${biggest.kind === 'statement' ? `${biggest.name} statement` : biggest.name} (${formatDollars(biggest.amount)}) is due ${formatShortDate(biggest.due)}`
-              : ''
-          }.`
-        : undefined,
     bank,
+    note: `Move it in ${bank.name}, then come back. We’ll show it as pending until it arrives.`,
     openLabel: bank.url ? `Open ${bank.name} to move it` : undefined,
-    howTo: bank.url
-      ? undefined
-      : `Move it in ${bank.name}'s app, then come back and tap "I already moved it".`,
     movedLabel: 'I already moved it',
   };
 }
 
 // 08 Week reviewed -------------------------------------------------------------
 
+const usualLine = (amount: Cents, average: Cents, label: string) =>
+  label === 'about usual'
+    ? 'About the same as usual'
+    : `${formatDollars(Math.abs(amount - average))} ${label}`;
+
 export function buildDoneView(data: AppData, pending: PendingTransfer | null) {
   const report = weekReport(data);
   const bar = spendBar(report.spent, report.allowance);
   const ats = availableToSpend(data);
+  const income = ats.nextIncome;
+  const days = `${ats.days} ${ats.days === 1 ? 'day' : 'days'}`;
+  const checking = data.accounts.find((a) => a.type === 'checking');
   return {
-    title: `You spent ${formatDollars(report.spent)}`,
+    title: 'Week reviewed',
+    subtitle: 'Here’s the short version.',
+    spentLabel: 'You spent',
+    spent: formatDollars(report.spent),
     bar,
     barLabel:
       bar.over > 0
-        ? `${formatDollars(bar.over)} over your ${formatDollars(report.allowance)} allowance`
-        : `${formatDollars(bar.left)} left of your ${formatDollars(report.allowance)} allowance`,
+        ? `${formatDollars(bar.over)} over your ${formatDollars(report.allowance)} weekly amount. Free covered it, so your savings weren’t touched.`
+        : `${formatDollars(bar.left)} left of your ${formatDollars(report.allowance)} weekly amount.`,
     categories: report.topCategories.map((c) => ({
       title: c.category,
-      subtitle: `${c.label} · usually ${formatDollars(c.average)}`,
+      subtitle: usualLine(c.amount, c.average, c.label),
       value: formatDollars(c.amount),
     })),
     left: [
       {
+        bucket: 'free' as const,
         title: 'Free to spend',
-        subtitle: `About ${formatDollars(ats.perDay)} a day`,
+        subtitle:
+          income.kind === 'none'
+            ? 'Over the next 30 days'
+            : income.kind === 'paycheck'
+              ? `${days} until payday on ${formatShortDate(income.date)}`
+              : `${days} until your ${formatShortDate(income.date)} invoice`,
         value: formatDollars(ats.display),
       },
       ...(pending
         ? [
             {
-              title: 'Moving to checking',
-              subtitle: 'Pending until it shows up in checking',
+              bucket: 'none' as const,
+              title: 'Move to checking',
+              subtitle: `Pending until it shows up in ${bankFor(checking?.name ?? 'checking').name}`,
               value: formatDollars(pending.amount),
             },
           ]
@@ -487,7 +568,8 @@ export function buildTransactionDetail(
 ) {
   const t = data.transactions.find((x) => x.id === id);
   if (!t) return undefined;
-  const account = data.accounts.find((a) => a.id === t.accountId)?.name;
+  const name = data.accounts.find((a) => a.id === t.accountId)?.name;
+  const account = name ? shortBank(name) : undefined;
   const category = t.category ?? t.suggestedCategory ?? 'Other';
   const categories = [
     ...new Set([category, ...(t.suggestedCategory ? [t.suggestedCategory] : []), ...CATEGORIES]),
@@ -497,7 +579,12 @@ export function buildTransactionDetail(
     id: t.id,
     merchant: t.merchant,
     amount: formatLedgerCents(t.amount),
-    meta: [formatShortDate(t.date), account, t.pending ? 'Pending' : undefined]
+    // S9 (Figma 99:1244): "Mon, Sep 21 · Contoso".
+    meta: [
+      weekdayShort.format(new Date(`${t.date}T00:00:00Z`)),
+      account,
+      t.pending ? 'Pending' : undefined,
+    ]
       .filter(Boolean)
       .join(' · '),
     category,

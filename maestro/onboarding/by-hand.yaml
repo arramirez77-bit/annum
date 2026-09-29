@@ -62,7 +62,7 @@ name: Onboarding by hand, restart, Delete everything
       id: 'today'
     timeout: 30000
 - assertVisible: 'You can spend about \$3,800 until your next invoice on .*'
-- assertVisible: '.*~6 mo.*'
+- assertVisible: 'Runway, About 6 months, Estimated from your accounts'
 
 # Delete everything, then a cold start shows Welcome.
 - tapOn:

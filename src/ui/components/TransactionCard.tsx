@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { formatCents, type Cents } from '@/domain';
+import { formatLedgerCents, type Cents } from '@/domain';
 import { color, radius, space } from '@/theme';
 
 import { Chip } from './Chip';
@@ -22,7 +22,7 @@ interface TransactionCardProps {
   testID?: string;
 }
 
-/** Merchant, date · card, amount, then chips: 2 suggestions + Tax last. */
+/** Merchant, date · bank, amount, then chips: 2 suggestions + Work expense last (Figma 56:61). */
 export function TransactionCard({
   merchant,
   dateLabel,
@@ -47,17 +47,17 @@ export function TransactionCard({
     >
       <View
         accessible
-        accessibilityLabel={`${merchant}, ${formatCents(amount)}, ${dateLabel}, ${accountName}`}
+        accessibilityLabel={`${merchant}, ${formatLedgerCents(amount)}, ${dateLabel}, ${accountName}`}
         style={{ flexDirection: 'row', gap: space[12] }}
       >
         <View style={{ flex: 1, gap: space[2] }}>
-          <Text variant="headline">{merchant}</Text>
+          <Text variant="bodyMedium">{merchant}</Text>
           <Text variant="footnote" tone="secondary">
             {`${dateLabel} · ${accountName}`}
           </Text>
         </View>
         <Text variant="headline" money>
-          {formatCents(amount)}
+          {formatLedgerCents(amount)}
         </Text>
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[8] }}>
@@ -70,7 +70,9 @@ export function TransactionCard({
             onPress={() => onSelectCategory(category)}
           />
         ))}
-        {onToggleTax ? <Chip kind="tax" label="Tax" selected={tax} onPress={onToggleTax} /> : null}
+        {onToggleTax ? (
+          <Chip kind="tax" label="Work expense" selected={tax} onPress={onToggleTax} />
+        ) : null}
       </View>
     </View>
   );

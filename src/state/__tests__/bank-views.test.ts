@@ -61,7 +61,8 @@ describe('bank words', () => {
   it('E4 says nothing was saved or used', () => {
     expect(DIDNT_CONNECT).toEqual({
       title: 'That bank didn’t connect',
-      body: 'Nothing was saved and no connection was used.',
+      body: 'Nothing was saved, and nothing is wrong with your account. Some banks need a second try, and a few aren’t supported yet. No bank login was used.',
+      note: 'If it keeps happening, import a file from your bank’s website instead. It takes about a minute.',
       action: 'retry',
     });
   });

@@ -66,7 +66,7 @@ name: Deposit split
     element: 'Savings, \$29,100'
     direction: UP
     timeout: 10000
-- assertVisible: 'Tax, \$5,500\. .*'
+- assertVisible: 'Taxes, \$5,500\. .*'
 - assertVisible: 'Free, \$4,300\. .*'
 - scrollUntilVisible:
     element: 'Moved \$2,300 to Fabrikam Invest, \$2,300, .* · Pending until it leaves Savings'

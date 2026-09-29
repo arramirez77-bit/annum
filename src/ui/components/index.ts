@@ -17,6 +17,7 @@ export { LedgerRow } from './LedgerRow';
 export { Mark, Wordmark } from './Mark';
 export { OptionCard } from './OptionCard';
 export { OptionRow } from './OptionRow';
+export { NumberedSteps, StepLabel } from './NumberedSteps';
 export { ProfileButton } from './ProfileButton';
 export { ScreenPlaceholder } from './ScreenPlaceholder';
 export { ScreenScroll } from './ScreenScroll';

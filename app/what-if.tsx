@@ -6,22 +6,24 @@ import { formatDollars, type Cents } from '@/domain';
 import { useWhatIfView } from '@/state/hooks';
 import { useAppStore } from '@/state/store';
 import { color, layout, space } from '@/theme';
-import { AmountInput, Button, GuardrailNote, HeaderButton, LedgerRow } from '@/ui/components';
+import { AmountInput, Button, GuardrailNote, HeaderButton, LedgerRow, Text } from '@/ui/components';
 import { useCountUp } from '@/ui/motion';
 
-// 10 fits · 11 guardrail. docs/05.
+// 10 fits · 11 guardrail (Figma 60:416, 60:463). docs/05.
 export default function WhatIfScreen() {
   const [amount, setAmount] = useState<Cents | null>(null);
   const [inputKey, setInputKey] = useState(0);
   const v = useWhatIfView(amount);
   const deferPurchase = useAppStore((s) => s.deferPurchase);
   const free = useCountUp(v.rows[0].amount ?? 0);
-  const perDay = useCountUp(v.rows[1].amount ?? 0);
-  const values: Record<string, string> = {
-    free: formatDollars(free),
-    'per-day': formatDollars(perDay),
-    runway: v.rows[2].value,
-  };
+  const perDay = useCountUp(v.rows.find((r) => r.id === 'per-day')?.amount ?? 0);
+  // Free to spend and per day count; the other values show as they are.
+  const valueOf = (row: (typeof v.rows)[number]) =>
+    row.id === 'free'
+      ? formatDollars(free)
+      : row.id === 'per-day'
+        ? formatDollars(perDay)
+        : row.value;
 
   const onPrimary = () => {
     if (v.guardrail && amount && v.waitUntil) deferPurchase(amount, v.waitUntil);
@@ -40,7 +42,7 @@ export default function WhatIfScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'What would this do?',
+          title: '',
           headerLeft: () => (
             <HeaderButton label="Cancel" onPress={() => router.back()} testID="what-if-cancel" />
           ),
@@ -48,28 +50,32 @@ export default function WhatIfScreen() {
       />
       <ScrollView
         style={{ backgroundColor: color.bgBase }}
-        contentContainerStyle={{ padding: layout.screenMargin, gap: space[24] }}
+        contentContainerStyle={{ padding: layout.screenMargin, gap: space[20] }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         automaticallyAdjustKeyboardInsets
         testID="what-if"
       >
+        <Text variant="title2" accessibilityRole="header">
+          What would this do?
+        </Text>
         <AmountInput
           key={inputKey}
           label="If I spend"
           valueCents={amount}
           onChangeCents={setAmount}
+          helper={v.helper}
           autoFocus
           testID="what-if-amount"
         />
         <View>
-          {v.rows.map((row, i) => (
+          {v.rows.map((row) => (
             <LedgerRow
               key={row.id}
               surface="dark"
               title={row.title}
-              value={values[row.id]}
-              last={i === v.rows.length - 1}
+              subtitle={row.subtitle}
+              value={valueOf(row)}
               testID={`what-if-row-${row.id}`}
             />
           ))}
@@ -78,7 +84,7 @@ export default function WhatIfScreen() {
           {v.note}
         </GuardrailNote>
         {!v.empty ? (
-          <View style={{ gap: space[8] }}>
+          <View style={{ gap: space[20] }}>
             <Button
               variant="primary"
               label={v.primary}

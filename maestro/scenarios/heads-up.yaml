@@ -6,8 +6,10 @@ name: Scenario heads-up
     env:
       SCENARIO: heads-up
 - extendedWaitUntil:
-    visible: 'You can spend \$200 until your next invoice on Oct 13\. About \$10 a day\. The Contoso Card statement \(\$500\) lands before your invoice does\.'
+    visible: 'You can spend \$200 until Oct 13\. The Contoso statement lands before your invoice does\.'
     timeout: 5000
 - assertVisible: 'Status: Heads up'
+- assertVisible: 'Contoso statement, \$500, Due Sep 28 · paying in full avoids interest'
+- assertVisible: 'Runway stays, 4\.2 months, If you pay it from Free, not savings'
 - assertVisible: 'See what I can move'
 - takeScreenshot: scenario-heads-up

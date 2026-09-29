@@ -14,9 +14,9 @@ app/
     connect.tsx                O3 Connect (Plaid Link) · E4 bank didn't connect (Step 2 of 2)
     accounts.tsx               O4 Accounts found (+ add brokerage/loan by hand)
     face-id.tsx                O4b Keep it private with Face ID
-    reminders.tsx              O4c Want a nudge on Sundays? → Today (estimate)
+    reminders.tsx              O4c Want a few reminders? → Today (estimate)
   (tabs)/
-    _layout.tsx                Native tabs: Today · Review · Money
+    _layout.tsx                Native tabs: Today · Review · Money (bar hidden on review steps, S2 Taxes and S9, as in the frames)
     index.tsx                  01 Today (+02 heads-up, O5 estimate, E1 stale, E2 late, P2 salary, 01c compact)
     review/
       _layout.tsx              Stack; progress saved on "Finish later"
@@ -51,32 +51,32 @@ Deep links from notifications: `annum://review/1`, `annum://deposit/{id}`, `annu
 
 ## Screen specs
 
-### 01 Today (`/`)
-- **Header**: "Sep 23 · Updated 7:02 AM" (or "Updated Sep 20" when stale) · StatusPill · settings symbol → `/settings`. The update time is the trust signal — always visible.
-- **Hero**: "You can spend" / `$ATS` (Hero, counts up) / "until your next invoice on {date}. About ${perDay} a day." Salary: "until payday on {date}." Estimate/stale: "You can spend about".
-- **Sheet facts** (LedgerRow light): Runway (bucket dot, months, "Up X this week · ${target} target"), Tax reserve (freelance only, next quarterly date; tap → S2 Taxes), "What would this do?" row → `/what-if`. Mixed lists use BucketDot `none` so titles align.
-- **Button**: Field "Start weekly review" (on-track) · Caution "See what I can move" (heads-up) · "Do my first weekly review" (estimate).
-- **States**: on-track (green field), heads-up (umber, cross-fade 600ms, cause sentence e.g. the Contoso Card statement), estimate (pill "Estimate"), stale (light heads-up GuardrailNote on the sheet), late invoice (umber, "{source} invoice is N days late", per-day stretched, button "See my options"), salary (no tax row).
+### 01 Today (`/`) — Figma 01, 01c, 02, E1, E2, O5, P2 Today
+- **Header**: "Sep 23 · Updated 7:02 AM" (only "Updated Sep 20" when out of date, and only the time on the small screen) · StatusPill · ProfileButton → `/settings`. The update time is the trust signal — always visible.
+- **Hero**: "You can spend" / `$ATS` (Hero, counts up) / "until your next invoice on {date}. About ${perDay} a day." Salary: "until payday on {date}." Estimate/stale: "You can spend about". Heads-up folds the cause into the sentence: "until Oct 13. The Contoso statement lands before your invoice does." / "until Oct 22. The Northwind Studio invoice is 4 days late, so we stretched it."
+- **Sheet facts** (LedgerRow light): Runway ("4.2 months", "Up 0.2 months this week · target 5 months", or "Target 6 months ($15,000)" before a first week), Taxes (freelance only, "Next payment Jan 15"; tap → S2), "Next paycheck" (salary: "Oct 5 · every 2 weeks"), "What would this do?" ("Try a purchase before you buy it") → `/what-if`. Mixed lists use BucketDot `none` so titles align.
+- **Button**: Field "Start weekly review" (on-track) · Caution "See what I can move" (heads-up) · "Start my first review" (estimate) · Caution "Change the invoice date" (late invoice → S4 edit).
+- **States**: on-track (green field); heads-up 02 (umber, cross-fade 600ms; rows: "{card} statement · Due Sep 28 · paying in full avoids interest", "Runway stays · If you pay it from Free, not savings"); estimate O5 ("About 6 months · Estimated from your accounts", Taxes "Not yet · You'll set this when your first deposit lands"); stale E1 (heads-up note "Woodgrove hasn't synced since Sep 20, so this may be off by a few purchases. Tap to reconnect." — taps reconnect the bank or open Import; no What would this do? row); late invoice E2 (rows "{source} invoice · Expected Oct 13 · 4 days late" and "Per day · Stretched to Oct 22"); salary P2 (no tax row).
 - Light TabBar floats over the sheet.
 
-### 03 Money (`/money`)
-- Title "Money", subtitle "Where every dollar in savings is spoken for."
-- Savings total; BucketBar; BucketRow (card) × 5 in fixed order with notes; grouped links "All transactions" → S1, "Taxes · 2026" → S2 (hidden if Tax off).
-- **E3 not split yet**: muted bar, info note showing what a split would look like, Primary "Split my savings now" → deposit split for the unsplit balance.
+### 03 Money (`/money`) — Figma 58:62, E3 70:1119, P2 Money 71:1407
+- Title "Money", subtitle "What your savings are set aside for." (E3: "Your savings aren't split into buckets yet.")
+- Savings total; BucketBar; BucketRow (card) × 5 in fixed order: Taxes "Next payment Jan 15", Bills "6 due in 30 days", Runway "4.2 months · target 5 months", Invest "Starts when Runway is full" (amount in secondary; opens S6 when it holds money), Free "Counts toward what you can spend"; pending invest moves (S6); grouped links "All transactions" → S1, "Taxes · 2026" → S2 (hidden if Tax off).
+- **E3 not split yet**: muted bar, info note "A split could look like this: $3,000 for taxes, $2,000 for bills, $1,000 to spend, and the rest in Runway. That's about 4.2 months.", Primary "Split my savings now".
 
-### Weekly Review (`/review/1…6`)
+### Weekly Review (`/review/1…6`) — Figma 04–08, 07b
 Top bar on every step: Back (not on step 1) · StepIndicator · "Finish later" (saves progress, returns to Today).
-1. **04 Balances**: LedgerRows per account (synced time or "Entered by hand"); heads-up note for manual accounts; Primary "Looks right". Tap a manual account to edit its balance.
-2. **05 Tag**: "12 new this week. We've guessed each category…"; TransactionCards with the suggested category **pre-selected**; Tax chip last; Primary "Looks right · Next". Corrections write merchant rules.
-3. **06 What changed**: three stacked delta cards (Free to spend, Runway, Tax reserve) with bucket dots, big values, one-line deltas; an info note for the week's notable change.
-4. **07b Habit** (first review only): AmountInput "I usually move" + SegmentedControl cadence; info note previewing this week's suggestion.
-5. **07 Move money**: "Move" / `$suggestion` (Display) / "from savings to checking." + "Change amount"; breakdown LedgerRows; heads-up note when above habit; Primary "Open {bank} to move it" (`Linking.openURL` to the bank app if installed, else its website), Secondary "I already moved it" → marks transfer **pending**.
-6. **08 Week reviewed** (scrolls): "You spent $X" (Display) + spent-vs-allowance bar (Free segment + heads-up overflow); "Where it went" top 3 categories vs usual; "What's left": Free to spend + pending transfer row; "Next review Sunday, Sep 27. We'll remind you." (local notification); Primary "Done". Sets `isEstimate=false` after the first completion.
+1. **04 Check your balances**: "Synced this morning at 7:02. Anything that didn't connect is marked."; LedgerRows ("Synced 7:02 AM", "Synced 7:02 AM · split into buckets", "Statement due Sep 28", "Entered by hand · updated Sep 1"); heads-up note "… are entered by hand. Tap one to update it if the balance changed."; Primary "Looks right".
+2. **05 What were these?**: "12 new this week. We guessed a category for each one. Fix any that are wrong, and tap Work expense for anything you bought for work."; TransactionCards ("Mon Sep 21 · Contoso", unsigned amount) with the suggestion **pre-selected** and the Work expense chip last; Primary "Looks right". Corrections write merchant rules.
+3. **06 Your week** ("What changed since last Sunday."): delta cards Free to spend ("Down $400 this week"), Runway ("Up 0.2 months"), Taxes ("On track for Jan 15"); info note "You spent $50 more on dining than your 4-week average. That came out of Free, not savings, so there's nothing to fix."
+4. **07b How much do you usually move?** (first review only; "First review only. After this, Annum starts from your habit and suggests changes."): AmountInput "I usually move" ("From savings to checking.") + cadence; note "Next, we'll check it against this week: the Contoso statement and two bills land, so you'll likely need about $1,050."; Primary "Continue".
+5. **07 Move money to checking** ("You usually move $1,000. This week needs about the same."): "Move" / `$suggestion` (Display) / "from savings to checking." + "Change amount"; rows "Bills due this week" (names) and "Weekly spending · About $50 a day for a week"; info note "Move it in {bank}, then come back. We'll show it as pending until it arrives."; Primary "Open {bank} to move it" (known banks), Secondary/Primary "I already moved it" → marks transfer **pending**.
+6. **08 Week reviewed** ("Here's the short version."): "You spent" / $X (Display) + bar ("$50 over your $350 weekly amount. Free covered it, so your savings weren't touched."); "Where it went" ("$50 more than usual", "About the same as usual"); "What's left": Free to spend ("20 days until your Oct 13 invoice") + "Move to checking · Pending until it shows up in {bank}"; "Next review Sunday, Sep 27. We'll remind you."; Primary "Done". Sets `isEstimate=false` after the first completion.
 
-### 10–11 What would this do? (`/what-if`)
-- Cancel; title; AmountInput (focused, numeric keypad) "If I spend"; result LedgerRows (Free to spend, per day, Runway) recompute on every keystroke with count-up.
-- **Fits**: info note; Primary "Got it", Quiet "Try another amount".
-- **Guardrail** (Runway would drop): heads-up note naming the wait-until date; Primary "Wait until {date}" (creates a DeferredPurchase), Quiet "Buy anyway".
+### 10–11 What would this do? (`/what-if`) — Figma 60:416, 60:463
+- Cancel; Title 2; AmountInput "If I spend" ("Nothing is saved. This is only a preview."); result rows recompute on every keystroke with count-up.
+- **Fits**: "Free to spend · Was $1,000", "Per day until Oct 13 · Was $50", "Runway · Unchanged"; info "This fits. It comes out of Free, and your savings stay where they are."; Primary "Got it", Quiet "Try another amount".
+- **Guardrail**: "Free to spend", "Runway · The rest would come from savings", "Your Runway target · $15,000 · 5 months"; heads-up "… Your invoice lands Oct 13, and if you wait until then, your savings stay whole. We'll ask you again when it lands." (S7); Primary "Wait until {date}" (creates a DeferredPurchase), Quiet "Buy anyway".
 
 ### O6 + 09 Deposit (`/deposit/:id/setup`, `/deposit/:id`)
 - **O6** (first deposit only): SegmentedControl tax % (25/30/35), SegmentedControl Runway target (3/5/6 months × monthlySpend); info note with live consequence; Primary "See the split".
@@ -84,11 +84,12 @@ Top bar on every step: Back (not on step 1) · StepIndicator · "Finish later" (
 
 ### Onboarding
 - **O1 Welcome**: mark, wordmark, "Money, by the year.", three promises with bucket dots, Primary "Get started", Quiet "How your data stays private", "About 3 minutes. Every step can be skipped." 
-- **O2 Income type** (Step 1 of 2): OptionCards Freelance · Salary · Both → sets `incomeType` and modules.
-- **O3 Connect** (Step 2 of 2): numbered steps (Choose your bank → Sign in on your bank's secure page → Accounts appear), privacy note ("Free and read-only…"); Primary "Connect a bank" (Plaid Link), Secondary "Import a file from my bank" → S11, Quiet "Enter balances by hand". Before Link opens, a confirmation names the cost in connections: "This uses 1 of your 10 bank connections. 7 left for both phones." (see **Bank connections** below). **E4**: "That bank didn't connect" — nothing was saved and no connection was used; Primary "Try again", Quiet "Import a file instead".
-- **O4 Accounts found**: LedgerRows; brokerage and loans marked "entered by hand" / "tap to add balance" (→ S10); Secondary "Add another bank" (same confirmation as O3); Primary "Continue".
+- **Header**: Back · "Step N of 4" · Skip (O2 1, O3/O4 2, O4b 3, O4c 4). Skip does what the quiet choice does: O2 keeps freelance, O3 enters balances by hand (hidden once a bank connects), O4 continues, O4b and O4c are "Not now".
+- **O2 How do you get paid?** ("This decides which parts of Annum you'll see. You can change it later."): OptionCards Freelance ("Money comes in from invoices, at different times. You'll also get a Taxes bucket.") · Salary ("A paycheck with taxes already taken out.") · Both ("A paycheck plus freelance work on the side.") → `incomeType` and modules.
+- **O3 Connect your banks** ("Annum uses Plaid, a secure bank connection, to read your balances and transactions. It can see your money but can never move it."): numbered steps (Choose your bank · Most US banks and credit unions → Sign in on your bank's secure page · Annum never sees your password → Your accounts appear here · Balances and up to two years of history), note "Free and read-only. Annum keeps your data on this phone. Plaid holds your bank connection so it can sync."; Primary "Connect a bank" (Plaid Link), Secondary "Import a file" → S11, Quiet "Enter a balance by hand". Before Link opens, a confirmation names the cost in connections: "This uses 1 of your 10 bank connections. 7 left for both phones." (see **Bank connections** below). **E4** (71:953): "That bank didn't connect", "Nothing was saved, and nothing is wrong with your account. Some banks need a second try, and a few aren't supported yet. No bank login was used." + heads-up "If it keeps happening, import a file from your bank's website instead. It takes about a minute."; Primary "Try again", Quiet "Import a file instead".
+- **O4 {n} accounts connected** ("From Woodgrove and Contoso. Investment accounts and loans usually don't connect, so add those by hand." — the banks that connected; the sample bank has no names): LedgerRows "Checking · connected", "Brokerage · entered by hand", "Loan · tap to add balance" / "Add" (→ S10); Secondary "Add another bank" (same confirmation as O3); monthly spending; Primary "Continue".
 - **O4b Face ID**: lock symbol, "Keep it private with Face ID", passcode-fallback note; Primary "Turn on Face ID", Quiet "Not now".
-- **O4c Reminders**: the four reminder types with timing; Primary "Turn on reminders" (system permission prompt), Quiet "Not now" → Today in estimate state.
+- **O4c Want a few reminders?** ("Annum only reminds you when something needs you. You can change these later in Settings."): Weekly review ("Sundays at 10 AM. Takes about 10 minutes."), Card statements ("Two days before they're due"), Quarterly taxes ("A week before each payment"), Deposits and late invoices ("When money lands or an invoice is late"); Primary "Turn on reminders" (system permission prompt), Quiet "Not now" → Today in estimate state.
 
 ### Supporting
 - **S1 Transactions** (Figma 64:656): Title 1; filters All · "Needs a tag · N" · "Work expense" (Tax chip, hidden when Tax is off); grouped by day ("Today", "Yesterday", weekday this past week, then "Sep 14"); LedgerRows without chevrons (merchant, "Category · Work expense · Account", "$80.00" spent / "+$5,000.00" received). Tap → S9. Quiet "Add one by hand" (no frame, kept). **For one account** (from a Settings account row): the account's name as the title, its transactions only, no account name on rows. **E5 none yet** (Figma 71:992): "No transactions yet. They show up after your first sync, usually within an hour of connecting a bank." + Secondary "Import a file".

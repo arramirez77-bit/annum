@@ -1,4 +1,4 @@
-import { router, Stack } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -15,14 +15,20 @@ import {
   TextField,
 } from '@/ui/components';
 
-// S4 Add expected income (modal). docs/05.
+// S4 Add expected income (modal); `edit=<id>` changes one (E2 "Change the invoice date"). docs/05.
 export default function AddIncome() {
+  const { edit } = useLocalSearchParams<{ edit?: string }>();
   const addExpectedIncome = useAppStore((s) => s.addExpectedIncome);
+  const updateExpectedIncome = useAppStore((s) => s.updateExpectedIncome);
+  const existing = useAppStore((s) => s.data.expectedIncome.find((i) => i.id === edit));
   const today = localISODate(new Date());
-  const [amount, setAmount] = useState<Cents | null>(null);
+  const [amount, setAmount] = useState<Cents | null>(existing?.amount ?? null);
   const helper = useAppStore((s) => incomeHelper(s.data, amount));
-  const [source, setSource] = useState('');
-  const [date, setDate] = useState(addDays(today, 14));
+  const [source, setSource] = useState(existing?.source ?? '');
+  // A late invoice's date has passed: start from a week out.
+  const [date, setDate] = useState(
+    existing && existing.date > today ? existing.date : addDays(today, existing ? 7 : 14),
+  );
 
   return (
     <>
@@ -37,10 +43,12 @@ export default function AddIncome() {
       {/* S4 (Figma 65:764). */}
       <ScreenScroll testID="add-income" fill>
         <Text variant="title2" accessibilityRole="header">
-          Add expected income
+          {existing ? 'Change expected income' : 'Add expected income'}
         </Text>
         <Text variant="callout" tone="secondary">
-          Add it when you send the invoice. Your daily amount will last until the day it arrives.
+          {existing
+            ? 'Move the date to when you now expect it. Your daily amount will last until then.'
+            : 'Add it when you send the invoice. Your daily amount will last until the day it arrives.'}
         </Text>
         <AmountInput
           label="Amount"
@@ -66,16 +74,18 @@ export default function AddIncome() {
         <View style={{ flex: 1 }} />
         <Button
           variant="primary"
-          label="Add income"
+          label={existing ? 'Save changes' : 'Add income'}
           disabled={!amount}
           onPress={() => {
             if (!amount) return;
-            addExpectedIncome({
-              id: newRecordId('income'),
+            const income = {
+              id: existing?.id ?? newRecordId('income'),
               source: source.trim() || 'Client',
               amount,
               date,
-            });
+            };
+            if (existing) updateExpectedIncome({ ...existing, ...income });
+            else addExpectedIncome(income);
             router.back();
           }}
           testID="income-add"
