@@ -5,7 +5,7 @@ export { BucketBar, type BarSegment } from './BucketBar';
 export { BucketDot } from './BucketDot';
 export { BucketRow } from './BucketRow';
 export { Button, type ButtonVariant } from './Button';
-export { Chip } from './Chip';
+export { Chip, CHIP_TOUCH_SLOP } from './Chip';
 export { CloseButton } from './CloseButton';
 export { DateField, TimeField } from './DateField';
 export { DeltaCard } from './DeltaCard';

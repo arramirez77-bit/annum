@@ -19,9 +19,34 @@ const targetMonthsOf = (data: AppData) =>
     ? Math.round(data.settings.runwayTarget / data.settings.monthlySpend)
     : 0;
 
-/** Where invested money goes: the first brokerage account, if Annum tracks one. */
-export function investDestination(data: AppData) {
-  const account = data.accounts.find((a) => a.type === 'brokerage');
+/** The investment accounts S6 can mark a move to (brokerage type), in Settings order. */
+export function investAccounts(data: AppData, connections: readonly BankConnection[] = []) {
+  return data.accounts
+    .filter((a) => a.type === 'brokerage')
+    .map((a) => {
+      const bank = a.itemId && connections.find((c) => c.itemId === a.itemId);
+      return {
+        id: a.id,
+        name: a.name,
+        detail:
+          a.source === 'manual'
+            ? 'Entered by hand'
+            : a.source === 'import'
+              ? 'From a file'
+              : bank
+                ? `Connected · ${bank.institution}`
+                : 'Connected',
+      };
+    });
+}
+
+/**
+ * Where invested money goes: the chosen investment account (S6 asks when there are two or
+ * more, Andy 2026-09-29), else the only or first one, if Annum tracks one.
+ */
+export function investDestination(data: AppData, chosenId?: string) {
+  const brokerage = data.accounts.filter((a) => a.type === 'brokerage');
+  const account = brokerage.find((a) => a.id === chosenId) ?? brokerage[0];
   return account
     ? { name: account.name, accountId: account.id, byHand: account.source === 'manual' }
     : { name: 'your investment account', accountId: undefined, byHand: false };
@@ -35,13 +60,17 @@ export function savingsSource(data: AppData, connections: readonly BankConnectio
   return bank ? bank.institution : savings.name;
 }
 
-/** S6 (Figma 65:829). `afterDeposit`: opened right after a split filled Runway. */
-export function buildInvestView(data: AppData, afterDeposit: boolean) {
+/**
+ * S6 (Figma 65:829). `afterDeposit`: opened right after a split filled Runway. `chosenId`: the
+ * investment account picked on S6 when there are two or more.
+ */
+export function buildInvestView(data: AppData, afterDeposit: boolean, chosenId?: string) {
   const amount = data.buckets.invest;
   const target = data.settings.runwayTarget;
   const full = target > 0 && data.buckets.runway >= target;
   const months = targetMonthsOf(data);
-  const destination = investDestination(data);
+  const destination = investDestination(data, chosenId);
+  const choose = data.accounts.filter((a) => a.type === 'brokerage').length > 1;
   return {
     empty: amount <= 0,
     label: full ? 'Runway is full' : 'Ready to invest',
@@ -68,8 +97,12 @@ export function buildInvestView(data: AppData, afterDeposit: boolean) {
       },
     ],
     note: `Annum doesn’t pick investments. Move it in ${destination.name}, then mark it here so your buckets stay accurate.`,
+    /** Two or more investment accounts: S6 asks which one it went to. */
+    choose: choose ? 'Where did you move it?' : undefined,
+    destination,
     primary: 'I moved it',
     quiet: 'Remind me tomorrow',
+    reminder: `Move it in ${choose ? 'your investment account' : destination.name}, then mark it in Annum.`,
   };
 }
 

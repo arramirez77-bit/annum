@@ -1,11 +1,11 @@
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { buildTransactionsView, type TransactionFilter } from '@/state/review-views';
 import { useAppStore } from '@/state/store';
-import { space } from '@/theme';
-import { Button, Chip, LedgerRow, ScreenScroll, Text } from '@/ui/components';
+import { layout, space } from '@/theme';
+import { Button, Chip, CHIP_TOUCH_SLOP, LedgerRow, ScreenScroll, Text } from '@/ui/components';
 import { pushedHeader } from '@/ui/navigation';
 
 /**
@@ -34,7 +34,25 @@ export function TransactionsList({
           {v.title}
         </Text>
         {none ? null : (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[8] }}>
+          // One line that scrolls sideways at large text or on an SE (Andy, 2026-09-29), edge to
+          // edge; the vertical padding keeps each chip's 44pt target inside the clipping scroll.
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{
+              marginHorizontal: -layout.screenMargin,
+              marginVertical: -CHIP_TOUCH_SLOP,
+              flexGrow: 0,
+            }}
+            contentContainerStyle={{
+              gap: space[8],
+              paddingHorizontal: layout.screenMargin,
+              paddingVertical: CHIP_TOUCH_SLOP,
+            }}
+            accessibilityRole="radiogroup"
+            accessibilityLabel="Filter transactions"
+            testID="txn-filters"
+          >
             {v.filters.map((f) => (
               <Chip
                 key={f.value}
@@ -45,7 +63,7 @@ export function TransactionsList({
                 testID={`filter-${f.value}`}
               />
             ))}
-          </View>
+          </ScrollView>
         )}
         {v.empty ? (
           <Text variant="callout" tone="secondary" testID="transactions-empty">

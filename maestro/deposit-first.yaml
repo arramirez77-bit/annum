@@ -10,8 +10,9 @@ name: First split
 - tapOn:
     id: 'split-now'
 - extendedWaitUntil:
-    visible: 'Before your first split'
+    visible: 'Before we split your savings'
     timeout: 8000
+- assertVisible: 'Two quick choices\. You can change both later in Settings\.'
 - assertVisible: '\$4,500 goes to taxes\. Your Runway target becomes \$15,000\. \$12,600 of your savings goes toward it\.'
 - tapOn:
     id: 'setup-continue'

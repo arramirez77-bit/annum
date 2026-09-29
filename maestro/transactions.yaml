@@ -1,0 +1,50 @@
+# S1: the filter chips sit on one line that scrolls sideways (Andy, 2026-09-29), and each one
+# still takes a tap.
+appId: com.highdesert.annum
+name: Transactions filters
+---
+- runFlow:
+    file: common/open-scenario.yaml
+    env:
+      SCENARIO: on-track
+- tapOn: 'Money'
+- scrollUntilVisible:
+    element:
+      id: 'open-transactions'
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: 'open-transactions'
+- extendedWaitUntil:
+    visible:
+      id: 'txn-filters'
+    timeout: 5000
+- assertVisible:
+    id: 'filter-all'
+    selected: true
+- tapOn:
+    id: 'filter-untagged'
+- assertVisible:
+    id: 'filter-untagged'
+    selected: true
+- assertVisible:
+    id: 'filter-all'
+    selected: false
+- tapOn:
+    id: 'filter-tax'
+# The Work expense chip is a checkbox; Maestro reads its state from the label, not `checked`.
+- assertVisible:
+    id: 'filter-tax'
+    text: 'checkbox, checked'
+- assertVisible:
+    id: 'filter-untagged'
+    selected: false
+- takeScreenshot: transactions-filters
+- tapOn:
+    id: 'filter-all'
+- assertVisible:
+    id: 'filter-all'
+    selected: true
+- assertNotVisible:
+    id: 'filter-tax'
+    text: 'checkbox, checked'

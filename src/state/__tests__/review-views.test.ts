@@ -185,15 +185,24 @@ describe('Deposit split views', () => {
   });
 
   test('O6 setup: live consequence sentence', () => {
+    // From E3 (Andy, 2026-09-29): a savings version, with the savings' own numbers.
     const v = buildSetupView(data('first-run'), 0.3, 5);
+    expect(v.title).toBe('Before we split your savings');
+    expect(v.subtitle).toBe('Two quick choices. You can change both later in Settings.');
     expect(v.note).toBe(
       '$4,500 goes to taxes. Your Runway target becomes $15,000. $12,600 of your savings goes toward it.',
     );
     expect(v.target).toBe(1500000);
+    expect(buildSetupView(data('first-run'), 0.3, 3).note).toBe(
+      '$4,500 goes to taxes. Your Runway target becomes $9,000. $12,600 of your savings goes to it, so it’s full.',
+    );
     // A landed deposit (Figma 70:981's own example).
     const d = data('on-track');
     const deposit = buildSetupView(d, 0.3, 5, d.pendingDeposit!.id);
     expect(deposit.title).toBe('Your first deposit: $10,000');
+    expect(deposit.subtitle).toBe(
+      'Two quick choices before we split it. You can change both later in Settings.',
+    );
     expect(deposit.note).toBe(
       '$3,000 goes to taxes. Your Runway target becomes $15,000. You’re at $12,600, so $2,400 of this fills it.',
     );

@@ -464,11 +464,13 @@ export function buildSetupView(
     id,
   );
   const now = data.buckets.runway;
+  const unsplit = id === 'unsplit';
+  // From E3 (Andy, 2026-09-29): the savings' own numbers, never a deposit's.
   const runwayLine = !split
     ? ''
-    : id === 'unsplit'
+    : unsplit
       ? split.runway >= target
-        ? ' Your savings cover it.'
+        ? ` ${formatDollars(split.runway)} of your savings goes to it, so it’s full.`
         : ` ${formatDollars(split.runway)} of your savings goes toward it.`
       : now >= target
         ? ` You’re at ${formatDollars(now)}, so it’s already full.`
@@ -476,11 +478,14 @@ export function buildSetupView(
   const taxLine =
     taxes && split && split.tax > 0 ? `${formatDollars(split.tax)} goes to taxes. ` : '';
   return {
-    title:
-      id !== 'unsplit' && deposit !== undefined
+    title: unsplit
+      ? 'Before we split your savings'
+      : deposit !== undefined
         ? `Your first deposit: ${formatDollars(deposit)}`
         : 'Before your first split',
-    subtitle: 'Two quick choices before we split it. You can change both later in Settings.',
+    subtitle: unsplit
+      ? 'Two quick choices. You can change both later in Settings.'
+      : 'Two quick choices before we split it. You can change both later in Settings.',
     showTax: taxes,
     note: `${taxLine}Your Runway target becomes ${formatDollars(target)}.${runwayLine}`,
     target,

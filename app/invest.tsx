@@ -6,15 +6,17 @@ import { remindTomorrow } from '@/services/notifications';
 import {
   buildInvestView,
   buildMovedView,
-  investDestination,
+  investAccounts,
   savingsSource,
 } from '@/state/invest-views';
 import { useAppStore } from '@/state/store';
+import { space } from '@/theme';
 import {
   Button,
   GuardrailNote,
   HeaderButton,
   LedgerRow,
+  OptionCard,
   ScreenScroll,
   Text,
 } from '@/ui/components';
@@ -22,7 +24,9 @@ import {
 /**
  * S6 Invest handoff (modal, Figma 65:829). "I moved it" empties Invest and logs the move as
  * pending until savings show it gone; an account entered by hand gets a one-tap add, never an
- * automatic one (Andy, 2026-09-28). `from=deposit`: opened right after a split.
+ * automatic one (Andy, 2026-09-28). With two or more investment accounts it asks which one the
+ * money went to, first one picked to start (Andy, 2026-09-29). `from=deposit`: opened right after
+ * a split.
  */
 export default function InvestHandoff() {
   const { from } = useLocalSearchParams<{ from?: string }>();
@@ -33,8 +37,9 @@ export default function InvestHandoff() {
   const [movedId, setMovedId] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [chosenId, setChosenId] = useState<string | undefined>(undefined);
   const move = useAppStore((s) => s.investMoves.find((m) => m.id === movedId));
-  const v = buildInvestView(data, from === 'deposit');
+  const v = buildInvestView(data, from === 'deposit', chosenId);
   const close = () => router.back();
 
   const header = (
@@ -95,7 +100,7 @@ export default function InvestHandoff() {
     );
   }
 
-  const destination = investDestination(data);
+  const { destination } = v;
   return (
     <>
       {header}
@@ -126,6 +131,23 @@ export default function InvestHandoff() {
           </GuardrailNote>
         ) : null}
         <View style={{ flex: 1 }} />
+        {v.choose ? (
+          <View style={{ gap: space[8] }} accessibilityRole="radiogroup" testID="invest-choose">
+            <Text variant="subhead" tone="secondary">
+              {v.choose}
+            </Text>
+            {investAccounts(data, connections).map((a) => (
+              <OptionCard
+                key={a.id}
+                title={a.name}
+                description={a.detail}
+                selected={a.id === destination.accountId}
+                onPress={() => setChosenId(a.id)}
+                testID={`invest-to-${a.id}`}
+              />
+            ))}
+          </View>
+        ) : null}
         <Button
           variant="primary"
           label={v.primary}
@@ -145,7 +167,7 @@ export default function InvestHandoff() {
           onPress={async () => {
             const ok = await remindTomorrow('invest', {
               title: 'Ready to invest',
-              body: `Move it in ${destination.name}, then mark it in Annum.`,
+              body: v.reminder,
               url: '/invest',
             }).catch(() => false);
             if (ok) close();

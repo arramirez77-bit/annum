@@ -15,7 +15,8 @@ interface ChipProps {
   testID?: string;
 }
 
-const TOUCH_SLOP = (layout.touchTarget - layout.chipHeight) / 2;
+/** The 4pt above and below the 36pt chip that make its 44pt target (rows that clip need room for it). */
+export const CHIP_TOUCH_SLOP = (layout.touchTarget - layout.chipHeight) / 2;
 
 /** 36pt visual, 44pt touch target. Tax: outlined in the Tax color; selected = filled + checkmark. */
 export function Chip({ kind, label, selected, onPress, testID }: ChipProps) {
@@ -34,7 +35,7 @@ export function Chip({ kind, label, selected, onPress, testID }: ChipProps) {
         haptic('select');
         onPress();
       }}
-      hitSlop={{ top: TOUCH_SLOP, bottom: TOUCH_SLOP }}
+      hitSlop={{ top: CHIP_TOUCH_SLOP, bottom: CHIP_TOUCH_SLOP }}
       accessibilityRole={isTax ? 'checkbox' : 'radio'}
       accessibilityLabel={isTax && !/work expense/i.test(label) ? `${label}, work expense` : label}
       accessibilityState={isTax ? { checked: selected } : { selected }}
