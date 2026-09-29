@@ -17,6 +17,7 @@ import {
   type CategoryRule,
   type DeferredPurchase,
   type Deposit,
+  type InvestMove,
   type ISODate,
 } from '@/domain';
 
@@ -33,6 +34,7 @@ export interface Persisted {
   connections: BankConnection[];
   reviewStep: number;
   pendingTransfer: PendingTransfer | null;
+  investMoves: InvestMove[];
   startedOn: ISODate | null;
 }
 
@@ -47,6 +49,7 @@ export const PERSISTED_KEYS: readonly (keyof Persisted)[] = [
   'connections',
   'reviewStep',
   'pendingTransfer',
+  'investMoves',
   'startedOn',
 ];
 
@@ -78,6 +81,7 @@ export function storedFrom(p: Persisted): Stored {
     lateAssumeDays: data.lateAssumeDays,
     reviewStep: p.reviewStep,
     pendingTransfer: p.pendingTransfer,
+    investMoves: p.investMoves,
     startedOn: p.startedOn ?? data.today,
   };
 }
@@ -108,6 +112,7 @@ export function persistedFrom(stored: Stored, today: ISODate): Persisted {
     connections: stored.connections,
     reviewStep: stored.reviewStep,
     pendingTransfer: stored.pendingTransfer,
+    investMoves: stored.investMoves ?? [],
     startedOn: stored.startedOn,
   };
 }

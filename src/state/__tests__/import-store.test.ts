@@ -40,6 +40,7 @@ function realSeed() {
       connections: [],
       reviewStep: 1,
       pendingTransfer: null,
+      investMoves: [],
       startedOn: '2026-09-01',
     },
     false,

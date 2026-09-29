@@ -299,36 +299,39 @@ export const initialSplit = (data: AppData, id: string): Split | undefined => {
 export function buildSplitView(data: AppData, id: string, split: Split) {
   const amount = splitTotal(split);
   const unsplit = id === 'unsplit';
-  const target = formatCompactThousands(data.settings.runwayTarget);
-  const runwayAfter = data.buckets.runway + split.runway;
+  const s = data.settings;
+  const months = s.monthlySpend > 0 ? Math.round(s.runwayTarget / s.monthlySpend) : 0;
+  const runwayBefore = unsplit ? 0 : data.buckets.runway;
+  const runwayAfter = runwayBefore + split.runway;
+  const fills = runwayAfter >= s.runwayTarget;
+  const billsDue = billsDueNext30(data);
+  const nextTax = data.taxYear?.nextQuarterlyDue;
   const notes: Record<BucketKey, string> = {
-    tax: unsplit
-      ? `${Math.round(data.settings.taxRate * 100)}% of this quarter's income`
-      : `${Math.round(data.settings.taxRate * 100)}% of this deposit`,
-    bills: `${formatDollars(billsDueNext30(data))} due in the next 30 days`,
-    runway:
-      runwayAfter >= data.settings.runwayTarget
-        ? `Reaches the ${target} target`
-        : `Toward the ${target} target`,
-    invest:
-      split.invest > 0
-        ? `Runway is full, so ${Math.round(data.settings.investShare * 100)}% of what’s left`
-        : 'Unlocks once Runway is full',
+    tax:
+      unsplit && nextTax
+        ? `Set aside for ${formatShortDate(nextTax)}`
+        : `${Math.round(s.taxRate * 100)}% of every deposit`,
+    bills:
+      billsDue === 0
+        ? 'Nothing due in the next 30 days'
+        : split.bills > 0
+          ? 'Covers the next 30 days'
+          : 'Already covered this month',
+    runway: fills
+      ? `Reaches your ${months}-month target`
+      : `${formatMonths(runwayMonths(data, runwayAfter))} months · target ${months} months`,
+    invest: split.invest > 0 ? 'Starts now that Runway is full' : 'Starts when Runway is full',
     free: 'Yours to spend',
   };
   const visible = BUCKET_KEYS.filter(
     (k) => (k !== 'tax' || taxApplies(data)) && (k !== 'invest' || data.settings.modules.invest),
   );
-  const source = data.pendingDeposit?.source;
+  const short = Math.max(s.runwayTarget - runwayAfter, 0);
   return {
-    title: unsplit
-      ? `Split your ${formatDollars(amount)} savings`
-      : `${formatDollars(amount)} just landed`,
+    title: unsplit ? `${formatDollars(amount)} in savings` : `${formatDollars(amount)} just landed`,
     subtitle: unsplit
-      ? 'Label every dollar so Annum knows what’s spoken for.'
-      : source
-        ? `From ${source}.`
-        : undefined,
+      ? 'Here’s a starting split. Change anything before you confirm.'
+      : 'Here’s where it goes. Change anything before you confirm.',
     segments: visible.map((bucket) => ({ bucket, amount: split[bucket] })),
     barLabel: `Split: ${visible.map((k) => `${BUCKET_NAMES[k]} ${formatDollars(split[k])}`).join(', ')}`,
     rows: visible.map((bucket) => ({
@@ -337,18 +340,42 @@ export function buildSplitView(data: AppData, id: string, split: Split) {
       note: notes[bucket],
       amount: split[bucket],
     })),
-    note: 'Change any amount — Free takes up the difference, so the total stays the same.',
+    note: !fills
+      ? `Runway is ${formatDollars(short)} short of your ${months}-month target. Your next deposits fill it first.`
+      : runwayBefore < s.runwayTarget
+        ? `This ${unsplit ? 'split' : 'deposit'} fills Runway. From now on, what’s left after taxes, bills and Free goes to Invest.`
+        : 'Runway is full, so what’s left after taxes, bills and Free goes to Invest.',
     total: amount,
     primary: 'Confirm split',
-    quiet: 'Edit amounts',
+    quiet: unsplit ? 'Not now' : 'Edit amounts',
   };
 }
 
-export function buildSetupView(data: AppData, taxRate: number, targetMonths: number) {
+/** 09b Change the split (Andy, 2026-09-28): Free absorbs every edit; saving is never blocked. */
+export const SPLIT_EDIT = {
+  title: 'Change the split',
+  subtitle: 'Tap an amount to change it.',
+  note: 'Whatever you don’t place goes to Free.',
+  capped: 'That’s more than this deposit has left, so it stops at what fits.',
+  primary: 'Save split',
+  quiet: 'Use the suggested split',
+} as const;
+
+export function buildSetupView(
+  data: AppData,
+  taxRate: number,
+  targetMonths: number,
+  id = 'unsplit',
+) {
   const target = data.settings.monthlySpend * targetMonths;
   const taxes = taxApplies(data);
+  const deposit = depositAmount(data, id);
   return {
-    title: 'Before your first split',
+    title:
+      id !== 'unsplit' && deposit !== undefined
+        ? `Your first deposit: ${formatDollars(deposit)}`
+        : 'Before your first split',
+    subtitle: 'Two quick choices before we split it. You can change both later in Settings.',
     showTax: taxes,
     note: taxes
       ? `${Math.round(taxRate * 100)}% goes to Tax, and Runway fills to ${formatCompactThousands(target)} (${targetMonths} months of spending) before anything goes to Invest.`

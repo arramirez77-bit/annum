@@ -20,21 +20,28 @@ export default function DepositSetup() {
   const [months, setMonths] = useState<Months>(
     (['3', '5', '6'].includes(String(current)) ? String(current) : '5') as Months,
   );
-  const v = buildSetupView(data, Number(rate), Number(months));
+  const v = buildSetupView(data, Number(rate), Number(months), id);
 
   return (
     <ScrollView
       style={{ backgroundColor: color.bgSurface }}
       contentContainerStyle={{
-        padding: layout.screenMargin,
+        paddingTop: space[28],
+        paddingHorizontal: layout.screenMargin,
         gap: space[20],
         paddingBottom: space[40],
       }}
       testID="deposit-setup"
     >
-      <Text variant="title2" accessibilityRole="header">
-        {v.title}
-      </Text>
+      {/* O6 (Figma 70:960). */}
+      <View style={{ gap: space[8] }}>
+        <Text variant="title2" money align="center" accessibilityRole="header">
+          {v.title}
+        </Text>
+        <Text variant="callout" tone="secondary" align="center">
+          {v.subtitle}
+        </Text>
+      </View>
       {v.showTax ? (
         <View style={{ gap: space[8] }}>
           <Text variant="subhead" tone="secondary">
@@ -55,7 +62,7 @@ export default function DepositSetup() {
       ) : null}
       <View style={{ gap: space[8] }}>
         <Text variant="subhead" tone="secondary">
-          Runway target
+          Runway target (months of savings to keep)
         </Text>
         <SegmentedControl
           options={[

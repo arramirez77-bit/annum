@@ -3,6 +3,7 @@ import { ScrollView, View } from 'react-native';
 
 import { formatDollars, formatShortDate } from '@/domain';
 import { useMoneyView } from '@/state/hooks';
+import { movingRows } from '@/state/invest-views';
 import { useAppStore } from '@/state/store';
 import { color, layout, space } from '@/theme';
 import {
@@ -10,6 +11,7 @@ import {
   BucketRow,
   Button,
   GuardrailNote,
+  LedgerRow,
   SettingsGroup,
   SettingsRow,
   Text,
@@ -20,6 +22,8 @@ export default function MoneyScreen() {
   const v = useMoneyView();
   const deposit = useAppStore((s) => s.data.pendingDeposit);
   const landed = deposit && !deposit.confirmed ? deposit : undefined;
+  const investMoves = useAppStore((s) => s.investMoves);
+  const moving = movingRows(investMoves);
 
   return (
     <ScrollView
@@ -106,9 +110,32 @@ export default function MoneyScreen() {
             name={row.name}
             note={row.note}
             amount={row.amount}
+            // S6: money waiting in Invest opens the handoff.
+            onPress={
+              row.bucket === 'invest' && row.amount > 0 ? () => router.push('/invest') : undefined
+            }
+            accessibilityHint={
+              row.bucket === 'invest' && row.amount > 0 ? 'Opens how to move it' : undefined
+            }
             testID={`money-row-${row.bucket}`}
           />
         ))}
+        {/* S6 log: a move stays pending until savings show it gone (Andy, 2026-09-28). */}
+        {moving.length ? (
+          <View>
+            {moving.map((m) => (
+              <LedgerRow
+                key={m.id}
+                surface="dark"
+                bucket="invest"
+                title={m.title}
+                subtitle={m.subtitle}
+                value={m.value}
+                testID={`money-moving-${m.id}`}
+              />
+            ))}
+          </View>
+        ) : null}
       </View>
 
       <View style={{ marginTop: space[16] }}>

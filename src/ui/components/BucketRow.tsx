@@ -2,7 +2,7 @@ import { useId, useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { formatDollars, type BucketKey, type Cents } from '@/domain';
-import { color, fontScale, layout, money, radius, space, type } from '@/theme';
+import { color, fontScale, layout, money, opacity, radius, size, space, type } from '@/theme';
 
 import { formatDollarDigits, parseDollarsToCents } from './AmountInput';
 import { BucketDot } from './BucketDot';
@@ -15,12 +15,21 @@ interface BucketRowProps {
   /** One-line note: "Due before Oct 13", "4.2 months · $15k target". */
   note: string;
   amount: Cents;
-  /** card: Money screen · split: deposit split with an editable amount chip. */
+  /** card: Money screen · split: a flat row on the split sheet with the amount in a chip. */
   variant: 'card' | 'split';
-  /** Split only. Omit for Free, which absorbs changes. */
+  /** Split only: an editable chip with a statusOk outline (09b). Omit for Free, which absorbs changes. */
   onChangeAmount?: (cents: Cents) => void;
+  /** Split only: tapping the plain chip (09, S14) starts changing the split. */
+  onPressAmount?: () => void;
+  /** Card only: the whole card opens something (Money's Invest card → S6). */
+  onPress?: () => void;
+  accessibilityHint?: string;
   testID?: string;
 }
+
+// The chip is Headline + 4pt padding + a 1pt border; the tap area stays 44pt.
+const CHIP_SLOP =
+  (layout.touchTarget - (type.headline.lineHeight + space[4] * 2 + size.hairline * 2)) / 2;
 
 export function BucketRow({
   bucket,
@@ -29,31 +38,64 @@ export function BucketRow({
   amount,
   variant,
   onChangeAmount,
+  onPressAmount,
+  onPress,
+  accessibilityHint,
   testID,
 }: BucketRowProps) {
   const split = variant === 'split';
   const input = useRef<TextInput>(null);
   const [focused, setFocused] = useState(false);
   const accessoryId = `split-done-${useId()}`;
-  // The chip is 36pt; this keeps the tap target at 44pt and focuses the field.
-  const slop = (layout.touchTarget - layout.chipHeight) / 2;
-  return (
-    <View
-      testID={testID}
-      accessible={!onChangeAmount}
-      accessibilityLabel={`${name}, ${formatDollars(amount)}. ${note}`}
-      style={{
+  const slop = { top: CHIP_SLOP, bottom: CHIP_SLOP, left: CHIP_SLOP, right: CHIP_SLOP };
+  // Bucket Row (Figma 54:587): a card on Money; flat 60pt rows on the split sheet (09, 09b, S14).
+  const chip = (editable: boolean) => ({
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: space[12],
+    paddingVertical: space[4],
+    borderRadius: radius.md,
+    borderWidth: size.hairline,
+    borderColor: editable ? color.statusOk : color.bgRaised,
+    backgroundColor: color.bgRaised,
+  });
+  const label = `${name}, ${formatDollars(amount)}. ${note}`;
+  const rowStyle = split
+    ? ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[12],
+        paddingVertical: space[8],
+      } as const)
+    : ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: space[12],
         padding: space[16],
         borderRadius: radius.lg,
         backgroundColor: color.bgSurface,
-      }}
+      } as const);
+  const Row = !split && onPress ? Pressable : View;
+  return (
+    <Row
+      testID={testID}
+      accessible={!onChangeAmount && !onPressAmount}
+      accessibilityLabel={label}
+      {...(!split && onPress
+        ? { onPress, accessibilityRole: 'button' as const, accessibilityHint }
+        : {})}
+      style={
+        !split && onPress
+          ? ({ pressed }: { pressed: boolean }) => [
+              rowStyle,
+              pressed && { opacity: opacity.pressed },
+            ]
+          : rowStyle
+      }
     >
       <BucketDot bucket={bucket} />
       <View style={{ flex: 1, gap: space[2] }}>
-        <Text variant="headline">{name}</Text>
+        <Text variant="bodyMedium">{name}</Text>
         <Text variant="footnote" tone="secondary">
           {note}
         </Text>
@@ -61,16 +103,9 @@ export function BucketRow({
       {split && onChangeAmount ? (
         <Pressable
           onPress={() => input.current?.focus()}
-          hitSlop={{ top: slop, bottom: slop, left: slop, right: slop }}
+          hitSlop={slop}
           accessible={false}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            height: layout.chipHeight,
-            paddingHorizontal: space[12],
-            borderRadius: radius.full,
-            backgroundColor: color.bgRaised,
-          }}
+          style={chip(true)}
         >
           <Text variant="headline" money>
             $
@@ -96,11 +131,31 @@ export function BucketRow({
           />
           <KeyboardDoneBar nativeID={accessoryId} active={focused} />
         </Pressable>
+      ) : split && onPressAmount ? (
+        <Pressable
+          onPress={onPressAmount}
+          hitSlop={slop}
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          accessibilityHint="Change the split"
+          testID={testID ? `${testID}-amount` : undefined}
+          style={({ pressed }) => [chip(false), pressed && { opacity: opacity.pressed }]}
+        >
+          <Text variant="headline" money>
+            {formatDollars(amount)}
+          </Text>
+        </Pressable>
+      ) : split ? (
+        <View style={chip(false)}>
+          <Text variant="headline" money>
+            {formatDollars(amount)}
+          </Text>
+        </View>
       ) : (
         <Text variant="headline" money>
           {formatDollars(amount)}
         </Text>
       )}
-    </View>
+    </Row>
   );
 }

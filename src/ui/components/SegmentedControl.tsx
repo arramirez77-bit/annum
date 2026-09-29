@@ -13,7 +13,7 @@ interface SegmentedControlProps<T extends string> {
   testID?: string;
 }
 
-/** 44pt raised track; the selected segment is filled with the primary action color. */
+/** Raised track with 44pt segments; the selected one is filled with the primary action color. */
 export function SegmentedControl<T extends string>({
   options,
   value,
@@ -26,11 +26,12 @@ export function SegmentedControl<T extends string>({
       testID={testID}
       accessibilityRole="tablist"
       accessibilityLabel={accessibilityLabel}
+      // Figma 61:41: raised track (radius md, 4pt inset), segments radius sm, 12pt tall padding.
       style={{
         flexDirection: 'row',
-        height: layout.touchTarget,
+        gap: space[4],
         padding: space[4],
-        borderRadius: radius.full,
+        borderRadius: radius.md,
         backgroundColor: color.bgRaised,
       }}
     >
@@ -53,11 +54,13 @@ export function SegmentedControl<T extends string>({
               flex: 1,
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: radius.full,
+              minHeight: layout.touchTarget,
+              paddingVertical: space[12],
+              borderRadius: radius.sm,
               backgroundColor: selected ? color.actionPrimary : 'transparent',
             }}
           >
-            <Text variant="subhead" tone={selected ? 'inverse' : 'secondary'} numberOfLines={1}>
+            <Text variant="subhead" tone={selected ? 'inverse' : 'primary'} numberOfLines={1}>
               {option.label}
             </Text>
           </Pressable>

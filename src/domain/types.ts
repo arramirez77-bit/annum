@@ -120,6 +120,8 @@ export interface DeferredPurchase {
   amount: Cents;
   waitUntil: ISODate;
   status: 'waiting' | 'bought' | 'dropped';
+  /** The day it was put off (S7 "On Sep 23 you waited on…"); missing on older ones. */
+  createdOn?: ISODate;
 }
 
 export type TodayStatus = 'on-track' | 'heads-up' | 'estimate';

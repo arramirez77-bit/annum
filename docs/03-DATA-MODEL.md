@@ -46,7 +46,8 @@ export interface Transaction {
 }
 
 export interface Deposit { id: string; date: ISODate; amount: Cents; source?: string; split?: Buckets; confirmed: boolean }
-export interface DeferredPurchase { id: string; label: string; amount: Cents; waitUntil: ISODate; status: 'waiting' | 'bought' | 'dropped' }
+export interface DeferredPurchase { id: string; label: string; amount: Cents; waitUntil: ISODate; status: 'waiting' | 'bought' | 'dropped'; createdOn?: ISODate }  // createdOn: the day it was put off (S7)
+export interface InvestMove { id: string; amount: Cents; markedOn: ISODate; to: string; toAccountId?: string; from: string; savingsAtMark: Cents; status: 'pending' | 'moved' }  // S6 log (src/domain/invest.ts)
 export type TodayStatus = 'on-track' | 'heads-up' | 'estimate';
 export interface WeekStart { date: ISODate; availableToSpend: Cents; runway: Cents }  // snapshot saved when the review week starts
 ```
@@ -97,6 +98,13 @@ For a purchase `p`:
 - `newATS = ATS − p`; `newPerDay = max(newATS,0) / daysUntilIncome`
 - If `p > ATS`: `shortfall = p − ATS`, taken from Runway → `newRunwayMonths = (runway − shortfall) / monthlySpend`
 - **Guardrail** shows when a purchase would reduce Runway at all. Copy: cause + suggestion to wait until the next income date.
+
+## Invest handoff (`src/domain/invest.ts`, Andy 2026-09-28)
+
+- **"I moved it"** sets the Invest bucket to $0 and logs an `InvestMove` (amount, date, destination, the savings balance at that moment). The savings total is never edited by hand: the bank sync lowers it. Free doesn't change.
+- While a move is **pending**, the buckets add up to savings minus the pending amount; Money shows the move ("Moved $X to {to}", "{date} · Pending until it leaves {from}").
+- It becomes **moved** once savings are down by at least 95% of the amount from `savingsAtMark` (checked on every data change, so after each sync).
+- A destination account entered by hand gets a one-tap "Add $X to {account}" (balance + X, dated today); never automatic, never for bank accounts.
 
 ## Weekly transfer suggestion (`src/domain/transfer.ts`)
 

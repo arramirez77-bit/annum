@@ -317,6 +317,7 @@ function realWith(connections: BankConnection[]) {
       connections,
       reviewStep: 1,
       pendingTransfer: null,
+      investMoves: [],
       startedOn: '2026-09-20',
     },
     false,

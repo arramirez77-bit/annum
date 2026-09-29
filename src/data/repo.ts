@@ -13,6 +13,7 @@ import type {
   DeferredPurchase,
   Deposit,
   ExpectedIncome,
+  InvestMove,
   ISODate,
   Settings,
   Transaction,
@@ -135,6 +136,8 @@ export interface Stored {
   /** Weekly review: the step to resume at. */
   reviewStep: number;
   pendingTransfer: PendingTransfer | null;
+  /** S6 "I moved it" log; pending until savings show the money gone (Andy, 2026-09-28). */
+  investMoves: InvestMove[];
   /** The day onboarding finished. */
   startedOn: ISODate;
 }
@@ -241,6 +244,7 @@ function keyValues(s: Stored): { settings: Map<string, string>; meta: Map<string
       lateAssumeDays: s.lateAssumeDays,
       reviewStep: s.reviewStep,
       pendingTransfer: s.pendingTransfer,
+      investMoves: s.investMoves,
       startedOn: s.startedOn,
     }).map(([k, v]) => [k, JSON.stringify(v)]),
   );
@@ -306,6 +310,7 @@ export class Repo {
       lateAssumeDays: m('lateAssumeDays', 5),
       reviewStep: m('reviewStep', 1),
       pendingTransfer: m<PendingTransfer | null>('pendingTransfer', null),
+      investMoves: m<InvestMove[]>('investMoves', []),
       startedOn: m('startedOn', ''),
     };
   }

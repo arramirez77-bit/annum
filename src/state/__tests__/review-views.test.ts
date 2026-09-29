@@ -134,27 +134,36 @@ describe('Deposit split views', () => {
     expect(split).toEqual(proposeSplit(d, 1000000));
     const v = buildSplitView(d, 'd1', split);
     expect(v.title).toBe('$10,000 just landed');
-    expect(v.subtitle).toBe('From Northwind Studio.');
+    expect(v.subtitle).toBe('Here’s where it goes. Change anything before you confirm.');
     expect(v.rows.map((r) => [r.name, r.amount, r.note])).toEqual([
-      ['Tax', 300000, '30% of this deposit'],
-      ['Bills', 0, '$2,000 due in the next 30 days'],
-      ['Runway', 240000, 'Reaches the $15k target'],
-      ['Invest', 230000, 'Runway is full, so 50% of what’s left'],
+      ['Tax', 300000, '30% of every deposit'],
+      ['Bills', 0, 'Already covered this month'],
+      ['Runway', 240000, 'Reaches your 5-month target'],
+      ['Invest', 230000, 'Starts now that Runway is full'],
       ['Free', 230000, 'Yours to spend'],
     ]);
+    expect(v.note).toBe(
+      'This deposit fills Runway. From now on, what’s left after taxes, bills and Free goes to Invest.',
+    );
+    expect(v.quiet).toBe('Edit amounts');
   });
 
   test('E3 → split: the first split of unsplit savings', () => {
     const d = data('first-run');
     const v = buildSplitView(d, 'unsplit', initialSplit(d, 'unsplit')!);
-    expect(v.title).toBe('Split your $19,100 savings');
-    expect(v.rows.map((r) => [r.name, r.amount])).toEqual([
-      ['Tax', 450000],
-      ['Bills', 200000],
-      ['Runway', 1260000],
-      ['Invest', 0],
-      ['Free', 0],
+    expect(v.title).toBe('$19,100 in savings');
+    expect(v.subtitle).toBe('Here’s a starting split. Change anything before you confirm.');
+    expect(v.rows.map((r) => [r.name, r.amount, r.note])).toEqual([
+      ['Tax', 450000, 'Set aside for Jan 15'],
+      ['Bills', 200000, 'Covers the next 30 days'],
+      ['Runway', 1260000, '4.2 months · target 5 months'],
+      ['Invest', 0, 'Starts when Runway is full'],
+      ['Free', 0, 'Yours to spend'],
     ]);
+    expect(v.note).toBe(
+      'Runway is $2,400 short of your 5-month target. Your next deposits fill it first.',
+    );
+    expect(v.quiet).toBe('Not now');
   });
 
   test('unknown or already-confirmed deposits have no split', () => {

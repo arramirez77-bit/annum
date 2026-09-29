@@ -24,6 +24,18 @@ const persisted = (): Persisted => ({
   connections: [],
   reviewStep: 3,
   pendingTransfer: { amount: 105000, markedOn: '2026-09-23' },
+  investMoves: [
+    {
+      id: 'move-1',
+      amount: 230000,
+      markedOn: '2026-09-23',
+      to: 'Fabrikam Invest',
+      toAccountId: 'brokerage',
+      from: 'Woodgrove',
+      savingsAtMark: 1910000,
+      status: 'pending',
+    },
+  ],
   startedOn: '2026-09-01',
 });
 
@@ -35,6 +47,7 @@ describe('saving and loading the app state', () => {
     expect(back.data.settings).toEqual(seed.settings);
     expect(back.reviewStep).toBe(3);
     expect(back.pendingTransfer).toEqual({ amount: 105000, markedOn: '2026-09-23' });
+    expect(back.investMoves).toEqual(persisted().investMoves);
     expect(availableToSpend(back.data).display).toBe(availableToSpend(seed).display);
   });
 

@@ -16,7 +16,9 @@ import {
   mergeImport,
   proposeBills,
   localISODate,
+  markInvestMoved,
   newAppData,
+  settleInvestMoves,
   ruleFromCorrection,
   toTag,
   normalizeMerchant,
@@ -34,6 +36,7 @@ import {
   type DeferredPurchase,
   type ExpectedIncome,
   type ImportedTransaction,
+  type InvestMove,
   type ISODate,
   type Settings,
   type Split,
@@ -110,6 +113,14 @@ export interface AppState extends Persisted {
   setSaveProblem: (problem: boolean) => void;
 
   deferPurchase: (amount: Cents, waitUntil: ISODate) => DeferredPurchase;
+  /** S7: bought it, or don't need it any more. */
+  resolveDeferred: (id: string, status: 'bought' | 'dropped') => void;
+  /** S7 "Wait again": until the next income date. */
+  waitAgain: (id: string, waitUntil: ISODate) => void;
+  /** S6 "I moved it": Invest goes to $0 and the move is logged as pending. */
+  markInvestMoved: (where: Pick<InvestMove, 'to' | 'toAccountId' | 'from'>) => InvestMove | null;
+  /** S6, accounts entered by hand only, on a tap: add the moved amount to that balance. */
+  addToBalance: (accountId: string, amount: Cents) => void;
   saveReviewStep: (step: number) => void;
   chooseCategory: (transactionId: string, category: string) => void;
   toggleTax: (transactionId: string) => void;
@@ -179,6 +190,7 @@ const empty = (today: ISODate): Persisted => ({
   connections: [],
   reviewStep: 1,
   pendingTransfer: null,
+  investMoves: [],
   startedOn: null,
 });
 
@@ -196,8 +208,15 @@ const demo = (name: ScenarioName) => {
 };
 
 export const useAppStore = create<AppState>((set, get) => {
-  /** Save a new AppData; real mode recomputes what depends on transactions and the date. */
-  const commit = (data: AppData) => set({ data: get().mode === 'real' ? withDerived(data) : data });
+  /**
+   * Save a new AppData; real mode recomputes what depends on transactions and the date. A
+   * pending invest move becomes moved once savings show the money gone (S6).
+   */
+  const commit = (data: AppData) => {
+    const next = get().mode === 'real' ? withDerived(data) : data;
+    const moves = settleInvestMoves(get().investMoves, next);
+    set(moves === get().investMoves ? { data: next } : { data: next, investMoves: [...moves] });
+  };
   const settings = (change: Partial<Settings>) =>
     commit({ ...get().data, settings: { ...get().data.settings, ...change } });
 
@@ -275,10 +294,37 @@ export const useAppStore = create<AppState>((set, get) => {
         amount,
         waitUntil,
         status: 'waiting',
+        createdOn: get().data.today,
       };
       set((s) => ({ deferred: [...s.deferred, purchase] }));
       return purchase;
     },
+
+    resolveDeferred: (id, status) => {
+      if (status === 'bought') haptic('confirm');
+      set((s) => ({ deferred: s.deferred.map((d) => (d.id === id ? { ...d, status } : d)) }));
+    },
+
+    waitAgain: (id, waitUntil) =>
+      set((s) => ({ deferred: s.deferred.map((d) => (d.id === id ? { ...d, waitUntil } : d)) })),
+
+    markInvestMoved: (where) => {
+      const r = markInvestMoved(get().data, { ...where, id: newId('move') });
+      if (!r) return null;
+      haptic('confirm');
+      commit(r.data);
+      set((s) => ({ investMoves: [...s.investMoves, r.move] }));
+      return r.move;
+    },
+
+    addToBalance: (accountId, amount) =>
+      accounts((list) =>
+        list.map((a) =>
+          a.id === accountId && a.source === 'manual'
+            ? { ...a, balance: a.balance + amount, enteredOn: get().data.today }
+            : a,
+        ),
+      ),
 
     saveReviewStep: (step) => set({ reviewStep: step }),
 

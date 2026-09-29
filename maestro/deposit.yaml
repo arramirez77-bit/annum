@@ -1,4 +1,5 @@
 # M4: split the landed $10,000; editing Tax keeps the total (Free absorbs the change).
+# Phase 3: 09b edit, then S6 (I moved it → pending on Money, one-tap add to the by-hand account).
 appId: com.highdesert.annum
 name: Deposit split
 ---
@@ -24,17 +25,42 @@ name: Deposit split
 - inputText: '2500'
 # Tapping plain text closes the number pad (the Done bar works for people, but Maestro
 # reports its position wrongly and would tap the keypad).
-- tapOn: 'From Northwind Studio\.'
+- tapOn: 'Tap an amount to change it\.'
 - scrollUntilVisible:
     element: 'Free, \$2,800\. Yours to spend'
     direction: DOWN
 - takeScreenshot: deposit-edited
+# 09b "Save split" keeps the edit and goes back to the split; then confirm it.
+- scrollUntilVisible:
+    element:
+      id: 'split-save'
+    direction: DOWN
+- tapOn:
+    id: 'split-save'
 - scrollUntilVisible:
     element:
       id: 'deposit-confirm'
     direction: DOWN
+- assertVisible: 'Free, \$2,800\. Yours to spend'
 - tapOn:
     id: 'deposit-confirm'
+# This split fills Runway, so S6 opens: $2,300 is ready to invest.
+- extendedWaitUntil:
+    visible:
+      id: 'invest'
+    timeout: 8000
+- assertVisible: 'Runway is full'
+- assertVisible: 'is ready to invest\. Your savings now cover 5 months, which was your target\.'
+- takeScreenshot: invest-handoff
+- tapOn:
+    id: 'invest-moved-it'
+- assertVisible: 'Moved \$2,300 to Fabrikam Invest'
+# Fabrikam Invest is entered by hand: one tap adds the amount; never automatic.
+- tapOn:
+    id: 'invest-add-balance'
+- assertVisible: 'Added\. Fabrikam Invest now shows \$12,300\.'
+- tapOn:
+    id: 'invest-done'
 # Money was scrolled down to reach "Split it"; go back up to the savings total.
 - scrollUntilVisible:
     element: 'Savings, \$29,100'
@@ -42,5 +68,8 @@ name: Deposit split
     timeout: 10000
 - assertVisible: 'Tax, \$5,500\. .*'
 - assertVisible: 'Free, \$4,300\. .*'
+- scrollUntilVisible:
+    element: 'Moved \$2,300 to Fabrikam Invest, \$2,300, .* · Pending until it leaves Savings'
+    direction: DOWN
 - assertNotVisible:
     id: 'split-deposit'

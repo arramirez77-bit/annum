@@ -76,6 +76,7 @@ const stored = (): Stored => ({
   lateAssumeDays: 5,
   reviewStep: 1,
   pendingTransfer: null,
+  investMoves: [],
   startedOn: '2026-09-20',
 });
 

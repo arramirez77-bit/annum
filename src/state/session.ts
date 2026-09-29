@@ -274,6 +274,7 @@ export async function finishOnboarding(draft: OnboardingDraft): Promise<boolean>
     connections: store().connections,
     reviewStep: 1,
     pendingTransfer: null,
+    investMoves: [],
     startedOn: day,
   };
   try {

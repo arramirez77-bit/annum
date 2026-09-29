@@ -1,0 +1,52 @@
+# Phase 3: S7. "Wait until Oct 13" on What would this do? keeps the purchase; when the invoice
+# lands and is split, "Your invoice landed" asks again (Buy it · Wait again · I don't need it).
+appId: com.highdesert.annum
+name: Waited-on purchase
+---
+- runFlow:
+    file: common/open-scenario.yaml
+    env:
+      SCENARIO: on-track
+- tapOn: 'What would this do\?'
+- extendedWaitUntil:
+    visible:
+      id: 'what-if-amount'
+    timeout: 5000
+- inputText: '2000'
+- extendedWaitUntil:
+    visible: 'Runway, 3\.9 mo'
+    timeout: 3000
+# Tapping plain text closes the number pad (see deposit.yaml).
+- tapOn: 'If I spend'
+- tapOn: 'Wait until Oct 13'
+- extendedWaitUntil:
+    visible:
+      id: 'today'
+    timeout: 5000
+- tapOn: 'Money'
+- scrollUntilVisible:
+    element:
+      id: 'split-deposit'
+    direction: DOWN
+- tapOn:
+    id: 'split-deposit'
+- scrollUntilVisible:
+    element:
+      id: 'deposit-confirm'
+    direction: DOWN
+- tapOn:
+    id: 'deposit-confirm'
+- extendedWaitUntil:
+    visible:
+      id: 'deferred'
+    timeout: 8000
+- assertVisible: 'Your invoice landed'
+- assertVisible: 'On Sep 23 you waited on a \$2,000 purchase\. It fits now\.'
+- assertVisible: 'If you buy it now, \$2,000, Comes out of Free'
+- takeScreenshot: waited-on
+- tapOn:
+    id: 'deferred-buy'
+- extendedWaitUntil:
+    visible:
+      id: 'money'
+    timeout: 5000

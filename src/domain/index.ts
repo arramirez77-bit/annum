@@ -22,3 +22,4 @@ export * from './banksync';
 export * from './bills';
 export * from './reminders';
 export * from './bankfile';
+export * from './invest';

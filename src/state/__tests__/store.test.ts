@@ -75,6 +75,51 @@ describe('review and deposit', () => {
   });
 });
 
+describe('S6 invest handoff and S7 waited-on purchase (Phase 3)', () => {
+  const savings = () => s().data.accounts.find((a) => a.type === 'savings')!;
+
+  test('"I moved it": Invest to $0, logged as pending, moved once savings show it gone', () => {
+    s().confirmDeposit(proposeSplit(s().data, 1000000), true);
+    const invest = s().data.buckets.invest;
+    expect(invest).toBe(230000);
+    const before = savingsBalance(s().data);
+    const move = s().markInvestMoved({
+      to: 'Fabrikam Invest',
+      toAccountId: 'brokerage',
+      from: 'Woodgrove',
+    });
+    expect(move).toMatchObject({ amount: 230000, status: 'pending', savingsAtMark: before });
+    expect(s().data.buckets.invest).toBe(0);
+    expect(savingsBalance(s().data)).toBe(before);
+    expect(s().investMoves).toHaveLength(1);
+    // The bank sync shows savings down by the amount: the move is done.
+    s().setBalance(savings().id, savings().balance - 230000);
+    expect(s().investMoves[0].status).toBe('moved');
+    expect(s().markInvestMoved({ to: 'x', from: 'y' })).toBeNull();
+  });
+
+  test('one tap adds the moved amount to an account entered by hand, never to a bank account', () => {
+    const fabrikam = s().data.accounts.find((a) => a.id === 'brokerage')!;
+    s().addToBalance('brokerage', 230000);
+    expect(s().data.accounts.find((a) => a.id === 'brokerage')).toMatchObject({
+      balance: fabrikam.balance + 230000,
+      enteredOn: '2026-09-23',
+    });
+    const checking = s().data.accounts.find((a) => a.id === 'chk')!;
+    s().addToBalance('chk', 230000);
+    expect(s().data.accounts.find((a) => a.id === 'chk')!.balance).toBe(checking.balance);
+  });
+
+  test('waited-on purchases keep the day they were put off; wait again, buy, or drop', () => {
+    const p = s().deferPurchase(200000, '2026-10-13');
+    expect(p.createdOn).toBe('2026-09-23');
+    s().waitAgain(p.id, '2026-11-13');
+    expect(s().deferred[0].waitUntil).toBe('2026-11-13');
+    s().resolveDeferred(p.id, 'bought');
+    expect(s().deferred[0].status).toBe('bought');
+  });
+});
+
 describe('M5: history, accounts, modules', () => {
   test('finishing a review records it and starts a new week from today', () => {
     s().markTransferMoved(105000);
@@ -161,6 +206,7 @@ describe('M5: history, accounts, modules', () => {
         connections: [],
         reviewStep: 1,
         pendingTransfer: null,
+        investMoves: [],
         startedOn: '2026-09-01',
       },
       false,

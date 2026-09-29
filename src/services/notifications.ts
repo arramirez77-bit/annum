@@ -34,10 +34,18 @@ export async function remindersAllowed(): Promise<boolean> {
   return (await Notifications.getPermissionsAsync()).granted;
 }
 
-/** Replace every scheduled reminder with this plan (no-op without permission). */
+/** One-off reminders ("Remind me tomorrow") use this id prefix; the plan leaves them alone. */
+const ONCE = 'once-';
+
+/** Replace every planned reminder with this plan (no-op without permission). */
 export async function scheduleReminders(plan: readonly PlannedReminder[]): Promise<void> {
   if (!(await remindersAllowed())) return;
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  for (const n of scheduled) {
+    if (!n.identifier.startsWith(ONCE)) {
+      await Notifications.cancelScheduledNotificationAsync(n.identifier);
+    }
+  }
   for (const r of plan) {
     const trigger: Notifications.NotificationTriggerInput = r.weekly
       ? {
@@ -62,6 +70,25 @@ export async function scheduleReminders(plan: readonly PlannedReminder[]): Promi
       trigger,
     });
   }
+}
+
+/**
+ * S6 "Remind me tomorrow": one reminder at 9 AM tomorrow that opens `url`. No amounts in the
+ * text (the lock screen may show it). False when reminders are off for Annum.
+ */
+export async function remindTomorrow(
+  key: string,
+  content: { title: string; body: string; url: string },
+  now: Date = new Date(),
+): Promise<boolean> {
+  if (!(await askForReminders())) return false;
+  const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0);
+  await Notifications.scheduleNotificationAsync({
+    identifier: `${ONCE}${key}`,
+    content: { title: content.title, body: content.body, data: { url: content.url } },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at },
+  });
+  return true;
 }
 
 /** The screen a tapped reminder opens (from its data), or null. */

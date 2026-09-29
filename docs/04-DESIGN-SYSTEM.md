@@ -27,12 +27,12 @@ Tokens: `src-starter/theme.ts` → copy to `src/theme/index.ts`. Components impo
 | **ProfileButton** | — | Figma 117:1581. 40pt circle (`size.profileButton`), overlaySubtle fill, SF Symbol `person.fill` 18pt Medium (`size.profileGlyph`), textPrimary; 44pt tap area (hitSlop 2); VoiceOver "Settings". In every Today header; opens Settings |
 | **StepIndicator** | step, total | 22×4 segments; filled textPrimary, rest overlayMuted; `accessibilityLabel="Step N of M"` |
 | **GuardrailNote** | tone: info · heads-up; surface: dark · light | radius md, 12/16 padding, 8pt dot; dark text on light surfaces |
-| **BucketRow** | card · split | dot + name + one-line note + amount; split puts the amount in an editable chip (numeric keypad) |
+| **BucketRow** | card · split; onPress (card) | Figma 54:587. Dot + Body Medium name + Footnote note + Headline amount. Card: bgSurface, radius lg, 16 padding (Money; the Invest card opens S6 when it holds money). Split: a flat 60pt row with the amount in a raised chip (radius md, 12/4 padding): plain (tap to start changing the split) or editable with a 1pt statusOk outline and the numeric keypad (09b); Free is never editable |
 | **LedgerRow** | light · dark; bucket?; chevron | Figma 56:21. Hairline bottom border, 16pt vertical padding, items centered; Body Medium title + Footnote subtitle left, Headline value right; optional BucketDot. Tappable rows show a chevron unless the screen leaves it out (S1) |
 | **TransactionCard** | untagged · tagged · tax | merchant, date · card, amount; chips (2 suggestions + Tax last) |
 | **AmountInput** | empty · focused · filled | label above, "$" + Title 2 value, `keyboardType="number-pad"`, formats with separators, live helper sentence |
 | **OptionCard** | selected | whole card pressable; radio on the right |
-| **SegmentedControl** | 3 options | 44pt, raised track, selected = actionPrimary fill (or native segmented control if it matches) |
+| **SegmentedControl** | 2–3 options | Figma 61:41. Raised track (radius md, 4pt inset and gap), 44pt segments (radius sm, Subhead, textPrimary), selected = actionPrimary fill |
 | **SettingsRow** | toggle · value · chevron · destructive | Figma 61:493. 12/16 padding, 8pt gap, full-width hairline between rows, inside a SettingsGroup (bgSurface, radius lg). The group's Footnote title sits 20pt above it, at the screen margin (S3) |
 | **AccountSourceCard** | bank · files · by hand; action | Figma 117:1729. bgSurface, radius lg. Source row: 32pt tile (`size.sourceTile`, overlaySelected, radius sm) + Subhead title + Footnote line, min 60pt (`layout.sourceRow`); becomes a button with a Reconnect value when the bank asks to sign in again. Account rows indented under the text (tile width + 12), top hairline, Body name + Footnote line, Body Medium value, chevron |
 | **AddAccountCard** | — | Figma 117:1769. Same card, `tintOk` tile with `plus` in statusOk, Body Medium "Add an account"; opens S12 |

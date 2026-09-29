@@ -16,7 +16,7 @@ name: First split
 - tapOn:
     id: 'setup-continue'
 - extendedWaitUntil:
-    visible: 'Split your \$19,100 savings'
+    visible: '\$19,100 in savings'
     timeout: 8000
 - scrollUntilVisible:
     element:

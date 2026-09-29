@@ -48,7 +48,7 @@ export default function AddAccountSheet() {
           icon={symbols.byHand}
           title="Enter a balance by hand"
           subtitle="For cash, or banks that won’t connect."
-          onPress={() => go({ pathname: '/account/[id]/balance', params: { id: 'new' } })}
+          onPress={() => go('/account/new')}
           testID="add-account-by-hand"
         />
         <OptionRow
