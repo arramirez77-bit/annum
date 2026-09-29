@@ -89,7 +89,7 @@ name: Weekly review
     element:
       id: 'review-done-button'
     direction: DOWN
-- assertVisible: "Next review Sunday, Sep 27\\. We'll remind you\\."
+- assertVisible: 'Next review Sunday, Sep 27\. We’ll remind you\.'
 - tapOn:
     id: 'review-done-button'
 - extendedWaitUntil:

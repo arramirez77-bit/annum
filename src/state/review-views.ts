@@ -356,7 +356,7 @@ export function buildDoneView(data: AppData, pending: PendingTransfer | null) {
           ]
         : []),
     ],
-    nextReview: `Next review ${formatWeekdayDate(nextReviewDate(data.today))}. We'll remind you.`,
+    nextReview: `Next review ${formatWeekdayDate(nextReviewDate(data.today))}. We’ll remind you.`,
     primary: 'Done',
   };
 }
@@ -451,6 +451,30 @@ export function buildSetupView(
   const target = data.settings.monthlySpend * targetMonths;
   const taxes = taxApplies(data);
   const deposit = depositAmount(data, id);
+  // O6 note (Figma 70:981): what these two choices do to the split that comes next.
+  const split = initialSplit(
+    {
+      ...data,
+      settings: {
+        ...data.settings,
+        taxRate: taxes ? taxRate : data.settings.taxRate,
+        runwayTarget: target,
+      },
+    },
+    id,
+  );
+  const now = data.buckets.runway;
+  const runwayLine = !split
+    ? ''
+    : id === 'unsplit'
+      ? split.runway >= target
+        ? ' Your savings cover it.'
+        : ` ${formatDollars(split.runway)} of your savings goes toward it.`
+      : now >= target
+        ? ` You’re at ${formatDollars(now)}, so it’s already full.`
+        : ` You’re at ${formatDollars(now)}, so ${formatDollars(split.runway)} of this ${now + split.runway >= target ? 'fills it' : 'goes toward it'}.`;
+  const taxLine =
+    taxes && split && split.tax > 0 ? `${formatDollars(split.tax)} goes to taxes. ` : '';
   return {
     title:
       id !== 'unsplit' && deposit !== undefined
@@ -458,9 +482,7 @@ export function buildSetupView(
         : 'Before your first split',
     subtitle: 'Two quick choices before we split it. You can change both later in Settings.',
     showTax: taxes,
-    note: taxes
-      ? `${Math.round(taxRate * 100)}% goes to Tax, and Runway fills to ${formatCompactThousands(target)} (${targetMonths} months of spending) before anything goes to Invest.`
-      : `Runway fills to ${formatCompactThousands(target)} (${targetMonths} months of spending) before anything goes to Invest.`,
+    note: `${taxLine}Your Runway target becomes ${formatDollars(target)}.${runwayLine}`,
     target,
     primary: 'See the split',
   };

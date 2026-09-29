@@ -25,7 +25,7 @@ export default function TaxesScreen() {
         ? exporter.shareTaxCsv(data, v.year)
         : exporter.shareTaxPdf(data, v.year));
     } catch {
-      setProblem("That export didn't work, so nothing was shared. Try again in a moment.");
+      setProblem('That export didn’t work, so nothing was shared. Try again in a moment.');
     } finally {
       setBusy(false);
     }

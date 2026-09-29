@@ -137,7 +137,7 @@ describe('Weekly Review views', () => {
       ['Free to spend', '20 days until your Oct 13 invoice', '$1,000'],
       ['Move to checking', 'Pending until it shows up in Woodgrove', '$1,050'],
     ]);
-    expect(v.nextReview).toBe("Next review Sunday, Sep 27. We'll remind you.");
+    expect(v.nextReview).toBe('Next review Sunday, Sep 27. We’ll remind you.');
   });
 });
 
@@ -187,9 +187,19 @@ describe('Deposit split views', () => {
   test('O6 setup: live consequence sentence', () => {
     const v = buildSetupView(data('first-run'), 0.3, 5);
     expect(v.note).toBe(
-      '30% goes to Tax, and Runway fills to $15k (5 months of spending) before anything goes to Invest.',
+      '$4,500 goes to taxes. Your Runway target becomes $15,000. $12,600 of your savings goes toward it.',
     );
     expect(v.target).toBe(1500000);
+    // A landed deposit (Figma 70:981's own example).
+    const d = data('on-track');
+    const deposit = buildSetupView(d, 0.3, 5, d.pendingDeposit!.id);
+    expect(deposit.title).toBe('Your first deposit: $10,000');
+    expect(deposit.note).toBe(
+      '$3,000 goes to taxes. Your Runway target becomes $15,000. You’re at $12,600, so $2,400 of this fills it.',
+    );
+    expect(buildSetupView(d, 0.3, 3, d.pendingDeposit!.id).note).toBe(
+      '$3,000 goes to taxes. Your Runway target becomes $9,000. You’re at $12,600, so it’s already full.',
+    );
     expect(buildSetupView(data('salary'), 0, 6).showTax).toBe(false);
   });
 });

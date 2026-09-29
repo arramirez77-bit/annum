@@ -112,7 +112,23 @@ export function causeSentence(cause: HeadsUpCause, income: NextIncome): string {
     case 'statement-before-income':
       return `The ${cardShortName(cause.name)} statement lands before ${incomeWord(income)} does.`;
     case 'low-per-day':
-      return `That's under ${formatDollars(2000)} a day until ${income.kind === 'paycheck' ? 'payday' : 'your next invoice'}.`;
+      return `That’s under ${formatDollars(2000)} a day until ${income.kind === 'paycheck' ? 'payday' : 'your next invoice'}.`;
+  }
+}
+
+/**
+ * 01c one-liner when a heads-up cause is behind the number ("until Oct 13 · Contoso statement
+ * first"): the full sentence would shrink to fit one line on a small screen.
+ */
+function compactCause(cause: HeadsUpCause, income: NextIncome, perDay: Cents, days: number) {
+  const until = `until ${formatShortDate(income.date)}`;
+  switch (cause.kind) {
+    case 'late-income':
+      return `${until} · invoice ${cause.daysLate} ${cause.daysLate === 1 ? 'day' : 'days'} late`;
+    case 'statement-before-income':
+      return `${until} · ${cardShortName(cause.name)} statement first`;
+    case 'low-per-day':
+      return compactSentence(income, perDay, days);
   }
 }
 
@@ -347,7 +363,9 @@ export function buildTodayView(data: AppData, now: Date): TodayView {
     lead,
     amount: spend.amount,
     sentence,
-    compactSentence: first ? sentence : compactSentence(ats.nextIncome, spend.perDay, spend.days),
+    compactSentence: first
+      ? compactCause(first, ats.nextIncome, spend.perDay, spend.days)
+      : compactSentence(ats.nextIncome, spend.perDay, spend.days),
     staleNote,
     staleRoute,
     emptyNote: data.accounts.every((a) => a.balance === 0)

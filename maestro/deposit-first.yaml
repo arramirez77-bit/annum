@@ -12,7 +12,7 @@ name: First split
 - extendedWaitUntil:
     visible: 'Before your first split'
     timeout: 8000
-- assertVisible: '30% goes to Tax, and Runway fills to \$15k \(5 months of spending\) before anything goes to Invest\.'
+- assertVisible: '\$4,500 goes to taxes\. Your Runway target becomes \$15,000\. \$12,600 of your savings goes toward it\.'
 - tapOn:
     id: 'setup-continue'
 - extendedWaitUntil:

@@ -71,7 +71,12 @@ export function SettingsRow(props: SettingsRowProps) {
 
   const onPress = props.onPress;
   const value = props.variant === 'value' ? props.value : undefined;
-  const trailing = value ? <Text tone="secondary">{value}</Text> : null;
+  // Label and value share the row, so at large text sizes both wrap instead of a word breaking.
+  const trailing = value ? (
+    <Text tone="secondary" align="right" style={{ flexShrink: 1 }}>
+      {value}
+    </Text>
+  ) : null;
   return (
     <View testID={testID}>
       <Pressable
@@ -81,7 +86,7 @@ export function SettingsRow(props: SettingsRowProps) {
         accessibilityLabel={value ? `${label}, ${value}` : label}
         style={({ pressed }) => [rowStyle, pressed && { opacity: opacity.pressed }]}
       >
-        <View style={{ flex: 1 }}>
+        <View style={{ flexGrow: 1, flexShrink: 1 }}>
           <Text tone={props.variant === 'destructive' ? 'destructive' : 'primary'}>{label}</Text>
         </View>
         {trailing}

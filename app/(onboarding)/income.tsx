@@ -106,7 +106,7 @@ export default function Income() {
               options={CADENCES}
               value={pay.cadence}
               onChange={(cadence) => o.setPaySchedule({ ...pay, cadence })}
-              accessibilityLabel="How often you're paid"
+              accessibilityLabel="How often you’re paid"
               testID="pay-cadence"
             />
             <DateField

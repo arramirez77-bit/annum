@@ -379,7 +379,7 @@ function Done() {
           />
         ))}
       </Section>
-      <Section title="What's left">
+      <Section title="What’s left">
         {v.left.map((r) => (
           <LedgerRow
             key={r.title}

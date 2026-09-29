@@ -26,7 +26,7 @@ export default function ReviewHome() {
         <Text variant="title1" accessibilityRole="header">
           This week is reviewed
         </Text>
-        <Text tone="secondary">{`Next review ${formatWeekdayDate(nextReviewDate(today))}. We'll remind you.`}</Text>
+        <Text tone="secondary">{`Next review ${formatWeekdayDate(nextReviewDate(today))}. We’ll remind you.`}</Text>
       </View>
       <Button
         variant="secondary"

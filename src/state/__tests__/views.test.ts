@@ -60,6 +60,7 @@ describe('Today, per scenario (Figma 01, 02, E1, E2, O5, P2)', () => {
       caution: true,
       amount: 20000,
       sentence: 'until Oct 13. The Contoso statement lands before your invoice does.',
+      compactSentence: 'until Oct 13 · Contoso statement first',
       button: { variant: 'caution', label: 'See what I can move' },
     });
     expect(v.rows.map((r) => [r.title, r.subtitle, r.value, r.bucket])).toEqual([
@@ -92,6 +93,7 @@ describe('Today, per scenario (Figma 01, 02, E1, E2, O5, P2)', () => {
       dateLabel: 'Oct 17',
       amount: 17500,
       sentence: 'until Oct 22. The Northwind Studio invoice is 4 days late, so we stretched it.',
+      compactSentence: 'until Oct 22 · invoice 4 days late',
       button: {
         variant: 'caution',
         label: 'Change the invoice date',
